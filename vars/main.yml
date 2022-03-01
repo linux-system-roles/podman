@@ -1,9 +1,9 @@
-# SPDX-License-Identifier: MIT
----
-# Put the role's internal variables here that are not distribution specific.
-# You can override these by defining the same variable with a different
-# value in a platform/version specific file in vars/
+# SPDX-License-Identifier: GPL-3.0-only
 
-# Examples of non-distribution specific (generic) internal variables:
-#__podman_config: "foo.conf"
-__podman_packages: []
+# systemd service name
+cidpid_base: "{{ systemd_tempdir }}/%n-"
+cidfile: "{{ cidpid_base }}cid"
+pidfile: "{{ cidpid_base }}pid"
+
+# kubeval
+kubeval_url: "https://github.com/instrumenta/kubeval/releases/latest"
