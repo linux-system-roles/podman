@@ -4,7 +4,7 @@ on:  # yamllint disable-line rule:truthy
   - pull_request
   - push
 env:
-  TOX_LSR: "git+https://github.com/linux-system-roles/tox-lsr@main"
+  TOX_LSR: "git+https://github.com/linux-system-roles/tox-lsr@2.10.1"
   LSR_ANSIBLES: 'ansible==2.9.*'
   LSR_MSCENARIOS: default
   # LSR_EXTRA_PACKAGES: libdbus-1-dev
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        pyver: ['2.7', '3.6', '3.7', '3.8', '3.9']
+        pyver: ['2.7', '3.6', '3.8', '3.9']
     steps:
       - name: checkout PR
         uses: actions/checkout@v2
