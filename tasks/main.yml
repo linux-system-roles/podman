@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: MIT
+---
+# Put the tasks for your role here.
+
+# An example of how to set distribution and version specific internal variables
+# (defined in vars/ directory)
+# see https://github.com/oasis-roles/meta_standards#platform-specific-variables
+- name: Set platform/version specific variables
+  include_vars: "{{ __template_vars_file }}"
+  loop:
+    - "{{ ansible_facts['os_family'] }}.yml"
+    - "{{ ansible_facts['distribution'] }}.yml"
+    - >-
+      {{ ansible_facts['distribution'] ~ '_' ~
+      ansible_facts['distribution_major_version'] }}.yml
+    - >-
+      {{ ansible_facts['distribution'] ~ '_' ~
+      ansible_facts['distribution_version'] }}.yml
+  vars:
+    __template_vars_file: "{{ role_path }}/vars/{{ item }}"
+  when: __template_vars_file is file
+
+# Examples of some tasks:
+- name: Ensure required packages are installed
+  package:
+    name: "{{ __template_packages }}"
+    state: present
+
+- name: Ensure required services are enabled and started
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop: "{{ __template_services }}"
+
+- name: Generate /etc/{{ __template_foo_config }}
+  template:
+    src: "{{ __template_foo_config }}.j2"
+    dest: /etc/{{ __template_foo_config }}
+    backup: yes
+    mode: 0400
+  notify: template handler to restart services

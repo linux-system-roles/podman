@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT
+---
+- name: Ensure that the role runs with default parameters
+  hosts: all
+
+  roles:
+    - linux-system-roles.template

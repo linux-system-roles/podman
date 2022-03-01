@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT
+---
+# Put handlers for tasks here.
+
+# Example:
+- name: template handler to restart services
+  service:
+    name: "{{ item }}"
+    state: restarted
+  loop: "{{ __template_services }}"
