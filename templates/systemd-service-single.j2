@@ -1,24 +1,24 @@
 [Unit]
 Description={{ container_name }} Podman Container
-{% for unit in systemd_After %}
+{% for unit in podman_systemd_after %}
 After={{ unit }}
 {% endfor %}
-{% for unit in systemd_Before %}
+{% for unit in podman_systemd_before %}
 Before={{ unit }}
 {% endfor %}
-{% for unit in systemd_Conflicts %}
+{% for unit in podman_systemd_conflicts %}
 Conflicts={{ unit }}
 {% endfor %}
-{% for unit in systemd_Requires %}
+{% for unit in podman_systemd_requires %}
 Requires={{ unit }}
 {% endfor %}
-{% for unit in systemd_Wants %}
+{% for unit in podman_systemd_wants %}
 Wants={{ unit }}
 {% endfor %}
 
 [Service]
 Type=simple
-TimeoutStartSec={{ systemd_TimeoutStartSec }}
+TimeoutStartSec={{ podman_systemd_timeout_start_sec }}
 ExecStartPre=-/usr/bin/podman stop -t {{ container_stop_timeout|quote }} {{ container_name|quote }}
 ExecStartPre=-/usr/bin/podman rm -f {{ container_name|quote }}
 ExecStartPre=-/usr/bin/rm -f {{ pidfile }} {{ cidfile }}
@@ -35,7 +35,7 @@ ExecStart=/usr/bin/podman run --name {{ container_name }} \
 ExecStop=/usr/bin/sh -c "/usr/bin/podman stop -t "{{ container_stop_timeout }}" `cat {{ cidfile }}`"
 ExecStop=/usr/bin/sh -c "/usr/bin/podman rm -f `cat {{ cidfile }}`"
 Restart={{ container_restart }}
-RestartSec={{ systemd_RestartSec }}
+RestartSec={{ podman_systemd_restart_sec }}
 KillMode=mixed
 PIDFile={{ pidfile }}
 Environment=PODMAN_SYSTEMD_UNIT=%n
@@ -47,9 +47,9 @@ WantedBy=multi-user.target
 {% if container_run_as_user != 'root' %}
 WantedBy=default.target
 {% endif %}
-{% for unit in systemd_RequiredBy %}
+{% for unit in podman_systemd_required_by %}
 RequiredBy={{ unit }}
 {% endfor %}
-{% for unit in systemd_WantedBy %}
+{% for unit in podman_systemd_wanted_by %}
 WantedBy={{ unit }}
 {% endfor %}

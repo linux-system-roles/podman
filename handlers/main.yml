@@ -7,7 +7,7 @@
     XDG_RUNTIME_DIR: "{{ xdg_runtime_dir }}"
   systemd:
     daemon_reload: true
-    scope: "{{ systemd_scope }}"
+    scope: "{{ podman_systemd_scope }}"
 
 - name: start service
   become: true
@@ -15,8 +15,8 @@
   environment:
     XDG_RUNTIME_DIR: "{{ xdg_runtime_dir }}"
   systemd:
-    name: "{{ service_name }}"
-    scope: "{{ systemd_scope }}"
+    name: "{{ podman_service_name }}"
+    scope: "{{ podman_systemd_scope }}"
     state: started
 
 - name: restart service
@@ -25,8 +25,8 @@
   environment:
     XDG_RUNTIME_DIR: "{{ xdg_runtime_dir }}"
   systemd:
-    name: "{{ service_name }}"
-    scope: "{{ systemd_scope }}"
+    name: "{{ podman_service_name }}"
+    scope: "{{ podman_systemd_scope }}"
     state: restarted
 
 - name: enable service
@@ -35,6 +35,6 @@
   environment:
     XDG_RUNTIME_DIR: "{{ xdg_runtime_dir }}"
   systemd:
-    name: "{{ service_name }}"
+    name: "{{ podman_service_name }}"
     enabled: true
-    scope: "{{ systemd_scope }}"
+    scope: "{{ podman_systemd_scope }}"

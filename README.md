@@ -37,9 +37,9 @@ using this module.
 * You need to have the user created prior running this role.
 * The user should have entries in /etc/sub[gu]id files for namespace range.
   If not, this role adds some variables there in order to get something going,
-  but preferrably you check them.
+  but preferably you check them.
 * Some control things like memory or other resource limit's won't work as user.
-* You want to increase ```systemd_TimeoutStartSec``` heavily, as we can not
+* You want to increase ```podman_systemd_timeout_start_sec``` heavily, as we can not
   prefetch the images before systemd unit start. So systemd needs to wait
   for podman to pull images prior it starts container. Might take minutes
   depending on your network connection, and container image size.
@@ -85,8 +85,8 @@ note that some options apply only to other method.
 - `container_firewall_ports` - list of ports you have exposed from container
   and want to open firewall for. When container_state is absent, firewall ports
   get closed. If you don't want firewalld installed, don't define this.
-- `systemd_TimeoutStartSec` - how long does systemd wait for container to start?
-- `systemd_tempdir` - Where to store conmon-pidfile and cidfile for single containers.
+- `podman_systemd_timeout_start_sec` - how long does systemd wait for container to start?
+- `podman_systemd_tempdir` - Where to store conmon-pidfile and cidfile for single containers.
   Defaults to `%T` on systems supporting this specifier (see man 5 systemd.unit) `/tmp`
   otherwise.
 - `container_pod_yaml` - Path to the pod yaml file. Required for a pod.

@@ -7,30 +7,31 @@ container_state: running
 # see man systemd.service for info
 # by default we want to restart failed container
 container_restart: on-failure
-service_files_dir: /usr/local/lib/systemd/system
-systemd_scope: system
-systemd_TimeoutStartSec: 15
-systemd_RestartSec: 30
-systemd_tempdir: "{{ '/tmp' if ansible_os_family == 'RedHat' and
+podman_service_files_dir: /usr/local/lib/systemd/system
+podman_systemd_scoped_scope: system
+podman_systemd_timeout_start_sec: 15
+podman_systemd_restart_sec: 30
+podman_systemd_tempdir: "{{ '/tmp' if ansible_os_family == 'RedHat' and
   ansible_distribution_major_version|int == 7 else '%T' }}"
 container_run_as_user: root
 container_run_as_group: root
 container_stop_timeout: 15
 
 # SystemD dependencies (some are hardcoded; see templates)
-systemd_After: [network.target]
-systemd_Before: []
-systemd_Conflicts: []
-systemd_RequiredBy: []
-systemd_Requires: []
-systemd_WantedBy: []
-systemd_Wants: []
+podman_systemd_after: [network.target]
+podman_systemd_before: []
+podman_systemd_conflicts: []
+podman_systemd_required_by: []
+podman_systemd_requires: []
+podman_systemd_wanted_by: []
+podman_systemd_wants: []
 
 # systemd service name
-service_name: "{{ container_name }}-container-pod-{{ container_run_as_user }}.service"
+podman_service_name: "{{
+  container_name }}-container-pod-{{ container_run_as_user }}.service"
 
 # to speed up you can disable always checking if podman is installed.
-skip_podman_install: false
+podman_skip_podman_install: false
 
 podman_dependencies_rootless:
   - fuse-overlayfs

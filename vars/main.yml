@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 
 # systemd service name
-cidpid_base: "{{ systemd_tempdir }}/%n-"
+cidpid_base: "{{ podman_systemd_tempdir }}/%n-"
 cidfile: "{{ cidpid_base }}cid"
 pidfile: "{{ cidpid_base }}pid"
 
