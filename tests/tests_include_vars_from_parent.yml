@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-only
+
 - hosts: all
   tasks:
     - name: create var file in caller that can override the one in called role

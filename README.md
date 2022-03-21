@@ -1,77 +1,226 @@
-# Role Name
+# podman
 ![CI Testing](https://github.com/linux-system-roles/podman/workflows/tox/badge.svg)
 
-A template for an ansible role which configures some GNU/Linux subsystem or
-service. A brief description of the role goes here.
+Role sets up container(s) to be run on host with help of systemd.
+[Podman](https://podman.io/) implements container events but does not control
+or keep track of the life-cycle. That's job of external tool as
+[Kubernetes](https://kubernetes.io/) in clusters, and
+[systemd](https://freedesktop.org/wiki/Software/systemd/) in local installs.
+
+The role was originally written in order to help managing podman containers
+life-cycle on a personal server which is not a cluster. Thus I want to use
+systemd for keeping them enabled and running over reboots.
+
+What role does:
+
+ * installs Podman
+ * pulls required images
+ * on consecutive runs it pulls image again,
+   and restarts container if image changed (not for pod yet)
+ * creates systemd file for container or pod
+ * creates kubernetes yaml for pod
+ * creates volume directories for containers if they do not exist. (for pod use DirectoryOrCreate)
+ * set's container or pod to be always automatically restarted if container dies.
+ * makes container or pod enter run state at system boot
+ * adds or removes containers exposed ports to firewall.
+ * It takes parameter for running rootless containers under given user
+
+For reference, see these two blogs about the role:
+* [Automate Podman Containers with Ansible 1/2](https://redhatnordicssa.github.io/ansible-podman-containers-1)
+* [Automate Podman Containers with Ansible 2/2](https://redhatnordicssa.github.io/ansible-podman-containers-2)
+
+Blogs describe how you can single container, or several containers as one pod
+using this module.
+
+### Note for running rootless containers:
+
+* You need to have the user created prior running this role.
+* The user should have entries in /etc/sub[gu]id files for namespace range.
+  If not, this role adds some variables there in order to get something going,
+  but preferably you check them.
+* Some control things like memory or other resource limit's won't work as user.
+* You want to increase ```podman_systemd_timeout_start_sec``` heavily, as we can not
+  prefetch the images before systemd unit start. So systemd needs to wait
+  for podman to pull images prior it starts container. Might take minutes
+  depending on your network connection, and container image size.
 
 ## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should
-be mentioned here. For instance, if the role uses the EC2 module, it may be a
-good idea to mention in this section that the `boto` package is required.
+Requires system which is capable of running podman, and that podman is found
+from package repositories. Role installs podman. Role also installs firewalld
+if user has defined ```container_firewall_ports``` -variable. Installs kubeval
+for a pod if ```container_pod_yaml_template_validation: true```.
 
 ## Role Variables
 
-A description of all input variables (i.e. variables that are defined in
-`defaults/main.yml`) for the role should go here as these form an API of the
-role.
+Role uses variables that are required to be passed while including it. As
+there is option to run one container separately or multiple containers in pod,
+note that some options apply only to other method.
 
-Variables that are not intended as input, like variables defined in
-`vars/main.yml`, variables that are read from other roles and/or the global
-scope (ie. hostvars, group vars, etc.) can be also mentioned here but keep in
-mind that as these are probably not part of the role API they may change during
-the lifetime.
+- `container_image_list` - list of container images to run.
+  If more than one image is defined, then the containers will be run in a pod.
+- `container_image_user` - optional username to use when authenticating
+  to remote registries
+- `container_image_password` - optional password to use when authenticating
+  to remote registries
+- `container_name` - Identify the container in systemd and podman commands.
+  Systemd service file be named container_name--container-pod.service.
+- `container_run_args` - Anything you pass to podman, except for the name
+  and image while running single container. Not used for pod.
+- `container_cmd_args` - Any command and arguments passed to podman-run after specifying the image name. Not used for pod.
+- `container_run_as_user` - Which user should systemd run container as.
+  Defaults to root.
+- `container_run_as_group` - Which group should systemd run container as.
+  Defaults to root.
+- `container_dir_owner` - Which owner should the volume dirs have.
+  Defaults to container_run_as_user.
+  If you use :U as a volume option podman will set the permissions for the user inside the container automatically.
+  Quote: The :U suffix tells Podman to use the correct host UID and GID based on the UID and GID within the container, to change recursively the owner and group of the source volume. Warning use with caution since this will modify the host filesystem.
+- `container_dir_group` - Which group should the volume dirs have.
+  Defaults to container_run_as_group.
+- `container_dir_mode` - Which permissions should the volume dirs have.
+  Defaults to '0755'.
+- `container_state` - container is installed and run if state is
+  `running`, and stopped and systemd file removed if `absent`
+- `container_firewall_ports` - list of ports you have exposed from container
+  and want to open firewall for. When container_state is absent, firewall ports
+  get closed. If you don't want firewalld installed, don't define this.
+- `podman_systemd_timeout_start_sec` - how long does systemd wait for container to start?
+- `podman_systemd_tempdir` - Where to store conmon-pidfile and cidfile for single containers.
+  Defaults to `%T` on systems supporting this specifier (see man 5 systemd.unit) `/tmp`
+  otherwise.
+- `container_pod_yaml` - Path to the pod yaml file. Required for a pod.
+- `container_pod_yaml_deploy` - Wheter to deploy the pod yaml file. Defaults to `false`
+- `container_pod_yaml_template` - Template to use for pod yaml deploy.
+  As the template doesn't include every possible configuration option it is possible to overwrite it with your own template.
+  Defaults to ``templates/container-pod-yaml.j2``.
+- `container_pod_yaml_template_validation` - Wheter to validate the deployed pod yaml file. Defaults to `false`.
+- `container_pod_labels` - Defines labels for `container_pod_yaml_deploy`.
+- `container_pod_volumes` - Defines volumes for `container_pod_yaml_deploy`.
+- `container_pod_containers` - Defines containers for `container_pod_yaml_deploy`.
 
-Example of setting the variables:
+This playbook doesn't have python module to parse parameters for podman command.
+Until that you just need to pass all parameters as you would use podman from
+command line. See `man podman` or
+[podman tutorials](https://github.com/containers/libpod/tree/master/docs/tutorials)
+for info.
 
-```yaml
-podman_foo: oof
-podman_bar: baz
-```
+If you want your
+[images to be automatically updated](http://docs.podman.io/en/latest/markdown/podman-auto-update.1.html),
+add this label to `container_cmd_args`: `--label "io.containers.autoupdate=image"`
+
+Never use `import_role` to execute this role if you intend to use it more
+than once per playbook, or you will fall in
+[this anti-pattern](https://medium.com/opsops/ansible-anti-pattern-import-role-task-with-task-level-vars-a9f5c752c9c3).
 
 ### Variables Exported by the Role
 
-This section is optional.  Some roles may export variables for playbooks to
-use later.  These are analogous to "return values" in Ansible modules.  For
-example, if a role performs some action that will require a system reboot, but
-the user wants to defer the reboot, the role might set a variable like
-`podman_reboot_needed: true` that the playbook can use to reboot at a more
-convenient time.
-
-Example:
-
-`podman_reboot_needed` - default `false` - if `true`, this means
-a reboot is needed to apply the changes made by the role
+None
 
 ## Dependencies
 
-A list of other roles hosted on Galaxy should go here, plus any details in
-regards to parameters that may need to be set for other roles, or variables
-that are used from other roles.
+* [containers.podman](https://galaxy.ansible.com/containers/podman) (collection)
+* [ansible.posix](https://galaxy.ansible.com/ansible/posix) (collection)
 
 ## Example Playbook
 
-Including an example of how to use your role (for instance, with variables
-passed in as parameters) is always nice for users too:
+Root container:
 
-```yaml
-- hosts: all
+```
+- name: tests container
   vars:
-    podman_foo: foo foo!
-    podman_bar: progress bar
-
-  roles:
-    - linux-system-roles.podman
+    container_image_list: 
+      - sebp/lighttpd:latest
+    container_name: lighttpd
+    container_run_args: >-
+      --rm
+      -v /tmp/podman-container-systemd:/var/www/localhost/htdocs:Z,U
+      --label "io.containers.autoupdate=image"
+      -p 8080:80
+    #container_state: absent
+    container_state: running
+    container_firewall_ports:
+      - 8080/tcp
+      - 8443/tcp
+  include_role:
+    name: linux-system-roles.podman
 ```
 
-More examples can be provided in the [`examples/`](examples) directory. These
-can be useful especially for documentation.
+Rootless container:
+
+```
+- name: ensure user
+  user:
+    name: rootless_user
+    comment: I run sample container
+
+- name: tests container
+  vars:
+    container_run_as_user: rootless_user
+    container_run_as_group: rootless_user
+    container_image_list: 
+      - sebp/lighttpd:latest
+    container_name: lighttpd
+    container_run_args: >-
+      --rm
+      -v /tmp/podman-container-systemd:/var/www/localhost/htdocs:Z,U
+      -p 8080:80
+    #container_state: absent
+    container_state: running
+    container_firewall_ports:
+      - 8080/tcp
+      - 8443/tcp
+  include_role:
+    name: linux-system-roles.podman
+```
+
+Rootless Pod:
+
+```
+- name: ensure user
+  user:
+    name: rootless_user
+    comment: I run sample container
+
+- name: tests pod
+  vars:
+    container_run_as_user: rootless_user
+    container_run_as_group: rootless_user
+    container_image_list:
+      - sebp/lighttpd:latest
+    container_name: lighttpd-pod
+    container_pod_yaml: /home/rootless_user/lighttpd-pod.yml
+    container_pod_yaml_deploy: true
+    container_pod_yaml_template_validation: true
+    container_pod_labels:
+      app: "{{ container_name }}"
+      io.containers.autoupdate: 'image(1)'
+    container_pod_volumes:
+      - name: htdocs
+        hostPath:
+          path: /tmp/podman-container-systemd
+          type: DirectoryOrCreate
+    container_pod_containers:
+      - name: lighttpd
+        image: sebp/lighttpd:latest
+        volumeMounts:
+          - name: htdocs
+            mountPath: /var/www/localhost/htdocs:Z
+        ports:
+          - containerPort: 80
+            hostPort: 8080
+    container_state: running
+    container_firewall_ports:
+      - 8080/tcp
+      - 8443/tcp
+  include_role:
+    name: podman-container-systemd
+```
 
 ## License
 
-Whenever possible, please prefer MIT.
+GPLv3
 
 ## Author Information
 
-An optional section for the role authors to include contact information, or a
-website (HTML is not allowed).
+Ilkka Tengvall <ilkka.tengvall@iki.fi> (@ikke-t)
