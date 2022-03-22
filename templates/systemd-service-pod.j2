@@ -18,7 +18,7 @@ Wants={{ unit }}
 
 [Service]
 Type=forking
-TimeoutStartSec={{ podman_systemd_timeout_start_secstart_sec }}
+TimeoutStartSec={{ podman_systemd_timeout_start_sec }}
 ExecStartPre=-/usr/bin/podman pod rm -f {{ container_name }}
 {% if container_run_as_user == 'root' %}
 User={{ container_run_as_user }}

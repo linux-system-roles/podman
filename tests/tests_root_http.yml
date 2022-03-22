@@ -28,24 +28,53 @@
         group: root
         mode: "0644"
 
-    - name: tests container
+    - name: tests container 1
       vars:
         container_image_list:
           - sebp/lighttpd:latest
-        container_name: "{{ outer_item.name }}"
+        container_name: lighthttpd-1
         container_run_args: >-
           --rm
           -v /tmp/podman-container-systemd:/var/www/localhost/htdocs:Z
           -t
-          -p "{{ outer_item.port }}:80/tcp"
+          -p "8080:80/tcp"
         container_firewall_ports:
-          - "{{ outer_item.port }}/tcp"
-
+          - "8080/tcp"
       include_role:
         name: linux-system-roles.podman
-      loop: "{{ container_instances }}"
-      loop_control:
-        loop_var: outer_item
+
+    - name: tests container 2
+      vars:
+        container_image_list:
+          - sebp/lighttpd:latest
+        container_name: lighthttpd-2
+        container_run_args: >-
+          --rm
+          -v /tmp/podman-container-systemd:/var/www/localhost/htdocs:Z
+          -t
+          -p "8081:80/tcp"
+        container_firewall_ports:
+          - "8081/tcp"
+      include_role:
+        name: linux-system-roles.podman
+
+    # - name: tests container
+    #   vars:
+    #     container_image_list:
+    #       - sebp/lighttpd:latest
+    #     container_name: "{{ outer_item.name }}"
+    #     container_run_args: >-
+    #       --rm
+    #       -v /tmp/podman-container-systemd:/var/www/localhost/htdocs:Z
+    #       -t
+    #       -p "{{ outer_item.port }}:80/tcp"
+    #     container_firewall_ports:
+    #       - "{{ outer_item.port }}/tcp"
+    #   include_role:
+    #     name: linux-system-roles.podman
+    #   loop: "{{ container_instances }}"
+    #   loop_control:
+    #     loop_var: outer_item
 
     - name: Wait for lighttpd to come up
       wait_for:
