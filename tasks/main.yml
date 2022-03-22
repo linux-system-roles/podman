@@ -226,7 +226,9 @@
         - start service
         - enable service
       register: service_file
-      when: container_image_list | d([]) | length == 1
+      when:
+        - container_image_list | d([]) | length == 1
+        - container_pod_yaml is defined
 
     - name: "ensure {{ podman_service_name }} is restarted due config change"
       debug: msg="config has changed:"
