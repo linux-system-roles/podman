@@ -6,19 +6,7 @@
 # (defined in vars/ directory)
 # see https://github.com/oasis-roles/meta_standards#platform-specific-variables
 - name: Set platform/version specific variables
-  include_vars: "{{ __podman_vars_file }}"
-  loop:
-    - "{{ ansible_facts['os_family'] }}.yml"
-    - "{{ ansible_facts['distribution'] }}.yml"
-    - >-
-      {{ ansible_facts['distribution'] ~ '_' ~
-      ansible_facts['distribution_major_version'] }}.yml
-    - >-
-      {{ ansible_facts['distribution'] ~ '_' ~
-      ansible_facts['distribution_version'] }}.yml
-  vars:
-    __podman_vars_file: "{{ role_path }}/vars/{{ item }}"
-  when: __podman_vars_file is file
+  include_tasks: set_vars.yml
 
 # Examples of some tasks:
 - name: Ensure required packages are installed

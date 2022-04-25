@@ -7,3 +7,10 @@
 # Examples of non-distribution specific (generic) internal variables:
 #__podman_config: "foo.conf"
 __podman_packages: []
+
+# ansible_facts required by the role
+__podman_required_facts:
+  - distribution
+  - distribution_major_version
+  - distribution_version
+  - os_family
