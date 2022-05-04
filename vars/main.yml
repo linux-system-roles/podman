@@ -3,10 +3,18 @@
 # Put the role's internal variables here that are not distribution specific.
 # You can override these by defining the same variable with a different
 # value in a platform/version specific file in vars/
+__podman_packages: [podman]
 
-# Examples of non-distribution specific (generic) internal variables:
-#__podman_config: "foo.conf"
-__podman_packages: []
+# Default values to use when creating host directories for bind mounts
+# User can override these in podman_host_directories
+__podman_hostdirs_defaults:
+  state: directory
+  owner: root
+  group: root
+  mode: "0644"
+
+__podman_ports_defaults:
+  state: enabled
 
 # ansible_facts required by the role
 __podman_required_facts:

@@ -1,10 +1,5 @@
 # SPDX-License-Identifier: MIT
 ---
-# Put the tasks for your role here.
-
-# An example of how to set distribution and version specific internal variables
-# (defined in vars/ directory)
-# see https://github.com/oasis-roles/meta_standards#platform-specific-variables
 - name: Set platform/version specific variables
   include_tasks: set_vars.yml
 
@@ -14,9 +9,31 @@
     name: "{{ __podman_packages }}"
     state: present
 
-#- name: Ensure required services are enabled and started
-#  service:
-#    name: "{{ item }}"
-#    state: started
-#    enabled: yes
-#  loop: "{{ __podman_services }}"
+- name: Get the mounts from podman_containers
+  set_fact:
+    __podman_mounts: "{{ podman_containers | selectattr('mount', 'defined') |
+      map(attribute='mount') | flatten | select('search', 'type=bind') |
+      map('regex_replace', '^.*source=([^,]+).*$', '\\1') | list }}"
+    __podman_volumes: "{{ podman_containers | selectattr('volume', 'defined') |
+      map(attribute='volume') | flatten |
+      map('regex_replace', '^([^:]+).*$', '\\1') | list }}"
+  when: podman_create_host_directories
+
+- name: Create host directories
+  file: "{{ __defaults | combine(podman_host_directories[__hostitem])
+            if __hostitem in podman_host_directories | d({})
+            else __defaults }}"
+  vars:
+    __hostitem: "{{ item if item in podman_host_directories | d({})
+      else 'DEFAULT' }}"
+    __defaults: "{{ {'path': item} | combine(__podman_hostdirs_defaults) }}"
+  loop: "{{ __podman_mounts | union(__podman_volumes) }}"
+  when:
+    - podman_create_host_directories
+    - __podman_mounts or __podman_volumes
+
+- name: Handle containers
+  include_tasks: handle_container.yml
+  loop: "{{ podman_containers }}"
+  loop_control:
+    loop_var: __podman_container

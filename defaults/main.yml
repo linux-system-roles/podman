@@ -1,8 +1,25 @@
 # SPDX-License-Identifier: MIT
 ---
-# Here is the right place to put the role's input variables.
-# This file also serves as a documentation for such a variables.
+# List of containers and systemd units to define
+podman_containers: []
 
-# Examples of role input variables:
-podman_foo: foo
-podman_bar: bar
+# If this is true, the role will automatically create the host directories
+# specified in volume or mount.
+podman_create_host_directories: false
+
+# If you want the role to create and manage the host directories for
+# bind mounts, specify the parameters as path: {arguments for file: module}
+# To specify the default file properties, use DEFAULT for the name of the
+# directory.
+podman_host_directories: {}
+
+# If this is true, the role will automatically open the necessary firewall
+# ports and set the necessary selinux options to allow the port to be
+# used.
+podman_open_ports: false
+
+# If you want the role to manage the firewall and selinux properties
+# of the ports, specify the parameters as
+# port_or_range: {arguments for firewall role and selinux role}
+# To specify the default port properties, use DEFAULT for the port.
+podman_ports: {}
