@@ -3,7 +3,7 @@
   vars:
     __container: "{{ __podman_container | dict2items |
       rejectattr('key', 'match', 'generate_systemd') |
-      items2dict }}"
+      list | items2dict }}"
   register: __podman_container_info
 
 - name: Ensure systemd unit file
