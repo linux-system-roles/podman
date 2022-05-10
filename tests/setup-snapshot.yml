@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 - hosts: all
   tasks:
     - name: Set platform/version specific variables

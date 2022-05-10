@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 - name: Update container
   containers.podman.podman_container: "{{ __container }}"
   vars:
@@ -12,11 +13,10 @@
     __systemd_params: "{{ __podman_container['generate_systemd']
       if __podman_container['generate_systemd'] is mapping
       else dict() }}"
-    __basename: "{{ __systemd_params.get('container_prefix', 'container') ~
-      __systemd_params.get('separator', '-') ~
+    __basename: "{{  __podman_systemd_prefix ~ '-' ~
       __podman_container['name'] ~ '.service' }}"
     __systemd_unit_filename: "{{
-      __systemd_params.get('path', '/etc/systemd/system')
+      __podman_systemd_root_path
       ~ '/' ~ __basename }}"
     __tmp_cname: "{{ __podman_container['name'] ~ '-tmpxxx' }}"
   block:

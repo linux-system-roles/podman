@@ -1,58 +1,83 @@
 # Role Name
 ![CI Testing](https://github.com/linux-system-roles/podman/workflows/tox/badge.svg)
 
-A template for an ansible role which configures some GNU/Linux subsystem or
-service. A brief description of the role goes here.
+This role manages `podman` configuration, containers, and systemd services which
+run `podman` containers.
 
 ## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should
-be mentioned here. For instance, if the role uses the EC2 module, it may be a
-good idea to mention in this section that the `boto` package is required.
+The role requires `containers.podman` collection.  If you are using
+`ansible-core`, you must install this collection.
+```
+ansible-galaxy collection install -vv -r meta/collection-requirements.yml
+```
+If you are using Ansible Engine 2.9, or are using an Ansible bundle which
+includes these collections/modules, you should have to do nothing.
 
 ## Role Variables
+
+### podman_containers
+
+This is a `list`.  Each element of the list is a `dict` describing a podman
+container and corresponding systemd unit to manage.  The format of the `dict` is
+mostly like the [podman_container
+module](https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_container_module.html#ansible-collections-containers-podman-podman-container-module)
+except for the following:
+
+* `generate_systemd.container_prefix` is hard-coded to `lsr_container`
+* `generate_systemd.separator` is hard-coded to `-`
+* `generate_systemd.path` is hard-coded to `/etc/systemd/system` for root
+  containers, and `$HOME/.config/systemd/user` for non-root containers
+
+### podman_create_host_directories
+
+This is a boolean, default value is `false`.  If `true`, the role will ensure
+host directories specified in host mounts in `volume` and `mount` specifications
+for the containers in `podman_containers`.  NOTE: Directories must be specified
+as absolute paths (for root containers), or paths relative to the home directory
+(for non-root containers), in order for the role to manage them.  Anything else
+will be assumed to be some other sort of volume and will be ignored.
+The role will apply its default ownership/permissions to the directories. If you
+need to set ownership/permissions, see `podman_host_directories`.
+
+### podman_host_directories
+
+This is a `dict`.  When using `podman_create_host_directories`, this tells the
+role what permissions/ownership to apply to automatically created host
+directories.  Each key is the absolute path of host directory to manage. The
+value is in the format of the parameters to the [file
+module](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html#ansible-collections-ansible-builtin-file-module).
+If you do not specify a value, the role will use its built-in default values. If
+you want to specify a value to be used for all host directories, use the special
+key `DEFAULT`.
+
+```yaml
+podman_host_directories:
+  "/var/lib/data":
+    owner: dbuser
+    group: dbgroup
+    mode: "0600"
+  DEFAULT:
+    owner: root
+    group: root
+    mode: "0644"
+```
+The role will use `dbuser:dbgroup` `0600` for `/var/lib/data`, and `root:root`
+`0644` for all other host directories created by the role.
 
 A description of all input variables (i.e. variables that are defined in
 `defaults/main.yml`) for the role should go here as these form an API of the
 role.
 
-Variables that are not intended as input, like variables defined in
-`vars/main.yml`, variables that are read from other roles and/or the global
-scope (ie. hostvars, group vars, etc.) can be also mentioned here but keep in
-mind that as these are probably not part of the role API they may change during
-the lifetime.
-
-Example of setting the variables:
-
-```yaml
-podman_foo: oof
-podman_bar: baz
-```
-
 ### Variables Exported by the Role
 
-This section is optional.  Some roles may export variables for playbooks to
-use later.  These are analogous to "return values" in Ansible modules.  For
-example, if a role performs some action that will require a system reboot, but
-the user wants to defer the reboot, the role might set a variable like
-`podman_reboot_needed: true` that the playbook can use to reboot at a more
-convenient time.
-
-Example:
-
-`podman_reboot_needed` - default `false` - if `true`, this means
-a reboot is needed to apply the changes made by the role
+None
 
 ## Dependencies
 
-A list of other roles hosted on Galaxy should go here, plus any details in
-regards to parameters that may need to be set for other roles, or variables
-that are used from other roles.
+None.
 
 ## Example Playbook
-
-Including an example of how to use your role (for instance, with variables
-passed in as parameters) is always nice for users too:
 
 ```yaml
 - hosts: all
@@ -64,14 +89,12 @@ passed in as parameters) is always nice for users too:
     - linux-system-roles.podman
 ```
 
-More examples can be provided in the [`examples/`](examples) directory. These
-can be useful especially for documentation.
-
 ## License
 
-Whenever possible, please prefer MIT.
+MIT.
 
 ## Author Information
 
-An optional section for the role authors to include contact information, or a
-website (HTML is not allowed).
+Based on `podman-container-systemd` by Ilkka Tengvall <ilkka.tengvall@iki.fi>.
+
+Authors: Thom Carlin, Valentin Rothberg, Rich Megginson

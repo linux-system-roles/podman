@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 - hosts: all
   tasks:
     - name: create var file in caller that can override the one in called role

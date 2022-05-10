@@ -13,8 +13,18 @@ __podman_hostdirs_defaults:
   group: root
   mode: "0644"
 
+# defaults applied when adding ports
 __podman_ports_defaults:
   state: enabled
+
+# prefix to use for systemd service file names
+__podman_systemd_prefix: lsr_container
+
+# path for root containers - systemd unit files
+__podman_systemd_root_path: "/etc/systemd/system"
+
+# relative path for non-root containers - under home dir
+__podman_systemd_non_root_path: "/.config/systemd/user"
 
 # ansible_facts required by the role
 __podman_required_facts:

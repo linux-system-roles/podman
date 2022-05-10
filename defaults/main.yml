@@ -23,3 +23,8 @@ podman_open_ports: false
 # port_or_range: {arguments for firewall role and selinux role}
 # To specify the default port properties, use DEFAULT for the port.
 podman_ports: {}
+
+# If running as root, the systemd unit file will be created in
+# __podman_systemd_root_path, otherwise, under
+# __podman_systemd_non_root_path
+podman_run_as_user: root
