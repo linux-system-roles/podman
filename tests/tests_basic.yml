@@ -5,26 +5,24 @@
   vars:
     podman_create_host_directories: true
     podman_containers:
-      - name: lighthttpd1
-        image: docker.io/sebp/lighttpd:latest
+      - name: httpd1
+        image: quay.io/centos7/httpd-24-centos7
         rm: true
         tty: true
         volume:
-          - /tmp/lighthttpd1:/var/www/localhost/htdocs:Z
+          - /tmp/httpd1:/var/www/localhost/htdocs:Z
         publish:
           - "8080:80"
         generate_systemd: true
-      - name: lighthttpd2
-        image: docker.io/sebp/lighttpd:latest
+      - name: httpd2
+        image: quay.io/centos7/httpd-24-centos7
         rm: true
         tty: true
         volume:
-          - /tmp/lighthttpd2:/var/www/localhost/htdocs:Z
+          - /tmp/httpd2:/var/www/localhost/htdocs:Z
         publish:
           - "8081:80"
         generate_systemd:
-          container_prefix: c7r
-          separator: "_"
           restart_policy: always
   tasks:
     - name: Run role
