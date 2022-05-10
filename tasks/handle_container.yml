@@ -1,0 +1,120 @@
+# SPDX-License-Identifier: MIT
+- name: Update container
+  containers.podman.podman_container: "{{ __container }}"
+  vars:
+    __container: "{{ __podman_container | dict2items |
+      rejectattr('key', 'match', 'generate_systemd') |
+      list | items2dict }}"
+  register: __podman_container_info
+
+- name: Ensure systemd unit file
+  when: __podman_container.get('generate_systemd')
+  vars:
+    __systemd_params: "{{ __podman_container['generate_systemd']
+      if __podman_container['generate_systemd'] is mapping
+      else dict() }}"
+    __basename: "{{  __podman_systemd_prefix ~ '-' ~
+      __podman_container['name'] ~ '.service' }}"
+    __systemd_unit_filename: "{{
+      __podman_systemd_root_path
+      ~ '/' ~ __basename }}"
+    __tmp_cname: "{{ __podman_container['name'] ~ '-tmpxxx' }}"
+  block:
+    - name: Get temp directory
+      tempfile:
+        state: directory
+      register: __podman_system_tmpdir
+      changed_when: false
+
+    - name: Generate new systemd unit file in tmpdir for a tmp container
+      containers.podman.podman_container:
+        name: "{{ __tmp_cname }}"
+        image: "{{ __podman_container['image'] }}"
+        generate_systemd: "{{ __systemd_params | combine(__default) }}"
+      vars:
+        __default:
+          path: "{{ __podman_system_tmpdir.path }}"
+          no_header: true
+      changed_when: false
+      register: __podman_container_info_tmp
+
+    - name: Remove the tmp container
+      containers.podman.podman_container:
+        name: "{{ __tmp_cname }}"
+        state: absent
+      changed_when: false
+
+    # use '+' for filename so assemble will always pick it first
+    - name: Write ansible_managed header to header file
+      copy:
+        content: "{{ lookup('template', 'get_ansible_managed.j2') }}"
+        dest: "{{ __podman_system_tmpdir.path }}/+"
+        owner: root
+        group: root
+        mode: "0400"
+      changed_when: false
+
+    - name: Create new systemd unit tmpfile
+      assemble:
+        src: "{{ __podman_system_tmpdir.path }}"
+        dest: "{{ __podman_system_tmpdir.path }}/{{ __basename }}.new"
+        owner: root
+        group: root
+        mode: "0400"
+      changed_when: false
+
+    - name: Change tmp name to real name in tmpfile
+      replace:
+        path: "{{ __podman_system_tmpdir.path }}/{{ __basename }}.new"
+        regexp: "{{ __tmp_cname }}"
+        replace: "{{ __podman_container['name'] }}"
+      changed_when: false
+
+    - name: Change ConmonPidFile
+      replace:
+        path: "{{ __podman_system_tmpdir.path }}/{{ __basename }}.new"
+        regexp: "{{
+          __podman_container_info_tmp['container']['ConmonPidFile'] }}"
+        replace: "{{ __podman_container_info['container']['ConmonPidFile'] }}"
+      changed_when: false
+
+    - name: Get stat of existing systemd unit file
+      stat:
+        path: "{{ __systemd_unit_filename }}"
+      register: __podman_systemd_unit
+
+    - name: Compare current file to new file
+      command: >
+        diff {{ __podman_system_tmpdir.path }}/{{ __basename }}.new
+        {{ __systemd_unit_filename }}
+      changed_when: false
+      register: __podman_diff
+      failed_when: not __podman_diff.rc in [0, 1]
+      when: __podman_systemd_unit.stat.exists
+
+    - name: Update existing systemd unit file
+      copy:
+        src: "{{ __podman_system_tmpdir.path }}/{{ __basename }}.new"
+        dest: "{{ __systemd_unit_filename }}"
+        remote_src: true
+        mode: preserve
+      when:
+        - __podman_systemd_unit.stat.exists
+        - __podman_diff.rc == 1
+
+    - name: Create new systemd unit file
+      copy:
+        src: "{{ __podman_system_tmpdir.path }}/{{ __basename }}.new"
+        dest: "{{ __systemd_unit_filename }}"
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0400"
+      when: not __podman_systemd_unit.stat.exists
+
+  always:
+    - name: Remove tmp directory
+      file:
+        path: "{{ __podman_system_tmpdir.path }}"
+        state: absent
+      changed_when: false

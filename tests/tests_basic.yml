@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: MIT
+---
+- name: Ensure that the role runs with default parameters
+  hosts: all
+  vars:
+    podman_create_host_directories: true
+    podman_containers:
+      - name: httpd1
+        image: quay.io/centos7/httpd-24-centos7
+        rm: true
+        tty: true
+        volume:
+          - /tmp/httpd1:/var/www/localhost/htdocs:Z
+        publish:
+          - "8080:80"
+        generate_systemd: true
+      - name: httpd2
+        image: quay.io/centos7/httpd-24-centos7
+        rm: true
+        tty: true
+        volume:
+          - /tmp/httpd2:/var/www/localhost/htdocs:Z
+        publish:
+          - "8081:80"
+        generate_systemd:
+          restart_policy: always
+  tasks:
+    - name: Run role
+      include_role:
+        name: linux-system-roles.podman
+
+    - name: Check if containers are running
+      command: podman ps -a
+      changed_when: false
+
+    - name: Run role again to test for idempotency
+      include_role:
+        name: linux-system-roles.podman

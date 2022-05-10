@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 ---
 - name: Ensure ansible_facts used by role
   setup:
