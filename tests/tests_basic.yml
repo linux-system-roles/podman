@@ -3,74 +3,240 @@
 - name: Ensure that the role runs with default parameters
   hosts: all
   vars:
-    __podman_containers_conf_file: 50-systemroles.conf
-    __podman_containers_conf_system: >
-      /etc/containers/containers.conf.d/{{ __podman_containers_conf_file }}
-    __podman_containers_conf_user: >
-      .config/containers/containers.conf.d/{{ __podman_containers_conf_file }
     podman_run_as_user: root
-    podman_create_host_directories: true
-    podman_containers:
-      - name: httpd1
-        image: quay.io/centos7/httpd-24-centos7
-        rm: true
-        tty: true
-        volume:
-          - /tmp/httpd1:/var/www/localhost/htdocs:Z
-        publish:
-          - "8080:80"
-        generate_systemd: true
-      - name: httpd2
-        image: quay.io/centos7/httpd-24-centos7
-        rm: true
-        tty: true
-        volume:
-          - /tmp/httpd2:/var/www/localhost/htdocs:Z
-        publish:
-          - "8081:80"
-        generate_systemd:
-          restart_policy: always
     podman_containers_conf:
       containers:
         annotations:
           environment: production
           status: tier2
-
+    test_names_users: [[httpd1, user1], [httpd2, root], [httpd3, root]]
+    podman_create_host_directories: true
+    podman_firewall:
+      - port: 8080-8082/tcp
+        state: enabled
+    podman_selinux_ports:
+      - ports: 8080-8082
+        setype: http_port_t
+    __podman_containers:
+      - name: httpd1
+        image: quay.io/libpod/testimage:20210610
+        rm: true
+        tty: true
+        volume:
+          - /tmp/httpd1:/var/www:Z
+          - /tmp/httpd1-create:/var/httpd-create:Z
+        publish:
+          - "8080:80"
+        generate_systemd: true
+        command: /bin/busybox-extras httpd -f -p 80
+        workdir: /var/www
+        run_as_user: user1
+        debug: true
+        log_level: debug
+        labels:
+          io.containers.autoupdate: registry
+      - name: httpd2
+        image: quay.io/libpod/testimage:20210610
+        rm: true
+        tty: true
+        volume:
+          - /tmp/httpd2:/var/www:Z
+          - /tmp/httpd2-create:/var/httpd-create:Z
+        publish:
+          - "8081:80"
+        generate_systemd:
+          restart_policy: always
+        command: /bin/busybox-extras httpd -f -p 80
+        workdir: /var/www
+        debug: true
+        log_level: debug
+        labels:
+          io.containers.autoupdate: registry
+      - name: httpd3
+        image: quay.io/libpod/testimage:20210610
+        rm: true
+        tty: true
+        volume:
+          - /tmp/httpd3:/var/www:Z
+          - /tmp/httpd3-create:/var/httpd-create:Z
+        publish:
+          - "8082:80"
+        generate_systemd: true
+        command: /bin/busybox-extras httpd -f -p 80
+        workdir: /var/www
+        debug: true
+        log_level: debug
+        labels:
+          io.containers.autoupdate: registry
   tasks:
-    - name: Run role
-      include_role:
-        name: linux-system-roles.podman
-
-    - name: Check if containers are running
-      command: podman ps -a
-      changed_when: false
-
-    - name: Run role again to test for idempotency
-      include_role:
-        name: linux-system-roles.podman
-
-    - name: Run Assertion Tests - System
-      when: podman_run_as_user == "root"
+    - name: Run basic tests
       block:
-        - name: stat containers.conf.d
+        - name: Create user
+          user:
+            name: user1
+
+        - name: Create host directories for data
+          file:
+            path: /tmp/{{ item[0] }}
+            state: directory
+            mode: "0755"
+            owner: "{{ item[1] }}"
+          loop: "{{ test_names_users }}"
+
+        - name: Create data files
+          copy:
+            dest: /tmp/{{ item[0] }}/index.txt
+            content: "123"
+            mode: "0644"
+            owner: "{{ item[1] }}"
+          loop: "{{ test_names_users }}"
+
+        - name: Run role
+          include_role:
+            name: linux-system-roles.podman
+            public: true
+          vars:
+            podman_containers: "{{ __podman_containers }}"
+
+        - name: Check root containers.conf.d
           stat:
             path: "{{ __podman_containers_conf_system|dirname }}"
           register: containersd_stat
-        - name: assert the containers.conf.d directory exists
-          assert:
-            that:
-              - containersd_stat.stat.exists
-              - containersd_stat.stat.isdir
+          failed_when: not containersd_stat.stat.exists or
+            not containersd_stat.stat.isdir
 
-    - name: Run Assertion Tests - User
-      when: podman_run_as_user != "root"
-      block:
-        - name: stat containers.conf.d
+        - name: Check if containers are running
+          command: podman inspect {{ item[0] }} --format {{ __fmt | quote }}
+          changed_when: false
+          register: __output
+          failed_when: __output.stdout != 'running'
+          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+          vars:
+            __fmt: "{{ '{' ~ '{.State.Status}' ~ '}' }}"
+          loop: "{{ test_names_users }}"
+
+        - name: Check services
+          systemd:
+            name: "{{ 'lsr_container-' ~ item[0] ~ '.service' }}"
+            state: started
+            scope: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+          register: __check_state
+          failed_when: __check_state is changed
+          loop: "{{ test_names_users }}"
+
+        - name: Check ports, data
+          uri:
+            url: http://localhost:{{ item }}/index.txt
+            return_content: true
+          register: __return
+          failed_when: __return.content != "123"
+          loop: [8080, 8081, 8082]
+
+        - name: Run role again to test for idempotency
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_containers: "{{ __podman_containers }}"
+
+        - name: Check if containers are running
+          command: podman inspect {{ item[0] }} --format {{ __fmt | quote }}
+          changed_when: false
+          register: __output
+          failed_when: __output.stdout != 'running'
+          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+          vars:
+            __fmt: "{{ '{' ~ '{.State.Status}' ~ '}' }}"
+          loop: "{{ test_names_users }}"
+
+        - name: Check services
+          systemd:
+            name: "{{ 'lsr_container-' ~ item[0] ~ '.service' }}"
+            state: started
+            scope: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+          register: __check_state
+          failed_when: __check_state is changed
+          loop: "{{ test_names_users }}"
+
+        - name: Check ports, data
+          uri:
+            url: http://localhost:{{ item }}/index.txt
+            return_content: true
+          register: __return
+          failed_when: __return.content != "123"
+          loop: [8080, 8081, 8082]
+
+        - name: Check auto-update
+          command: podman auto-update --dry-run
+          changed_when: false
+
+        - name: Manage user containers.d
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_containers: []
+            podman_run_as_user: user1
+
+        - name: Check users containers.conf.d
           stat:
             path: "{{ __podman_containers_conf_user|dirname }}"
           register: containersd_stat
-        - name: assert the containers.conf.d directory exists
-          assert:
-            that:
-              - containersd_stat.stat.exists
-              - containersd_stat.stat.isdir
+          failed_when: not containersd_stat.stat.exists or
+            not containersd_stat.stat.isdir
+
+        - name: Remove containers and units
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_containers: "{{ __podman_containers |
+              map('combine', {'state':'absent'}) }}"
+            podman_create_host_directories: false
+            podman_firewall: []
+            podman_selinux_ports: []
+
+        - name: Check if containers exist
+          command: podman inspect {{ item[0] }} --format {{ __fmt | quote }}
+          changed_when: false
+          register: __output
+          failed_when: not __output is failed
+          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+          vars:
+            __fmt: "{{ '{' ~ '{.State.Status}' ~ '}' }}"
+          loop: "{{ test_names_users }}"
+
+        - name: Check services
+          command: systemctl --{{ __scope }} status {{ __name }}
+          changed_when: false
+          register: __output
+          failed_when: not __output is failed
+          vars:
+            __name: "{{ 'lsr_container-' ~ item[0] ~ '.service' }}"
+            __scope: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+          loop: "{{ test_names_users }}"
+
+      always:
+        # have to clean up storage.conf - otherwise, get this message:
+        # A storage.conf file exists at /etc/containers/storage.conf
+        # You should remove this file if you did not modify the configuration.
+        - name: Clean up storage.conf
+          file:
+            path: /etc/containers/storage.conf
+            state: absent
+          tags:
+            - tests::cleanup
+
+        - name: Clean up host directories
+          file:
+            path: /tmp/{{ item }}
+            state: absent
+          loop: [httpd1, httpd2, httpd3]
+          tags:
+            - tests::cleanup
