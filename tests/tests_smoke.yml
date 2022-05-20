@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: MIT
+---
+- name: "Ensure role creates the container as expected"
+  hosts: all
+  vars:
+    podman_containers:
+      - command: top
+        detach: true
+        generate_systemd:
+          new: true
+          restart_policy: always
+        image: "quay.io/libpod/alpine:latest"
+        name: foo
+        state: started
+    systemd_unit: 'lsr_container-{{ podman_containers[0]["name"] }}.service'
+  tasks:
+    - name: "Run role"
+      include_role:
+        name: linux-system-roles.podman
+
+    - name: "Reload systemd (global) to read the new unit"
+      ansible.builtin.command:
+        cmd: "systemctl daemon-reload"
+
+    - name: "Reload systemd (user) to read the new unit"
+      ansible.builtin.command:
+        cmd: "systemctl --user daemon-reload"
+
+    - name: "Ensure systemd unit has the expected name"
+      ansible.builtin.systemd:
+        enabled: yes
+        masked: no
+        name: "{{ systemd_unit }}"
+        scope: system
+
+    - name: "Ensure systemd unit has the expected name"
+      ansible.builtin.systemd:
+        name: "{{ systemd_unit }}"
+        scope: system
+
+    - name: "Ensure systemd unit runs"
+      ansible.builtin.systemd:
+        enabled: yes
+        masked: no
+        name: "{{ systemd_unit }}"
+        scope: system
+        state: started
+
+    #  - name: "Ensure container exists"
+    #    ansible.builtin.command:
+    #      cmd: podman container exists '{{ podman_containers[0]["name"] }}'
+    #    register: container_exists
+    #    changed_when: container_exists.rc != 0
+
+    # - name: "Ensure container is running"
+    #   ansible.builtin.command:
+    #     cmd: |
+    #        podman container inspect '{{ podman_containers[0]["name"] }}'
+    #               --format "{{ '{{' }}.State.Running {{ '}}' }}"
+    #   register: container_running
+    #   changed_when: container_running.rc != 0
+
+    # - name: "Verify result"
+    #   ansible.builtin.fail:
+    #     msg: "Unexpected container run status {{ container_running }}"
+    #    when: not container_running
+
+    - name: "Ensure the service can be stopped"
+      ansible.builtin.systemd:
+        name: '{{ systemd_unit }}'
+        scope: system
+        state: stopped
