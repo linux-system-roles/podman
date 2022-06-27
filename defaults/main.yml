@@ -28,3 +28,7 @@ podman_ports: {}
 # __podman_systemd_root_path, otherwise, under
 # __podman_systemd_non_root_path
 podman_run_as_user: root
+
+# containers.conf(5) settings, these will be provided in a drop-in
+# TOML file at __podman_containers_conf_system
+podman_containers_conf: {}

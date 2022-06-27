@@ -1,0 +1,35 @@
+---
+
+- name: Ensure containers.d exists - system
+  file:
+    path: "{{ __podman_containers_conf_system|dirname }}"
+    state: "directory"
+  when: podman_run_as_user == "root"
+
+- name: Ensure containers.d exists - user
+  file:
+    path: "{{ __podman_containers_conf_non_root|dirname }}"
+    state: "directory"
+  when: podman_run_as_user != "root"
+
+- name: Update system container config file
+  template:
+    src: containers_conf_dropin.j2
+    dest: "{{ __podman_containers_conf_system }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  vars:
+    __conf: "{{ podman_containers_conf }}"
+  when: podman_run_as_user == "root"
+
+- name: Update non-root user container config file
+  template:
+    src: containers_conf_dropin.j2
+    dest: "{{ __podman_containers_conf_non_root }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  vars:
+    __conf: "{{ podman_containers_conf }}"
+  when: podman_run_as_user != "root"
