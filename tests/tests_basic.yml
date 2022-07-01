@@ -52,7 +52,7 @@
     - name: Run Assertion Tests - System
       when: podman_run_as_user == "root"
       block:
-        - name: state containers.conf.d
+        - name: stat containers.conf.d
           stat:
             path: "{{ __podman_containers_conf_system|dirname }}"
           register: containersd_stat
@@ -65,7 +65,7 @@
     - name: Run Assertion Tests - User
       when: podman_run_as_user != "root"
       block:
-        - name: state containers.conf.d
+        - name: stat containers.conf.d
           stat:
             path: "{{ __podman_containers_conf_user|dirname }}"
           register: containersd_stat

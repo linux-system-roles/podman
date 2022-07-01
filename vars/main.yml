@@ -34,8 +34,8 @@ __podman_required_facts:
   - os_family
 
 __podman_containers_conf_file: 50-systemroles.conf
-__podman_containers_conf_system: >
-  "/etc/containers/containers.conf.d/{{ __podman_containers_conf_file }}"
+__podman_containers_conf_system: >-
+  /etc/containers/containers.conf.d/{{ __podman_containers_conf_file }}
 # relative to $HOME
-__podman_containers_conf_user: >
-  ".config/containers/containers.conf.d/{{ __podman_containers_conf_file }}"
+__podman_containers_conf_user: >-
+  .config/containers/containers.conf.d/{{ __podman_containers_conf_file }}
