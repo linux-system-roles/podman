@@ -48,7 +48,7 @@
         name: linux-system-roles.podman
 
     - name: Run Assertion Tests - System
-      when: not podman_run_as_user|bool
+      when: podman_run_as_user == "root"
       block:
         - name: state containers.conf.d
           stat:
@@ -61,7 +61,7 @@
               - containersd_stat.stat.isdir
 
     - name: Run Assertion Tests - User
-      when: podman_run_as_user|bool
+      when: podman_run_as_user != "root"
       block:
         - name: state containers.conf.d
           stat:
