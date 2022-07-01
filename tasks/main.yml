@@ -40,4 +40,3 @@
 
 - name: Handle container.conf.d
   include_tasks: handle_container_conf_d.yml
-
