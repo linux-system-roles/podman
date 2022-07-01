@@ -68,6 +68,25 @@
         log_level: debug
         labels:
           io.containers.autoupdate: registry
+    __podman_containers_conf_file: 50-systemroles.conf
+    __podman_containers_conf_system: >-
+      /etc/containers/containers.conf.d/{{ __podman_containers_conf_file }}
+    __podman_containers_conf_user: >-
+      .config/containers/containers.conf.d/{{ __podman_containers_conf_file }
+    __podman_registries_conf_file: 50-systemroles.conf
+    __podman_registries_conf_system: >-
+      /etc/containers/registries.conf.d/{{ __podman_registries_conf_file }}
+    __podman_registries_conf_user: >-
+      .config/containers/registries.conf.d/{{ __podman_registries_conf_file }
+    podman_registries_conf:
+      aliases:
+        tier1test: myregistry.domain/test/test:tier1
+        tier2test: myregistry.domain/test/test:tier2
+    podman_containers_conf:
+      containers:
+        annotations:
+          environment: production
+          status: tier2
   tasks:
     - name: Run basic tests
       block:
@@ -104,6 +123,13 @@
           register: containersd_stat
           failed_when: not containersd_stat.stat.exists or
             not containersd_stat.stat.isdir
+
+        - name: Check root registries.conf.d
+          stat:
+            path: "{{ __podman_registries_conf_system|dirname }}"
+          register: registriesd_stat
+          failed_when: not resigstriesd_stat.stat.exists or
+            not registriesd_stat.stat.isdir
 
         - name: Check if containers are running
           command: podman inspect {{ item[0] }} --format {{ __fmt | quote }}
@@ -222,6 +248,13 @@
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
           loop: "{{ test_names_users }}"
 
+        - name: Check root containers.conf.d
+          stat:
+            path: "{{ __podman_containers_conf_system|dirname }}"
+          register: containersd_stat
+          failed_when: not containersd_stat.stat.exists or
+            not containersd_stat.stat.isdir
+
       always:
         # have to clean up storage.conf - otherwise, get this message:
         # A storage.conf file exists at /etc/containers/storage.conf
@@ -240,3 +273,4 @@
           loop: [httpd1, httpd2, httpd3]
           tags:
             - tests::cleanup
+

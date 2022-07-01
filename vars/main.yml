@@ -37,3 +37,9 @@ __podman_containers_conf_system: >-
 # relative to $HOME
 __podman_containers_conf_user: >-
   .config/containers/containers.conf.d/{{ __podman_containers_conf_file }}
+
+__podman_registries_conf_file: 50-systemroles.conf
+__podman_registries_conf_system: >-
+  /etc/containers/registries.conf.d/{{ __podman_registries_conf_file }}
+__podman_registries_conf_user: >-
+  .config/containers/registries.conf.d/{{ __podman_registries_conf_file }
