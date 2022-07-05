@@ -3,6 +3,12 @@
 - name: Ensure that the role runs with default parameters
   hosts: all
   vars:
+    __podman_containers_conf_file: 50-systemroles.conf
+    __podman_containers_conf_system: >
+      /etc/containers/containers.conf.d/{{ __podman_containers_conf_file }}
+    __podman_containers_conf_user: >
+      .config/containers/containers.conf.d/{{ __podman_containers_conf_file }
+    podman_run_as_user: root
     podman_create_host_directories: true
     podman_containers:
       - name: httpd1
@@ -24,6 +30,12 @@
           - "8081:80"
         generate_systemd:
           restart_policy: always
+    podman_containers_conf:
+      containers:
+        annotations:
+          environment: production
+          status: tier2
+
   tasks:
     - name: Run role
       include_role:
@@ -36,3 +48,29 @@
     - name: Run role again to test for idempotency
       include_role:
         name: linux-system-roles.podman
+
+    - name: Run Assertion Tests - System
+      when: podman_run_as_user == "root"
+      block:
+        - name: stat containers.conf.d
+          stat:
+            path: "{{ __podman_containers_conf_system|dirname }}"
+          register: containersd_stat
+        - name: assert the containers.conf.d directory exists
+          assert:
+            that:
+              - containersd_stat.stat.exists
+              - containersd_stat.stat.isdir
+
+    - name: Run Assertion Tests - User
+      when: podman_run_as_user != "root"
+      block:
+        - name: stat containers.conf.d
+          stat:
+            path: "{{ __podman_containers_conf_user|dirname }}"
+          register: containersd_stat
+        - name: assert the containers.conf.d directory exists
+          assert:
+            that:
+              - containersd_stat.stat.exists
+              - containersd_stat.stat.isdir

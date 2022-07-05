@@ -1,0 +1,16 @@
+{{ ansible_managed | comment }}
+{% if __conf is defined and __conf is iterable %}
+{% for section in __conf %}
+[{{ section }}]
+{%   for key in __conf[section] %}
+{% if (__conf[section][key] is iterable and ((__conf[section][key] is not string) and (__conf[section][key] is not mapping)))  %}
+{{ key }}={{ __conf[section][key] }}
+{% elif __conf[section][key] is mapping and __conf[section][key] is not string %}
+{% set value_list = [] %}
+{{ key }} = [{%- for k in __conf[section][key] %} "{{k}}={{__conf[section][key][k]}}", {%- endfor %}]
+{% else %}
+{{ key }}="{{ __conf[section][key] }}"
+{% endif %}
+{%   endfor %}
+{% endfor %}
+{% endif %}
