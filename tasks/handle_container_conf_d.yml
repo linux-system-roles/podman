@@ -4,20 +4,26 @@
   file:
     path: "{{ __podman_containers_conf_system|dirname }}"
     state: "directory"
+    owner: "{{ podman_run_as_user }}"
+    group: "{{ podman_run_as_user }}"
+    mode: "0755"
   when: podman_run_as_user == "root"
 
 - name: Ensure containers.d exists - user
   file:
     path: "{{ __podman_containers_conf_non_root|dirname }}"
     state: "directory"
+    owner: "{{ podman_run_as_user }}"
+    group: "{{ podman_run_as_user }}"
+    mode: "0755"
   when: podman_run_as_user != "root"
 
 - name: Update system container config file
   template:
     src: containers_conf_dropin.j2
     dest: "{{ __podman_containers_conf_system }}"
-    owner: "root"
-    group: "root"
+    owner: "{{ podman_run_as_user }}"
+    group: "{{ podman_run_as_user }}"
     mode: "0644"
   vars:
     __conf: "{{ podman_containers_conf }}"
@@ -27,8 +33,8 @@
   template:
     src: containers_conf_dropin.j2
     dest: "{{ __podman_containers_conf_non_root }}"
-    owner: "root"
-    group: "root"
+    owner: "{{ podman_run_as_user }}"
+    group: "{{ podman_run_as_user }}"
     mode: "0644"
   vars:
     __conf: "{{ podman_containers_conf }}"
