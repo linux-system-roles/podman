@@ -54,7 +54,7 @@ podman_systemd_unit_scope: null
 # TOML file at __podman_containers_conf_system
 podman_containers_conf: {}
 
-# registries.conf(5) settings, these will be provided in a drop-in
+# containers-registries.conf(5) settings, these will be provided in a drop-in
 # If running as root, the configuration file will be created in
 # __podman_registries_conf_system or __podman_registries_conf_user
 # paths, respectively, depending on execution mode selected
