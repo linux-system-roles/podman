@@ -29,7 +29,7 @@
     __conf: "{{ podman_registries_conf }}"
   when: podman_run_as_user == "root"
 
-- name: Update non-root user container config file
+- name: Update non-root user registries config file
   template:
     src: toml.j2
     dest: "{{ __podman_registries_conf_user }}"
