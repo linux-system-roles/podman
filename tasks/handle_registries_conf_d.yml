@@ -18,7 +18,7 @@
     mode: "0755"
   when: podman_run_as_user != "root"
 
-- name: Update system container config file
+- name: Update system registries config file
   template:
     src: toml.j2
     dest: "{{ __podman_registries_conf_system }}"
