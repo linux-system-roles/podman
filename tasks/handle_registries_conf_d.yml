@@ -3,7 +3,7 @@
 - name: Ensure registries.d exists - system
   file:
     path: "{{ __podman_registries_conf_system|dirname }}"
-    state: "directory"
+    state: directory
     owner: "{{ podman_run_as_user }}"
     group: "{{ podman_run_as_user }}"
     mode: "0755"
@@ -12,7 +12,7 @@
 - name: Ensure registries.d exists - user
   file:
     path: "{{ __podman_registries_conf_user|dirname }}"
-    state: "directory"
+    state: directory
     owner: "{{ podman_run_as_user }}"
     group: "{{ podman_run_as_user }}"
     mode: "0755"
