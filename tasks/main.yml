@@ -11,6 +11,9 @@
 - name: Handle container.conf.d
   include_tasks: handle_container_conf_d.yml
 
+- name: Handle registries.conf.d
+  include_tasks: handle_registries_conf_d.yml
+
 - name: Get the mounts from podman_containers
   set_fact:
     __podman_mounts: "{{ podman_containers | selectattr('mount', 'defined') |
@@ -56,9 +59,3 @@
   loop: "{{ podman_containers }}"
   loop_control:
     loop_var: __podman_container_item
-
-- name: Handle container.conf.d
-  include_tasks: handle_container_conf_d.yml
-
-- name: Handle registries.conf.d
-  include_tasks: handle_registries_conf_d.yml
