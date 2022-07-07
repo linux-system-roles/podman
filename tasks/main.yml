@@ -3,11 +3,13 @@
 - name: Set platform/version specific variables
   include_tasks: set_vars.yml
 
-# Examples of some tasks:
 - name: Ensure required packages are installed
   package:
     name: "{{ __podman_packages }}"
     state: present
+
+- name: Handle container.conf.d
+  include_tasks: handle_container_conf_d.yml
 
 - name: Get the mounts from podman_containers
   set_fact:
@@ -32,11 +34,25 @@
     - podman_create_host_directories
     - __podman_mounts or __podman_volumes
 
+# This task should ensure that __podman_containers has only
+# parameters valid for containers.podman.podman_container - other
+# parameters should be stripped out into separate vars
+- name: Manage firewall for specified ports
+  include_role:
+    name: fedora.linux_system_roles.firewall
+  vars:
+    firewall: "{{ podman_firewall }}"
+  when: podman_firewall | length > 0
+
+- name: Manage selinux for specified ports
+  include_role:
+    name: fedora.linux_system_roles.selinux
+  vars:
+    selinux_ports: "{{ podman_selinux_ports }}"
+  when: podman_selinux_ports | length > 0
+
 - name: Handle containers
   include_tasks: handle_container.yml
   loop: "{{ podman_containers }}"
   loop_control:
-    loop_var: __podman_container
-
-- name: Handle container.conf.d
-  include_tasks: handle_container_conf_d.yml
+    loop_var: __podman_container_item

@@ -11,7 +11,7 @@
 
 - name: Ensure containers.d exists - user
   file:
-    path: "{{ __podman_containers_conf_non_root|dirname }}"
+    path: "{{ __podman_containers_conf_user|dirname }}"
     state: "directory"
     owner: "{{ podman_run_as_user }}"
     group: "{{ podman_run_as_user }}"
@@ -32,7 +32,7 @@
 - name: Update non-root user container config file
   template:
     src: containers_conf_dropin.j2
-    dest: "{{ __podman_containers_conf_non_root }}"
+    dest: "{{ __podman_containers_conf_user }}"
     owner: "{{ podman_run_as_user }}"
     group: "{{ podman_run_as_user }}"
     mode: "0644"

@@ -1,0 +1,73 @@
+- name: Stop and disable service
+  systemd:
+    name: "{{ __podman_service_name }}"
+    scope: "{{ __podman_systemd_scope }}"
+    state: stopped
+    enabled: false
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  register: __podman_service_status
+  failed_when:
+    - __podman_service_status is failed
+    - not __podman_service_status.stdout is search(__service_error)
+  vars:
+    __service_error: Could not find the requested service
+
+- name: Remove systemd unit file
+  file:
+    path: "{{ __podman_systemd_unit_filename }}"
+    state: absent
+
+- name: Find systemd unit files if not root
+  find:
+    paths: "{{ __podman_systemd_path }}"
+  become: true
+  become_user: "{{ __podman_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  register: __podman_systemd_unit_files
+  when: __podman_rootless
+
+- name: Remove systemd files directory if empty and user not root
+  file:
+    path: "{{ __podman_systemd_path }}"
+    state: absent
+  become: true
+  become_user: "{{ __podman_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  when:
+    - __podman_rootless
+    - __podman_systemd_unit_files.matched == 0
+
+- name: Remove container
+  containers.podman.podman_container: "{{ __podman_container }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  register: __podman_removed
+
+- name: Gather facts for all containers
+  containers.podman.podman_container_info:
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  register: __podman_container_info
+
+- name: Cancel linger if no more containers are running
+  command: loginctl disable-linger {{ __podman_user }}
+  when:
+    - __podman_rootless | bool
+    - __podman_container_info.containers | length == 0
+
+- name: Prune images no longer in use
+  command: podman image prune -f
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  when: __podman_removed is changed  # noqa no-handler
