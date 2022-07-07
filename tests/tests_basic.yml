@@ -194,7 +194,7 @@
             name: linux-system-roles.podman
           vars:
             podman_containers: "{{ __podman_containers |
-              map('combine', {'state':'absent'}) }}"
+              map('combine', {'state':'absent'}) | list }}"
             podman_create_host_directories: false
             podman_firewall: []
             podman_selinux_ports: []
