@@ -4,7 +4,6 @@
   hosts: all
   vars:
     podman_run_as_user: root
-      .config/containers/containers.conf.d/{{ __podman_containers_conf_file }
     podman_containers_conf:
       containers:
         annotations:
