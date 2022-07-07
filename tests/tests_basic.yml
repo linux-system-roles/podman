@@ -4,19 +4,6 @@
   hosts: all
   vars:
     podman_run_as_user: root
-    __podman_registries_conf_file: 50-systemroles.conf
-    __podman_registries_conf_system: >-
-      /etc/containers/registries.conf.d/{{ __podman_registries_conf_file }}
-    __podman_registries_conf_user: >-
-      .config/containers/registries.conf.d/{{ __podman_registries_conf_file }
-    podman_registries_conf:
-      aliases:
-        tier1test: myregistry.domain/test/test:tier1
-        tier2test: myregistry.domain/test/test:tier2
-    __podman_containers_conf_file: 50-systemroles.conf
-    __podman_containers_conf_system: >-
-      /etc/containers/containers.conf.d/{{ __podman_containers_conf_file }}
-    __podman_containers_conf_user: >-
       .config/containers/containers.conf.d/{{ __podman_containers_conf_file }
     podman_containers_conf:
       containers:
