@@ -1,23 +1,23 @@
 ---
-- name: Manage registries conf
-  when: podman_registries_conf | length > 0
+- name: Manage storage.conf
+  when: podman_storage_conf | length > 0
   block:
-    - name: Ensure registries.d exists
+    - name: Ensure storage.conf parent dir exists
       file:
-        path: "{{ __podman_registries_conf_file | dirname }}"
+        path: "{{ __podman_storage_conf_file | dirname }}"
         state: directory
         owner: "{{ podman_run_as_user }}"
         group: "{{ podman_run_as_group if
           podman_run_as_group is not none else omit }}"
         mode: "0755"
 
-    - name: Update registries config file
+    - name: Update storage config file
       template:
         src: toml.j2
-        dest: "{{ __podman_registries_conf_file }}"
+        dest: "{{ __podman_storage_conf_file }}"
         owner: "{{ podman_run_as_user }}"
         group: "{{ podman_run_as_group if
           podman_run_as_group is not none else omit }}"
         mode: "0644"
       vars:
-        __conf: "{{ podman_registries_conf }}"
+        __conf: "{{ podman_storage_conf }}"

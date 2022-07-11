@@ -59,3 +59,15 @@ podman_containers_conf: {}
 # __podman_registries_conf_system or __podman_registries_conf_user
 # paths, respectively, depending on execution mode selected
 podman_registries_conf: {}
+
+# containers-storage.conf(5) settings
+# If running as root, the configuration file will be created in
+# __podman_storage_conf_system or __podman_storage_conf_user
+# paths, respectively, depending on execution mode selected
+podman_storage_conf: {}
+
+# containers-policy.json(5) settings
+# If running as root, the configuration file will be created in
+# __podman_policy_json_system or __podman_policy_json_user
+# paths, respectively, depending on execution mode selected
+podman_policy_json: {}

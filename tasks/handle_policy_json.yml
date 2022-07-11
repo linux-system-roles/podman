@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MIT
+- name: Manage policy.json
+  when: podman_policy_json | length > 0
+  block:
+    - name: Ensure policy.json parent dir exists
+      file:
+        path: "{{ __podman_policy_json_file | dirname }}"
+        state: directory
+        owner: "{{ podman_run_as_user }}"
+        group: "{{ podman_run_as_group if
+          podman_run_as_group is not none else omit }}"
+        mode: "0755"
+
+    - name: Stat the policy.json file
+      stat:
+        path: "{{ __podman_policy_json_file }}"
+      register: __podman_policy_stat
+
+    - name: Get the existing policy.json
+      slurp:
+        path: "{{ __podman_policy_json_file }}"
+      register: __podman_policy_slurp
+      when: __podman_policy_stat.stat.exists
+
+    - name: Write new policy.json file
+      copy:
+        content: "{{ podman_policy_json | to_nice_json }}"
+        dest: "{{ __podman_policy_json_file }}"
+        owner: "{{ podman_run_as_user }}"
+        group: "{{ podman_run_as_group if
+          podman_run_as_group is not none else omit }}"
+        mode: "0644"
+      when: __policy_existing != podman_policy_json
+      vars:
+        __policy_existing: "{{ __podman_policy_slurp.content |
+          b64decode | from_json
+          if __podman_policy_stat.stat.exists else {} }}"

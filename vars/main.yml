@@ -31,18 +31,33 @@ __podman_required_facts:
   - distribution_version
   - os_family
 
-__podman_containers_conf_file: 50-systemroles.conf
+__podman_containers_conf_file_name: 50-systemroles.conf
 __podman_containers_conf_system: >-
-  /etc/containers/containers.conf.d/{{ __podman_containers_conf_file }}
+  /etc/containers/containers.conf.d/{{ __podman_containers_conf_file_name }}
 # relative to $HOME
 __podman_containers_conf_user: >-
-  .config/containers/containers.conf.d/{{ __podman_containers_conf_file }}
+  .config/containers/containers.conf.d/{{ __podman_containers_conf_file_name }}
 
-__podman_registries_conf_file: 50-systemroles.conf
+__podman_registries_conf_file_name: 50-systemroles.conf
 __podman_registries_conf_system: >-
-  /etc/containers/registries.conf.d/{{ __podman_registries_conf_file }}
+  /etc/containers/registries.conf.d/{{ __podman_registries_conf_file_name }}
+# relative to $HOME
 __podman_registries_conf_user: >-
-  .config/containers/registries.conf.d/{{ __podman_registries_conf_file }}
+  .config/containers/registries.conf.d/{{ __podman_registries_conf_file_name }}
+
+__podman_storage_conf_file_name: storage.conf
+__podman_storage_conf_system: >-
+  /etc/containers/{{ __podman_storage_conf_file_name }}
+# relative to $HOME
+__podman_storage_conf_user: >-
+  .config/containers/{{ __podman_storage_conf_file_name }}
+
+__podman_policy_json_file_name: policy.json
+__podman_policy_json_system: >-
+  /etc/containers/{{ __podman_policy_json_file_name }}
+# relative to $HOME
+__podman_policy_json_user: >-
+  .config/containers/{{ __podman_policy_json_file_name }}
 
 # location for system kubernetes yaml files
 __podman_system_kube_path: "/etc/containers/ansible-kubernetes.d"

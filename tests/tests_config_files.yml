@@ -1,0 +1,96 @@
+# SPDX-License-Identifier: MIT
+---
+- name: Ensure that the role can manage its config files
+  hosts: all
+  vars:
+    podman_run_as_user: user1
+    podman_containers_conf:
+      containers:
+        annotations:
+          environment: production
+          status: tier2
+    podman_registries_conf:
+      aliases:
+        myregistry: registry.example.com
+    podman_storage_conf:
+      storage:
+        runroot: /tmp
+    podman_policy_json:
+      default:
+        type: insecureAcceptAnything
+  tasks:
+    - name: Create user
+      user:
+        name: user1
+
+    - name: Run the role with user config
+      include_role:
+        name: linux-system-roles.podman
+        public: true
+
+    - name: Check that files exist and are non-null
+      stat:
+        path: "{{ item }}"
+      register: __stat
+      failed_when: not __stat.stat.exists or
+        __stat.stat.size == 0
+      loop:
+        - /home/user1/{{ __podman_containers_conf_user }}
+        - /home/user1/{{ __podman_registries_conf_user }}
+        - /home/user1/{{ __podman_storage_conf_user }}
+        - /home/user1/{{ __podman_policy_json_user }}
+
+    - name: Run the role again with user config
+      include_role:
+        name: linux-system-roles.podman
+        public: true
+
+    - name: Check that files still exist and are non-null
+      stat:
+        path: "{{ item }}"
+      register: __stat
+      failed_when: not __stat.stat.exists or
+        __stat.stat.size == 0
+      loop:
+        - /home/user1/{{ __podman_containers_conf_user }}
+        - /home/user1/{{ __podman_registries_conf_user }}
+        - /home/user1/{{ __podman_storage_conf_user }}
+        - /home/user1/{{ __podman_policy_json_user }}
+
+    - name: Run the role with root config
+      include_role:
+        name: linux-system-roles.podman
+        public: true
+      vars:
+        podman_run_as_user: root
+
+    - name: Check that files exist and are non-null
+      stat:
+        path: "{{ item }}"
+      register: __stat
+      failed_when: not __stat.stat.exists or
+        __stat.stat.size == 0
+      loop:
+        - "{{ __podman_containers_conf_system }}"
+        - "{{ __podman_registries_conf_system }}"
+        - "{{ __podman_storage_conf_system }}"
+        - "{{ __podman_policy_json_system }}"
+
+    - name: Run the role again with user config
+      include_role:
+        name: linux-system-roles.podman
+        public: true
+      vars:
+        podman_run_as_user: root
+
+    - name: Check that files still exist and are non-null
+      stat:
+        path: "{{ item }}"
+      register: __stat
+      failed_when: not __stat.stat.exists or
+        __stat.stat.size == 0
+      loop:
+        - "{{ __podman_containers_conf_system }}"
+        - "{{ __podman_registries_conf_system }}"
+        - "{{ __podman_storage_conf_system }}"
+        - "{{ __podman_policy_json_system }}"
