@@ -112,6 +112,12 @@
           failed_when: not registriesd_stat.stat.exists or
             not registriesd_stat.stat.isdir
 
+        - name: Check root storage.conf
+          stat:
+            path: "{{ __podman_storage_conf_system }}"
+          register: storageconf_stat
+          failed_when: not storageconf_stat.stat.exists
+
         - name: Check if containers are running
           command: podman inspect {{ item[0] }} --format {{ __fmt | quote }}
           changed_when: false

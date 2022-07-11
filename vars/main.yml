@@ -43,3 +43,9 @@ __podman_registries_conf_system: >-
   /etc/containers/registries.conf.d/{{ __podman_registries_conf_file }}
 __podman_registries_conf_user: >-
   .config/containers/registries.conf.d/{{ __podman_registries_conf_file }}
+
+__podman_storage_conf_file: storage.conf
+__podman_storage_conf_system: >-
+  /etc/containers/{{ __podman_storage_conf_file }}
+__podman_storage_conf_user: >-
+  .config/containers/{{ __podman_storage_conf_file }}
