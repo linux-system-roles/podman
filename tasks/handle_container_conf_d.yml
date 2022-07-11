@@ -1,41 +1,23 @@
 ---
+- name: Manage containers conf
+  when: podman_containers_conf | length > 0
+  block:
+    - name: Ensure containers.d exists
+      file:
+        path: "{{ __podman_container_conf_file | dirname }}"
+        state: directory
+        owner: "{{ podman_run_as_user }}"
+        group: "{{ podman_run_as_group if
+          podman_run_as_group is not none else omit }}"
+        mode: "0755"
 
-- name: Ensure containers.d exists - system
-  file:
-    path: "{{ __podman_containers_conf_system|dirname }}"
-    state: "directory"
-    owner: "{{ podman_run_as_user }}"
-    group: "{{ podman_run_as_user }}"
-    mode: "0755"
-  when: podman_run_as_user == "root"
-
-- name: Ensure containers.d exists - user
-  file:
-    path: "{{ __podman_containers_conf_user|dirname }}"
-    state: "directory"
-    owner: "{{ podman_run_as_user }}"
-    group: "{{ podman_run_as_user }}"
-    mode: "0755"
-  when: podman_run_as_user != "root"
-
-- name: Update system container config file
-  template:
-    src: toml.j2
-    dest: "{{ __podman_containers_conf_system }}"
-    owner: "{{ podman_run_as_user }}"
-    group: "{{ podman_run_as_user }}"
-    mode: "0644"
-  vars:
-    __conf: "{{ podman_containers_conf }}"
-  when: podman_run_as_user == "root"
-
-- name: Update non-root user container config file
-  template:
-    src: toml.j2
-    dest: "{{ __podman_containers_conf_user }}"
-    owner: "{{ podman_run_as_user }}"
-    group: "{{ podman_run_as_user }}"
-    mode: "0644"
-  vars:
-    __conf: "{{ podman_containers_conf }}"
-  when: podman_run_as_user != "root"
+    - name: Update container config file
+      template:
+        src: toml.j2
+        dest: "{{ __podman_container_conf_file }}"
+        owner: "{{ podman_run_as_user }}"
+        group: "{{ podman_run_as_group if
+          podman_run_as_group is not none else omit }}"
+        mode: "0644"
+      vars:
+        __conf: "{{ podman_containers_conf }}"

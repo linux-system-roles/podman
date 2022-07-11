@@ -151,6 +151,62 @@ specify per-container scope with `systemd_unit_scope` in `podman_kube_specs`. By
 default, rootless containers will use `user` and root containers will use
 `system`.
 
+### podman_containers_conf
+
+These are the containers.conf(5) settings, provided as a `dict`.  These settings
+will be provided in a drop-in file in the `containers.conf.d` directory.  If
+running as root (see `podman_run_as_user`), the system settings will be managed,
+otherwise, the user settings will be managed.  See the man page for the
+directory locations.
+
+```yaml
+podman_containers_conf:
+  containers:
+    default_sysctls:
+      - net.ipv4.ping_group_range=0 1000
+      - user.max_ipc_namespaces=125052
+```
+
+### podman_registries_conf
+
+These are the containers-registries.conf(5) settings, provided as a `dict`.
+These settings will be provided in a drop-in file in the `registries.conf.d`
+directory.  If running as root (see `podman_run_as_user`), the system settings
+will be managed, otherwise, the user settings will be managed.  See the man page
+for the directory locations.
+
+```yaml
+podman_registries_conf:
+  aliases:
+    myregistry: registry.example.com
+```
+
+### podman_storage_conf
+
+These are the containers-storage.conf(5) settings, provided as a `dict`.  If
+running as root (see `podman_run_as_user`), the system settings will be managed,
+otherwise, the user settings will be managed.  See the man page for the file
+locations.
+
+```yaml
+podman_storage_conf:
+  storage:
+    runroot: /var/big/partition/container/storage
+```
+
+### podman_policy_json
+
+These are the containers-policy.json(5) settings, provided as a `dict`.  If
+running as root (see `podman_run_as_user`), the system settings will be managed,
+otherwise, the user settings will be managed.  See the man page for the file
+locations.
+
+```yaml
+podman_policy_json:
+  default:
+    type: insecureAcceptAnything
+```
+
 ## Variables Exported by the Role
 
 None

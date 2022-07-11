@@ -23,12 +23,52 @@
     __podman_version: "{{
       (__podman_version_output.stdout.split())[2] }}"
 
+- name: Get user information
+  getent:
+    database: passwd
+    key: "{{ podman_run_as_user }}"
+    fail_key: false
+
+- name: Fail if user does not exist
+  fail:
+    msg: >
+      The given podman user [{{ podman_run_as_user }}] does not exist -
+      cannot continue
+  when: not ansible_facts['getent_passwd'][podman_run_as_user]
+
+- name: Set config file paths
+  set_fact:
+    __podman_container_conf_file: "{{ __podman_containers_conf_system
+      if podman_run_as_user == 'root' else
+      __podman_user_home_dir ~ '/' ~ __podman_containers_conf_user }}"
+    __podman_registries_conf_file: "{{ __podman_registries_conf_system
+      if podman_run_as_user == 'root' else
+      __podman_user_home_dir ~ '/' ~ __podman_registries_conf_user }}"
+    __podman_storage_conf_file: "{{ __podman_storage_conf_system
+      if podman_run_as_user == 'root' else
+      __podman_user_home_dir ~ '/' ~ __podman_storage_conf_user }}"
+    __podman_policy_json_file: "{{ __podman_policy_json_system
+      if podman_run_as_user == 'root' else
+      __podman_user_home_dir ~ '/' ~ __podman_policy_json_user }}"
+  vars:
+    __podman_user_home_dir: "{{
+      ansible_facts['getent_passwd'][podman_run_as_user][4] }}"
+
 - name: Handle container.conf.d
   include_tasks: handle_container_conf_d.yml
 
 - name: Handle registries.conf.d
   include_tasks: handle_registries_conf_d.yml
 
+- name: Handle storage.conf
+  include_tasks: handle_storage_conf.yml
+
+- name: Handle policy.json
+  include_tasks: handle_policy_json.yml
+
+# This task should ensure that __podman_containers has only
+# parameters valid for containers.podman.podman_container - other
+# parameters should be stripped out into separate vars
 - name: Manage firewall for specified ports
   include_role:
     name: fedora.linux_system_roles.firewall

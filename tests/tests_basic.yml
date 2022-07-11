@@ -4,11 +4,6 @@
   hosts: all
   vars:
     podman_run_as_user: root
-    podman_containers_conf:
-      containers:
-        annotations:
-          environment: production
-          status: tier2
     test_names_users:
       - [httpd1, user1, 1001]
       - [httpd2, root, 0]
@@ -191,20 +186,6 @@
             podman_kube_specs: "{{ __podman_kube_specs |
               union([__podman_use_kube_file]) | list }}"
 
-        - name: Check root containers.conf.d
-          stat:
-            path: "{{ __podman_containers_conf_system|dirname }}"
-          register: containersd_stat
-          failed_when: not containersd_stat.stat.exists or
-            not containersd_stat.stat.isdir
-
-        - name: Check root registries.conf.d
-          stat:
-            path: "{{ __podman_registries_conf_system|dirname }}"
-          register: registriesd_stat
-          failed_when: not registriesd_stat.stat.exists or
-            not registriesd_stat.stat.isdir
-
         - name: Check if pods are running
           command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
           changed_when: false
@@ -286,21 +267,7 @@
         #   command: podman auto-update --dry-run
         #   changed_when: false
 
-        - name: Manage user containers.d
-          include_role:
-            name: linux-system-roles.podman
-          vars:
-            podman_kube_specs: []
-            podman_run_as_user: user1
-
-        - name: Check users containers.conf.d
-          stat:
-            path: "{{ __podman_containers_conf_user|dirname }}"
-          register: containersd_stat
-          failed_when: not containersd_stat.stat.exists or
-            not containersd_stat.stat.isdir
-
-        - name: Remove containers and units
+        - name: Remove pods and units
           include_role:
             name: linux-system-roles.podman
           vars:
@@ -343,13 +310,6 @@
             __regex: >-
               ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
               ]+active
-
-        - name: Check root containers.conf.d should be absent
-          stat:
-            path: "{{ __podman_containers_conf_system|dirname }}"
-          register: containersd_stat
-          failed_when: not containersd_stat.stat.exists or
-            not containersd_stat.stat.isdir
 
       always:
         # have to clean up storage.conf - otherwise, get this message:
