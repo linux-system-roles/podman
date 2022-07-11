@@ -1,9 +1,5 @@
 # SPDX-License-Identifier: MIT
 ---
-# containers.conf(5) settings, these will be provided in a drop-in
-# TOML file at __podman_containers_conf_system
-podman_containers_conf: {}
-
 # List of containers and systemd units to define
 podman_containers: []
 
@@ -53,3 +49,13 @@ podman_run_as_group: null
 # per container to override this and the default setting, by using
 # "system_unit_scope: value" in the podman_containers list element.
 podman_systemd_unit_scope: null
+
+# containers.conf(5) settings, these will be provided in a drop-in
+# TOML file at __podman_containers_conf_system
+podman_containers_conf: {}
+
+# containers-registries.conf(5) settings, these will be provided in a drop-in
+# If running as root, the configuration file will be created in
+# __podman_registries_conf_system or __podman_registries_conf_user
+# paths, respectively, depending on execution mode selected
+podman_registries_conf: {}

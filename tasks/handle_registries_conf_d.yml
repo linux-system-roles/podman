@@ -1,41 +1,41 @@
 ---
 
-- name: Ensure containers.d exists - system
+- name: Ensure registries.d exists - system
   file:
-    path: "{{ __podman_containers_conf_system|dirname }}"
-    state: "directory"
+    path: "{{ __podman_registries_conf_system|dirname }}"
+    state: directory
     owner: "{{ podman_run_as_user }}"
     group: "{{ podman_run_as_user }}"
     mode: "0755"
   when: podman_run_as_user == "root"
 
-- name: Ensure containers.d exists - user
+- name: Ensure registries.d exists - user
   file:
-    path: "{{ __podman_containers_conf_user|dirname }}"
-    state: "directory"
+    path: "{{ __podman_registries_conf_user|dirname }}"
+    state: directory
     owner: "{{ podman_run_as_user }}"
     group: "{{ podman_run_as_user }}"
     mode: "0755"
   when: podman_run_as_user != "root"
 
-- name: Update system container config file
+- name: Update system registries config file
   template:
     src: toml.j2
-    dest: "{{ __podman_containers_conf_system }}"
+    dest: "{{ __podman_registries_conf_system }}"
     owner: "{{ podman_run_as_user }}"
     group: "{{ podman_run_as_user }}"
     mode: "0644"
   vars:
-    __conf: "{{ podman_containers_conf }}"
+    __conf: "{{ podman_registries_conf }}"
   when: podman_run_as_user == "root"
 
-- name: Update non-root user container config file
+- name: Update non-root user registries config file
   template:
     src: toml.j2
-    dest: "{{ __podman_containers_conf_user }}"
+    dest: "{{ __podman_registries_conf_user }}"
     owner: "{{ podman_run_as_user }}"
     group: "{{ podman_run_as_user }}"
     mode: "0644"
   vars:
-    __conf: "{{ podman_containers_conf }}"
+    __conf: "{{ podman_registries_conf }}"
   when: podman_run_as_user != "root"
