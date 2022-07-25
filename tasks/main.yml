@@ -14,6 +14,9 @@
 - name: Handle registries.conf.d
   include_tasks: handle_registries_conf_d.yml
 
+- name: Handle storage.conf
+  include_tasks: handle_storage_conf.yml
+
 - name: Get the mounts from podman_containers
   set_fact:
     __podman_mounts: "{{ podman_containers | selectattr('mount', 'defined') |

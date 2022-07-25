@@ -1,0 +1,44 @@
+---
+
+- name: Ensure storage.conf parent dir exists - system
+  file:
+    path: "{{ __podman_storage_conf_system|dirname }}"
+    state: directory
+    owner: "{{ podman_run_as_user }}"
+    group: "{{ podman_run_as_user }}"
+    mode: "0755"
+  when: podman_run_as_user == "root"
+
+- name: Ensure storage.conf parent dir - user
+  file:
+    path: "{{ __podman_storage_conf_user|dirname }}"
+    state: directory
+    owner: "{{ podman_run_as_user }}"
+    group: "{{ podman_run_as_user }}"
+    mode: "0755"
+  when: podman_run_as_user != "root"
+
+- name: template storage.conf
+  when: podman_storage_conf|length > 0
+  block:
+    - name: Update system storage config file
+      template:
+        src: toml.j2
+        dest: "{{ __podman_storage_conf_system }}"
+        owner: "{{ podman_run_as_user }}"
+        group: "{{ podman_run_as_user }}"
+        mode: "0644"
+      vars:
+        __conf: "{{ podman_storage_conf }}"
+      when: podman_run_as_user == "root"
+
+    - name: Update non-root user storage config file
+      template:
+        src: toml.j2
+        dest: "{{ __podman_storage_conf_user }}"
+        owner: "{{ podman_run_as_user }}"
+        group: "{{ podman_run_as_user }}"
+        mode: "0644"
+      vars:
+        __conf: "{{ podman_storage_conf }}"
+      when: podman_run_as_user != "root"
