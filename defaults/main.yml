@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 ---
-# List of containers and systemd units to define
-podman_containers: []
+# List of pod specifications using Kubernetes YAML format
+podman_kube_specs: []
 
 # If this is true, the role will automatically create the host directories
 # specified in volume or mount.
@@ -34,11 +34,11 @@ podman_firewall: []
 podman_selinux_ports: []
 
 # The default user to run as - can be set per container to override
-# this in the podman_containers list element using "run_as_user: username"
+# this in the podman_kube_specs list element using "run_as_user: username"
 podman_run_as_user: root
 
 # The default group to run as - can be set per container to override
-# this in the podman_containers list element using "run_as_group: name"
+# this in the podman_kube_specs list element using "run_as_group: name"
 # The default 'null' means determine the group from the user information
 # from the managed host
 podman_run_as_group: null
@@ -47,7 +47,7 @@ podman_run_as_group: null
 # system for root containers.  You can override this for all containers
 # by setting podman_systemd_unit_scope.  You can also specify the scope
 # per container to override this and the default setting, by using
-# "system_unit_scope: value" in the podman_containers list element.
+# "system_unit_scope: value" in the podman_kube_specs list element.
 podman_systemd_unit_scope: null
 
 # containers.conf(5) settings, these will be provided in a drop-in

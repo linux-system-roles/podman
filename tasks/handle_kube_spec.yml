@@ -1,0 +1,132 @@
+# SPDX-License-Identifier: MIT
+# each item is the same as the parameters to
+# https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_play_module.html#ansible-collections-containers-podman-podman-play-module
+# with the following additions
+# kube_file_src: path to a file on the controller to be copied to kube_file on
+#   the managed node
+# kube_file_content: a string or YAML dict representation of the content of
+#   kube_file on the managed node
+# e.g. kube_file_src corresponds to the `src` parameter of the Ansible `copy`
+#   module
+# kube_file_content corresponds to the `content` parameter of the Ansible
+#   `copy` module
+- name: Set per-container variables part 0
+  set_fact:
+    __podman_kube_spec: "{{ __podman_kube_spec_item |
+      dict2items | rejectattr('key', 'in', __del_params) |
+      list | items2dict }}"
+    __podman_kube_str: "{{ __podman_kube_spec_item['kube_file_content']
+      if 'kube_file_content' in __podman_kube_spec_item
+      and not __podman_kube_spec_item['kube_file_content'] is mapping
+      else __podman_kube_spec_item['kube_file_content'] | to_nice_yaml
+      if 'kube_file_content' in __podman_kube_spec_item
+      and __podman_kube_spec_item['kube_file_content'] is mapping
+      else lookup('file', __podman_kube_spec_item['kube_file_src'])
+      if 'kube_file_src' in __podman_kube_spec_item
+      and __podman_kube_spec_item['kube_file_src'] is exists
+      else none }}"
+  vars:
+    __del_params:
+      - kube_file_src
+      - kube_file_content
+      - run_as_user
+      - run_as_group
+      - systemd_unit_scope
+
+- name: Set per-container variables part 1
+  set_fact:
+    __podman_kube: "{{ __podman_kube_spec_item['kube_file_content']
+      if 'kube_file_content' in __podman_kube_spec_item
+      and __podman_kube_spec_item['kube_file_content'] is mapping
+      else __podman_kube_str | from_yaml
+      if not __podman_kube_str is none
+      else none }}"
+    __podman_kube_file: "{{ __podman_kube_spec_item['kube_file']
+      if 'kube_file' in __podman_kube_spec_item
+      else none }}"
+    __podman_user: "{{ __podman_kube_spec_item['run_as_user'] |
+      d(podman_run_as_user) }}"
+    __podman_systemd_unit_scope: "{{
+      __podman_kube_spec_item['systemd_unit_scope'] |
+      d(podman_systemd_unit_scope) }}"
+    __podman_state: "{{ __state }}"
+  vars:
+    __state: "{{ ((__podman_kube_spec_item['state'] | d('')) == 'absent') |
+      ternary('absent', 'created') }}"
+
+- name: Set per-container variables part 2
+  set_fact:
+    __podman_rootless: "{{ __podman_user != 'root' }}"
+    __podman_kube_name: "{{ __podman_kube['metadata']['name']
+      if not __podman_kube is none else none }}"
+
+- name: Get user information
+  getent:
+    database: passwd
+    key: "{{ __podman_user }}"
+    fail_key: false
+
+- name: Fail if user does not exist
+  fail:
+    msg: >
+      The given podman user [{{ __podman_user }}] does not exist -
+      cannot continue
+  when: not ansible_facts['getent_passwd'][__podman_user]
+
+- name: Fail if no kube spec is given
+  fail:
+    msg: >
+      One of kube_file, kube_file_src, or kube_file_content must
+      be given
+  when:
+    - __podman_kube is none
+    - __podman_kube_file is none
+
+- name: Set per-container variables part 3
+  set_fact:
+    __podman_group: |-
+      {%- if 'run_as_group' in __podman_kube_spec_item -%}
+      {{ __podman_kube_spec_item['run_as_group'] }}
+      {%- elif podman_run_as_group is not none -%}
+      {{ podman_run_as_group }}
+      {%- else -%}
+      {{ ansible_facts['getent_passwd'][__podman_user][2] }}
+      {%- endif -%}
+    __podman_xdg_runtime_dir: >-
+      /run/user/{{ ansible_facts['getent_passwd'][__podman_user][1] }}
+    __podman_user_home_dir: "{{
+      ansible_facts['getent_passwd'][__podman_user][4] }}"
+    __podman_systemd_scope: "{{ __podman_systemd_unit_scope
+      if not __podman_systemd_unit_scope is none
+      and __podman_systemd_unit_scope | length > 0
+      else __podman_rootless | ternary('user', 'system') }}"
+    __podman_activate_systemd_unit: true
+
+- name: Set per-container variables part 4
+  set_fact:
+    __podman_kube_path: "{{ __podman_user_home_dir ~
+      __podman_user_kube_path
+      if __podman_rootless else __podman_system_kube_path }}"
+
+- name: Set per-container variables part 5
+  set_fact:
+    __podman_kube_file: "{{ __podman_kube_file
+      if __podman_kube_file and __podman_kube_file is abs
+      else __podman_kube_path ~ '/' ~ __podman_kube_file
+      if __podman_kube_file
+      else __podman_kube_path ~ '/' ~ __podman_kube_name ~ '.yml' }}"
+
+- name: Get service name using systemd-escape
+  command: >-
+    systemd-escape --template podman-kube@.service
+    {{ __podman_kube_file | quote }}
+  register: __podman_service_name
+  when: __podman_activate_systemd_unit | bool
+
+- name: Cleanup containers and services
+  include_tasks: cleanup_kube_spec.yml
+  when: __podman_state == 'absent'
+
+- name: Create and update containers and services
+  include_tasks: create_update_kube_spec.yml
+  when: __podman_state != 'absent'

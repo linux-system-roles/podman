@@ -8,38 +8,27 @@
     name: "{{ __podman_packages }}"
     state: present
 
+- name: Get podman version
+  command: podman --version
+  changed_when: false
+  register: __podman_version_output
+
+- name: podman package version must be 4.2 or later
+  fail:
+    msg: >
+      podman package version {{ __podman_version }} is too old -
+      must be 4.2 or later
+  when: __podman_version is version("4.2", "<")
+  vars:
+    __podman_version: "{{
+      (__podman_version_output.stdout.split())[2] }}"
+
 - name: Handle container.conf.d
   include_tasks: handle_container_conf_d.yml
 
 - name: Handle registries.conf.d
   include_tasks: handle_registries_conf_d.yml
 
-- name: Get the mounts from podman_containers
-  set_fact:
-    __podman_mounts: "{{ podman_containers | selectattr('mount', 'defined') |
-      map(attribute='mount') | flatten | select('search', 'type=bind') |
-      map('regex_replace', '^.*source=([^,]+).*$', '\\1') | list }}"
-    __podman_volumes: "{{ podman_containers | selectattr('volume', 'defined') |
-      map(attribute='volume') | flatten |
-      map('regex_replace', '^([^:]+).*$', '\\1') | list }}"
-  when: podman_create_host_directories
-
-- name: Create host directories
-  file: "{{ __defaults | combine(podman_host_directories[__hostitem])
-            if __hostitem in podman_host_directories | d({})
-            else __defaults }}"
-  vars:
-    __hostitem: "{{ item if item in podman_host_directories | d({})
-      else 'DEFAULT' }}"
-    __defaults: "{{ {'path': item} | combine(__podman_hostdirs_defaults) }}"
-  loop: "{{ __podman_mounts | union(__podman_volumes) }}"
-  when:
-    - podman_create_host_directories
-    - __podman_mounts or __podman_volumes
-
-# This task should ensure that __podman_containers has only
-# parameters valid for containers.podman.podman_container - other
-# parameters should be stripped out into separate vars
 - name: Manage firewall for specified ports
   include_role:
     name: fedora.linux_system_roles.firewall
@@ -54,8 +43,8 @@
     selinux_ports: "{{ podman_selinux_ports }}"
   when: podman_selinux_ports | length > 0
 
-- name: Handle containers
-  include_tasks: handle_container.yml
-  loop: "{{ podman_containers }}"
+- name: Handle Kubernetes specifications
+  include_tasks: handle_kube_spec.yml
+  loop: "{{ podman_kube_specs }}"
   loop_control:
-    loop_var: __podman_container_item
+    loop_var: __podman_kube_spec_item

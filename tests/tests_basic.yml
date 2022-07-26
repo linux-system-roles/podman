@@ -9,71 +9,160 @@
         annotations:
           environment: production
           status: tier2
-    test_names_users: [[httpd1, user1], [httpd2, root], [httpd3, root]]
+    test_names_users:
+      - [httpd1, user1, 1001]
+      - [httpd2, root, 0]
+      - [httpd3, root, 0]
     podman_create_host_directories: true
     podman_firewall:
-      - port: 8080-8082/tcp
+      - port: 15001-15003/tcp
         state: enabled
     podman_selinux_ports:
-      - ports: 8080-8082
+      - ports: 15001-15003
         setype: http_port_t
-    __podman_containers:
-      - name: httpd1
-        image: quay.io/libpod/testimage:20210610
-        rm: true
-        tty: true
-        volume:
-          - /tmp/httpd1:/var/www:Z
-          - /tmp/httpd1-create:/var/httpd-create:Z
-        publish:
-          - "8080:80"
-        generate_systemd: true
-        command: /bin/busybox-extras httpd -f -p 80
-        workdir: /var/www
+    __podman_kube_specs:
+      - state: started
+        debug: true
+        log_level: debug
         run_as_user: user1
+        kube_file_content:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              app: test
+              io.containers.autoupdate: registry
+            name: httpd1
+          spec:
+            containers:
+              - name: httpd1
+                image: quay.io/libpod/testimage:20210610
+                command:
+                  - /bin/busybox-extras
+                  - httpd
+                  - -f
+                  - -p
+                  - 80
+                ports:
+                  - containerPort: 80
+                    hostPort: 15001
+                volumeMounts:
+                  - mountPath: /var/www:Z
+                    name: www
+                  - mountPath: /var/httpd-create:Z
+                    name: create
+                workingDir: /var/www
+            volumes:
+              - name: www
+                hostPath:
+                  path: /tmp/httpd1
+              - name: create
+                hostPath:
+                  path: /tmp/httpd1-create
+      - state: started
         debug: true
         log_level: debug
+        kube_file_content:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              app: test
+              io.containers.autoupdate: registry
+            name: httpd2
+          spec:
+            containers:
+              - name: httpd2
+                image: quay.io/libpod/testimage:20210610
+                command:
+                  - /bin/busybox-extras
+                  - httpd
+                  - -f
+                  - -p
+                  - 80
+                ports:
+                  - containerPort: 80
+                    hostPort: 15002
+                volumeMounts:
+                  - mountPath: /var/www:Z
+                    name: www
+                  - mountPath: /var/httpd-create:Z
+                    name: create
+                workingDir: /var/www
+            volumes:
+              - name: www
+                hostPath:
+                  path: /tmp/httpd2
+              - name: create
+                hostPath:
+                  path: /tmp/httpd2-create
+    __podman_kube_file_content: |
+      apiVersion: v1
+      kind: Pod
+      metadata:
         labels:
+          app: test
           io.containers.autoupdate: registry
-      - name: httpd2
-        image: quay.io/libpod/testimage:20210610
-        rm: true
-        tty: true
-        volume:
-          - /tmp/httpd2:/var/www:Z
-          - /tmp/httpd2-create:/var/httpd-create:Z
-        publish:
-          - "8081:80"
-        generate_systemd:
-          restart_policy: always
-        command: /bin/busybox-extras httpd -f -p 80
-        workdir: /var/www
-        debug: true
-        log_level: debug
-        labels:
-          io.containers.autoupdate: registry
-      - name: httpd3
-        image: quay.io/libpod/testimage:20210610
-        rm: true
-        tty: true
-        volume:
-          - /tmp/httpd3:/var/www:Z
-          - /tmp/httpd3-create:/var/httpd-create:Z
-        publish:
-          - "8082:80"
-        generate_systemd: true
-        command: /bin/busybox-extras httpd -f -p 80
-        workdir: /var/www
-        debug: true
-        log_level: debug
-        labels:
-          io.containers.autoupdate: registry
+        name: httpd3
+      spec:
+        containers:
+          - name: httpd3
+            image: quay.io/libpod/testimage:20210610
+            command:
+              - /bin/busybox-extras
+              - httpd
+              - -f
+              - -p
+              - 80
+            ports:
+              - containerPort: 80
+                hostPort: 15003
+            volumeMounts:
+              - mountPath: /var/www:Z
+                name: www
+              - mountPath: /var/httpd-create:Z
+                name: create
+            workingDir: /var/www
+        volumes:
+          - name: www
+            hostPath:
+              path: /tmp/httpd3
+          - name: create
+            hostPath:
+              path: /tmp/httpd3-create
   tasks:
     - name: Run basic tests
       block:
+        - name: Enable podman copr
+          command: dnf copr enable rhcontainerbot/podman-next -y
+          when: podman_use_copr | d(false)
+
+        - name: Install podman from updates-testing
+          command: dnf -y install podman
+          when: podman_use_copr | d(false)
+
+        - name: Podman version
+          command: podman --version
+          when: podman_use_copr | d(false)
+
         - name: Create user
           user:
             name: user1
+            uid: 1001
+
+        - name: Create tempfile for kube_src
+          tempfile:
+            state: file
+            prefix: lsr_podman_
+            suffix: .yml
+          register: __kube_file_src
+          delegate_to: localhost
+
+        - name: Write kube_file_src
+          copy:
+            content: "{{ __podman_kube_file_content }}"
+            dest: "{{ __kube_file_src.path }}"
+          delegate_to: localhost
 
         - name: Create host directories for data
           file:
@@ -96,7 +185,11 @@
             name: linux-system-roles.podman
             public: true
           vars:
-            podman_containers: "{{ __podman_containers }}"
+            __podman_use_kube_file:
+              state: started
+              kube_file_src: "{{ __kube_file_src.path }}"
+            podman_kube_specs: "{{ __podman_kube_specs |
+              union([__podman_use_kube_file]) | list }}"
 
         - name: Check root containers.conf.d
           stat:
@@ -112,27 +205,32 @@
           failed_when: not registriesd_stat.stat.exists or
             not registriesd_stat.stat.isdir
 
-        - name: Check if containers are running
-          command: podman inspect {{ item[0] }} --format {{ __fmt | quote }}
+        - name: Check if pods are running
+          command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
           changed_when: false
           register: __output
-          failed_when: __output.stdout != 'running'
+          failed_when: __output.stdout != 'Running'
           become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
           vars:
-            __fmt: "{{ '{' ~ '{.State.Status}' ~ '}' }}"
+            __fmt: "{{ '{' ~ '{.State}' ~ '}' }}"
           loop: "{{ test_names_users }}"
 
-        - name: Check services
-          systemd:
-            name: "{{ 'lsr_container-' ~ item[0] ~ '.service' }}"
-            state: started
-            scope: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+        - name: Check Services
+          shell: |
+            set -euo pipefail
+            systemctl --{{ __state }} list-units -a -l --plain | \
+              grep -E '{{ __regex }} '
           become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
-          register: __check_state
-          failed_when: __check_state is changed
+          environment:
+            XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
           loop: "{{ test_names_users }}"
+          vars:
+            __state: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+            __regex: >-
+              ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
+              ]+active
 
         - name: Check ports, data
           uri:
@@ -140,35 +238,41 @@
             return_content: true
           register: __return
           failed_when: __return.content != "123"
-          loop: [8080, 8081, 8082]
+          loop: [15001, 15002]
 
         - name: Run role again to test for idempotency
           include_role:
             name: linux-system-roles.podman
           vars:
-            podman_containers: "{{ __podman_containers }}"
+            podman_kube_specs: "{{ __podman_kube_specs |
+              union([__podman_use_kube_file]) | list }}"
 
-        - name: Check if containers are running
-          command: podman inspect {{ item[0] }} --format {{ __fmt | quote }}
+        - name: Check if pods are running
+          command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
           changed_when: false
           register: __output
-          failed_when: __output.stdout != 'running'
+          failed_when: __output.stdout != 'Running'
           become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
           vars:
-            __fmt: "{{ '{' ~ '{.State.Status}' ~ '}' }}"
+            __fmt: "{{ '{' ~ '{.State}' ~ '}' }}"
           loop: "{{ test_names_users }}"
 
-        - name: Check services
-          systemd:
-            name: "{{ 'lsr_container-' ~ item[0] ~ '.service' }}"
-            state: started
-            scope: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+        - name: Check Services
+          shell: |
+            set -euo pipefail
+            systemctl --{{ __state }} list-units -a -l --plain | \
+              grep -E '{{ __regex }} '
           become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
-          register: __check_state
-          failed_when: __check_state is changed
+          environment:
+            XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
           loop: "{{ test_names_users }}"
+          vars:
+            __state: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+            __regex: >-
+              ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
+              ]+active
 
         - name: Check ports, data
           uri:
@@ -176,17 +280,17 @@
             return_content: true
           register: __return
           failed_when: __return.content != "123"
-          loop: [8080, 8081, 8082]
+          loop: [15001, 15002, 15003]
 
-        - name: Check auto-update
-          command: podman auto-update --dry-run
-          changed_when: false
+        # - name: Check auto-update
+        #   command: podman auto-update --dry-run
+        #   changed_when: false
 
         - name: Manage user containers.d
           include_role:
             name: linux-system-roles.podman
           vars:
-            podman_containers: []
+            podman_kube_specs: []
             podman_run_as_user: user1
 
         - name: Check users containers.conf.d
@@ -200,36 +304,47 @@
           include_role:
             name: linux-system-roles.podman
           vars:
-            podman_containers: "{{ __podman_containers |
+            podman_kube_specs: "{{ __podman_kube_specs |
+              union([__podman_use_kube_file]) |
               map('combine', {'state':'absent'}) | list }}"
             podman_create_host_directories: false
             podman_firewall: []
             podman_selinux_ports: []
 
-        - name: Check if containers exist
-          command: podman inspect {{ item[0] }} --format {{ __fmt | quote }}
+        - name: Check that pods are not running
+          command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
           changed_when: false
           register: __output
-          failed_when: not __output is failed
+          failed_when:
+            - not __output.stderr is search(__err_pat1)
+            - not __output.stderr is search(__err_pat2)
           become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
           vars:
-            __fmt: "{{ '{' ~ '{.State.Status}' ~ '}' }}"
+            __fmt: "{{ '{' ~ '{.State}' ~ '}' }}"
+            __err_pat1: "Error: error creating tmpdir:"
+            __err_pat2: "no such pod$"
           loop: "{{ test_names_users }}"
 
-        - name: Check services
-          command: systemctl --{{ __scope }} status {{ __name }}
-          changed_when: false
-          register: __output
-          failed_when: not __output is failed
-          vars:
-            __name: "{{ 'lsr_container-' ~ item[0] ~ '.service' }}"
-            __scope: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+        - name: Check Services should be absent
+          shell: |
+            set -euo pipefail
+            systemctl --{{ __state }} list-units -a -l --plain | \
+              grep -E '{{ __regex }} '
           become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+          register: __output
+          failed_when: not __output is failed
+          environment:
+            XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
           loop: "{{ test_names_users }}"
+          vars:
+            __state: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+            __regex: >-
+              ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
+              ]+active
 
-        - name: Check root containers.conf.d
+        - name: Check root containers.conf.d should be absent
           stat:
             path: "{{ __podman_containers_conf_system|dirname }}"
           register: containersd_stat

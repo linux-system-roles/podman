@@ -1,6 +1,6 @@
 - name: Stop and disable service
   systemd:
-    name: "{{ __podman_service_name }}"
+    name: "{{ __podman_service_name.stdout }}"
     scope: "{{ __podman_systemd_scope }}"
     state: stopped
     enabled: false
@@ -15,40 +15,19 @@
   vars:
     __service_error: Could not find the requested service
 
-- name: Remove systemd unit file
-  file:
-    path: "{{ __podman_systemd_unit_filename }}"
-    state: absent
-
-- name: Find systemd unit files if not root
-  find:
-    paths: "{{ __podman_systemd_path }}"
-  become: true
-  become_user: "{{ __podman_user }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-  register: __podman_systemd_unit_files
-  when: __podman_rootless
-
-- name: Remove systemd files directory if empty and user not root
-  file:
-    path: "{{ __podman_systemd_path }}"
-    state: absent
-  become: true
-  become_user: "{{ __podman_user }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-  when:
-    - __podman_rootless
-    - __podman_systemd_unit_files.matched == 0
-
-- name: Remove container
-  containers.podman.podman_container: "{{ __podman_container }}"
+- name: Remove pod/containers
+  containers.podman.podman_play: "{{ __podman_kube_spec |
+    combine({'kube_file': __podman_kube_file}) }}"
   environment:
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   become: "{{ __podman_rootless | ternary(true, omit) }}"
   become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
   register: __podman_removed
+
+- name: Remove kubernetes yaml file
+  file:
+    path: "{{ __podman_kube_file }}"
+    state: absent
 
 - name: Gather facts for all containers
   containers.podman.podman_container_info:
