@@ -83,7 +83,7 @@ The role will use `dbuser:dbgroup` `0600` for `/var/lib/data`, and `root:root`
 ### podman_firewall
 
 This is a `list` of `dict` in the same format as used by the
-`fedora.linux_system_role.firewall` role.  Use this to specify ports that you
+`fedora.linux_system_roles.firewall` role.  Use this to specify ports that you
 want the role to manage in the firewall.
 
 ```yaml
@@ -94,7 +94,7 @@ podman_firewall:
 ### podman_selinux_ports
 
 This is a `list` of `dict` in the same format as used by the
-`fedora.linux_system_role.selinux` role.  Use this if you want the role to
+`fedora.linux_system_roles.selinux` role.  Use this if you want the role to
 manage the SELinux policy for ports used by the role.
 
 ```yaml
