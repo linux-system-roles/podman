@@ -46,7 +46,10 @@ except for the following:
   `dict` in Kubernetes YAML format.  It will be used as the contents of
   `kube_file` on the managed node.  Do not specify this if you specify
   `kube_file_src`. `kube_file_content` takes precedence over `kube_file_src`.
-* `kube_file` - If you specify either `kube_file_src` or `kube_file_content`, you
+* `kube_file` - This is the name of a file on the managed node that contains the
+  Kubernetes specification of the container/pod.  You typically do not have to specify
+  this unless you need to somehow copy this file to the managed node outside of the
+  role.  If you specify either `kube_file_src` or `kube_file_content`, you
   do not have to specify this.  It is highly recommended to omit `kube_file` and
   instead specify either `kube_file_src` or `kube_file_content` and let the role
   manage the file path and name.
