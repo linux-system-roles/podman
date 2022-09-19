@@ -43,3 +43,9 @@ __podman_registries_conf_system: >-
   /etc/containers/registries.conf.d/{{ __podman_registries_conf_file }}
 __podman_registries_conf_user: >-
   .config/containers/registries.conf.d/{{ __podman_registries_conf_file }}
+
+# location for system kubernetes yaml files
+__podman_system_kube_path: "/etc/containers/ansible-kubernetes.d"
+
+# location for user kubernetes yaml files
+__podman_user_kube_path: "/.config/containers/ansible-kubernetes.d"

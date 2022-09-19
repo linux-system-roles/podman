@@ -6,6 +6,8 @@ run `podman` containers.
 
 ## Requirements
 
+The role requires podman version 4.2 or later.
+
 The role requires the following collections:
 * `containers.podman`
 * `fedora.linux_system_roles` 
@@ -16,26 +18,19 @@ ansible-galaxy collection install -vv -r meta/collection-requirements.yml
 
 ## Role Variables
 
-### podman_containers
+### podman_kube_specs
 
 This is a `list`.  Each element of the list is a `dict` describing a podman
-container and corresponding systemd unit to manage.  The format of the `dict` is
-mostly like the [podman_container
-module](https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_container_module.html#ansible-collections-containers-podman-podman-container-module)
+pod and corresponding systemd unit to manage.  The format of the `dict` is
+mostly like the [podman_play
+module](https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_play_module.html#ansible-collections-containers-podman-podman-play-module)
 except for the following:
 
-* `generate_systemd` - If you specify a value of `true`, then the role will
-  create a systemd unit to run the container using the role default variables.
-  Or, you can specify a `dict` in the `podman_container` module format.
-* `generate_systemd.container_prefix` is hard-coded to `lsr_container`
-* `generate_systemd.separator` is hard-coded to `-`
-* `generate_systemd.path` is hard-coded to `/etc/systemd/system` for root
-  containers, and `$HOME/.config/systemd/user` for non-root containers
-* `run_as_user` - Use this to specify a per-container user.  If you do not
+* `run_as_user` - Use this to specify a per-pod user.  If you do not
   specify this, then the global default `podman_run_as_user` value will be used.
   Otherwise, `root` will be used.  NOTE: The user must already exist - the role
   will not create.
-* `run_as_group` - Use this to specify a per-container group.  If you do not
+* `run_as_group` - Use this to specify a per-pod group.  If you do not
   specify this, then the global default `podman_run_as_group` value will be
   used.  Otherwise, `root` will be used.  NOTE: The group must already exist -
   the role will not create.
@@ -43,17 +38,47 @@ except for the following:
   specify this, then the global default `podman_systemd_unit_scope` will be
   used.  Otherwise, the scope will be `system` for root containers, and `user`
   for user containers.
+* `kube_file_src` - This is the name of a file on the controller node which will
+  be copied to `kube_file` on the managed node.  This is a file in Kubernetes
+  YAML format.  Do not specify this if you specify `kube_file_content`.
+  `kube_file_content` takes precedence over `kube_file_src`.
+* `kube_file_content` - This is either a string in Kubernetes YAML format, or a
+  `dict` in Kubernetes YAML format.  It will be used as the contents of
+  `kube_file` on the managed node.  Do not specify this if you specify
+  `kube_file_src`. `kube_file_content` takes precedence over `kube_file_src`.
+* `kube_file` - If you specify either `kube_file_src` or `kube_file_content`, you
+  do not have to specify this.  It is highly recommended to omit `kube_file` and
+  instead specify either `kube_file_src` or `kube_file_content` and let the role
+  manage the file path and name.
+  * The file basename will be the `metadata.name` value from the K8s yaml, with a
+    `.yml` suffix appended to it.
+  * The directory will be `/etc/containers/ansible-kubernetes.d` for system services.
+  * The directory will be `$HOME/.config/containers/ansible-kubernetes.d` for user services.
+
+For example, if you have
+```yaml
+    podman_kube_specs:
+      - state: started
+        kube_file_content:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: myappname
+```
+This will be copied to the file `/etc/containers/ansible-kubernetes.d/myappname.yml` on
+the managed node.
 
 ### podman_create_host_directories
 
 This is a boolean, default value is `false`.  If `true`, the role will ensure
-host directories specified in host mounts in `volume` and `mount` specifications
-for the containers in `podman_containers`.  NOTE: Directories must be specified
-as absolute paths (for root containers), or paths relative to the home directory
-(for non-root containers), in order for the role to manage them.  Anything else
-will be assumed to be some other sort of volume and will be ignored.
-The role will apply its default ownership/permissions to the directories. If you
-need to set ownership/permissions, see `podman_host_directories`.
+host directories specified in host mounts in `volumes.hostPath` specifications
+in the Kubernetes YAML given in `podman_kube_specs`.  NOTE: Directories must be
+specified as absolute paths (for root containers), or paths relative to the home
+directory (for non-root containers), in order for the role to manage them.
+Anything else will be assumed to be some other sort of volume and will be
+ignored. The role will apply its default ownership/permissions to the
+directories. If you need to set ownership/permissions, see
+`podman_host_directories`.
 
 ### podman_host_directories
 
@@ -107,19 +132,19 @@ podman_selinux_ports:
 ### podman_run_as_user
 
 This is the name of the user to use for all rootless containers.  You can also
-specify per-container username with `run_as_user` in `podman_containers`.  NOTE:
+specify per-container username with `run_as_user` in `podman_kube_specs`.  NOTE:
   The user must already exist - the role will not create.
 
 ### podman_run_as_group
 
 This is the name of the group to use for all rootless containers.  You can also
-specify per-container group name with `run_as_group` in `podman_containers`.
+specify per-container group name with `run_as_group` in `podman_kube_specs`.
   NOTE: The group must already exist - the role will not create.
 
 ### podman_systemd_unit_scope
 
 This is systemd scope to use by default for all systemd units.  You can also
-specify per-container scope with `systemd_unit_scope` in `podman_containers`. By
+specify per-container scope with `systemd_unit_scope` in `podman_kube_specs`. By
 default, rootless containers will use `user` and root containers will use
 `system`.
 
@@ -140,39 +165,40 @@ None.
     podman_firewall:
       - port: 8080-8081/tcp
         state: enabled
+      - port: 12340/tcp
+        state: enabled
     podman_selinux_ports:
       - ports: 8080-8081
         setype: http_port_t
-    podman_containers:
-      - name: my_user_service
-        image: quay.io/a_service/an_image:v4.1
-        rm: true
-        tty: true
-        volume:
-          - /var/lib/my_service:/var/www:Z
-        publish:
-          - "8080:80"
-        generate_systemd: true
-        command: /bin/busybox-extras httpd -f -p 80
-        workdir: /var/www
+    podman_kube_specs:
+      - state: started
         run_as_user: dbuser
         run_as_group: dbgroup
-        labels:
-          io.containers.autoupdate: registry
-      - name: my_system_service
-        image: quay.io/another_service/an_image:v4.2
-        rm: true
-        tty: true
-        volume:
-          - /var/lib/my_service:/var/www:Z
-        publish:
-          - "8081:80"
-        generate_systemd:
-          restart_policy: always
-        command: /bin/busybox-extras httpd -f -p 80
-        workdir: /var/www
-        labels:
-          io.containers.autoupdate: registry
+        kube_file_content:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: db
+          spec:
+            containers:
+              - name: db
+                image: quay.io/db/db:stable
+                ports:
+                  - containerPort: 1234
+                    hostPort: 12340
+                volumeMounts:
+                  - mountPath: /var/lib/db:Z
+                    name: db
+            volumes:
+              - name: db
+                hostPath:
+                  path: /var/lib/db
+      - state: started
+        run_as_user: webapp
+        run_as_group: webapp
+        kube_file_src: /path/to/webapp.yml
+  roles:
+    - linux-system-roles.podman
 ```
 
 ## License
@@ -183,4 +209,4 @@ MIT.
 
 Based on `podman-container-systemd` by Ilkka Tengvall <ilkka.tengvall@iki.fi>.
 
-Authors: Adam Miller, Thom Carlin, Valentin Rothberg, Rich Megginson
+Authors: Thom Carlin, Rich Megginson, Adam Miller, Valentin Rothberg

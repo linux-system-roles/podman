@@ -1,0 +1,167 @@
+- name: Check if user is lingering
+  stat:
+    path: "/var/lib/systemd/linger/{{ __podman_user }}"
+  register: __podman_user_lingering
+  when: __podman_rootless | bool
+
+- name: Enable lingering if needed
+  command: loginctl enable-linger {{ __podman_user }}
+  when:
+    - __podman_rootless | bool
+    - not __podman_user_lingering.stat.exists
+
+- name: Get the host mount volumes
+  set_fact:
+    __podman_volumes: "{{ (__dir_vols + __notype_vols) | map(attribute='path')
+      | unique | list }}"
+  vars:
+    __host_paths: "{{ __podman_kube['spec']['volumes'] | map('dict2items')
+      | list | flatten |
+      selectattr('key', 'match', '^hostPath$') | map(attribute='value') |
+      list }}"
+    __dir_vols: "{{ __host_paths | selectattr('type', 'defined') |
+      selectattr('type', 'match', '^Directory') | list }}"
+    __notype_vols: "{{ __host_paths | rejectattr('type', 'defined') | list }}"
+  when:
+    - podman_create_host_directories | bool
+    - "'volumes' in __podman_kube['spec']"
+
+- name: Create host directories
+  file: "{{ __defaults | combine(podman_host_directories[__hostitem])
+            if __hostitem in podman_host_directories | d({})
+            else __defaults }}"
+  vars:
+    __hostitem: "{{ item if item in podman_host_directories | d({})
+      else 'DEFAULT' }}"
+    __owner_group: "{{ {'owner': __podman_user, 'group': __podman_group}
+      if __podman_rootless else {'owner': 'root', 'group': 'root'} }}"
+    __defaults: "{{ {'path': item} | combine(__podman_hostdirs_defaults) |
+      combine(__owner_group) }}"
+  loop: "{{ __podman_volumes }}"
+  when:
+    - podman_create_host_directories | bool
+    - __podman_volumes | d([]) | length > 0
+
+- name: Ensure container images are present
+  containers.podman.podman_image:
+    name: "{{ item }}"
+    force: true
+    username: "{{ container_image_user | default(omit) }}"
+    password: "{{ container_image_password | default(omit) }}"
+  register: __podman_image_updated
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  loop: "{{ (__images + __init_images) | unique | list }}"
+  vars:
+    __images: "{{ __podman_kube['spec']['containers'] |
+      selectattr('image', 'defined') | map(attribute='image') | list
+      if 'containers' in __podman_kube['spec']
+      else [] }}"
+    __init_images: "{{ __podman_kube['spec']['initContainers'] |
+      selectattr('image', 'defined') | map(attribute='image') | list
+      if 'initContainers' in __podman_kube['spec']
+      else [] }}"
+
+- name: Check the kubernetes yaml file
+  stat:
+    path: "{{ __podman_kube_file }}"
+  register: __podman_kube_stat
+  failed_when:
+    - __podman_kube is none
+    - not __podman_kube_stat.stat.exists
+
+- name: Ensure the kubernetes directory is present
+  file:
+    path: "{{ __podman_kube_file | dirname }}"
+    state: directory
+    owner: "{{ __podman_user }}"
+    group: "{{ __podman_group }}"
+    mode: "0700"
+  when: not __podman_kube is none
+
+- name: Ensure kubernetes yaml files are present
+  copy:
+    content: "{{ __podman_kube | to_nice_yaml }}"
+    dest: "{{ __podman_kube_file }}"
+    owner: "{{ __podman_user }}"
+    group: "{{ __podman_group }}"
+    mode: "0600"
+  register: __podman_copy
+  when: not __podman_kube is none
+
+- name: Update containers/pods
+  containers.podman.podman_play: "{{ __podman_kube_spec |
+    combine({'kube_file': __podman_kube_file}) }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  register: __podman_play_info
+
+- name: Reload systemctl  # noqa no-handler
+  systemd:
+    daemon_reload: true
+    scope: "{{ __podman_systemd_scope }}"
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  when:
+    - __podman_play_info is changed or __podman_copy is changed
+    - __podman_activate_systemd_unit | bool
+
+- name: Enable service  # noqa no-handler
+  systemd:
+    name: "{{ __podman_service_name.stdout }}"
+    scope: "{{ __podman_systemd_scope }}"
+    enabled: true
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  when:
+    - __podman_play_info is changed or __podman_copy is changed
+    - __podman_activate_systemd_unit | bool
+
+- name: Start service  # noqa no-handler
+  systemd:
+    name: "{{ __podman_service_name.stdout }}"
+    scope: "{{ __podman_systemd_scope }}"
+    state: started
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  register: __podman_service_started
+  when:
+    - __podman_play_info is changed or __podman_copy is changed
+    - __podman_activate_systemd_unit | bool
+
+- name: Restart service  # noqa no-handler
+  systemd:
+    name: "{{ __podman_service_name.stdout }}"
+    scope: "{{ __podman_systemd_scope }}"
+    state: restarted
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  when:
+    - not __podman_service_started is changed
+    - __podman_play_info is changed or __podman_copy is changed
+    - __podman_activate_systemd_unit | bool
+
+# auto update not yet working for kube play pods/containers
+# - name: Ensure auto update is running for images
+#   become: "{{ __podman_rootless | ternary(true, omit) }}"
+#   become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+#   environment:
+#     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+#   systemd:
+#     name: podman-auto-update.timer
+#     daemon_reload: true
+#     scope: "{{ __podman_systemd_scope }}"
+#     state: started
+#     enabled: true
