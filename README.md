@@ -40,17 +40,19 @@ except for the following:
   for user containers.
 * `kube_file_src` - This is the name of a file on the controller node which will
   be copied to `kube_file` on the managed node.  This is a file in Kubernetes
-  YAML format.
-* `kube_file_content` - This is either a string in Kubernetes YAML format, or
-  a `dict` in Kubernetes YAML format.  It will be used as the contents of
-  `kube_file` on the managed node.
+  YAML format.  Do not specify this if you specify `kube_file_content`.
+  `kube_file_content` takes precedence over `kube_file_src`.
+* `kube_file_content` - This is either a string in Kubernetes YAML format, or a
+  `dict` in Kubernetes YAML format.  It will be used as the contents of
+  `kube_file` on the managed node.  Do not specify this if you specify
+  `kube_file_src`. `kube_file_content` takes precedence over `kube_file_src`.
 * `kube_file` - If you specify either `kube_file_src` or `kube_file_content`, you
   do not have to specify this.  It is highly recommended to omit `kube_file` and
   instead specify either `kube_file_src` or `kube_file_content` and let the role
   manage the file path and name.
   * The file basename will be the `metadata.name` value from the K8s yaml, with a
     `.yml` suffix appended to it.
-  * The directory will be `/etc/containers/ansible-kubernetes.d` for system services
+  * The directory will be `/etc/containers/ansible-kubernetes.d` for system services.
   * The directory will be `$HOME/.config/containers/ansible-kubernetes.d` for user services.
 
 For example, if you have
