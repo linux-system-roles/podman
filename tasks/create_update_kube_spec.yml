@@ -38,6 +38,8 @@
     __defaults: "{{ {'path': item} | combine(__podman_hostdirs_defaults) |
       combine(__owner_group) }}"
   loop: "{{ __podman_volumes }}"
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
   when:
     - podman_create_host_directories | bool
     - __podman_volumes | d([]) | length > 0

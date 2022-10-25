@@ -3,6 +3,9 @@
 - name: Ensure that the role runs with default parameters
   hosts: all
   vars:
+    podman_host_directories:
+      "/tmp/httpd1-create":
+        mode: "0777"
     podman_run_as_user: root
     test_names_users:
       - [httpd1, user1, 1001]
@@ -221,6 +224,10 @@
           failed_when: __return.content != "123"
           loop: [15001, 15002]
 
+        - name: Check host directories
+          command: ls -alrtF /tmp/{{ item[0] }}-create
+          loop: "{{ test_names_users }}"
+
         - name: Run role again to test for idempotency
           include_role:
             name: linux-system-roles.podman
@@ -329,3 +336,8 @@
           loop: [httpd1, httpd2, httpd3]
           tags:
             - tests::cleanup
+
+        - name: Remove kube file src
+          file:
+            path: "{{ __kube_file_src.path }}"
+            state: absent
