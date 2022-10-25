@@ -9,7 +9,6 @@ __podman_packages: [podman]
 # User can override these in podman_host_directories
 __podman_hostdirs_defaults:
   state: directory
-  mode: "0644"
 
 # defaults applied when adding ports
 __podman_ports_defaults:
