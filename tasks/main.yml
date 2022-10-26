@@ -7,6 +7,7 @@
   package:
     name: "{{ __podman_packages }}"
     state: present
+  become: yes
 
 - name: Get podman version
   command: podman --version
