@@ -3,10 +3,15 @@
 - name: Set platform/version specific variables
   include_tasks: set_vars.yml
 
+- name: Gather the package facts
+  package_facts:
+
 - name: Ensure required packages are installed
   package:
     name: "{{ __podman_packages }}"
     state: present
+  become: true
+  when: (__podman_packages | difference(ansible_facts.packages))
 
 - name: Get podman version
   command: podman --version
