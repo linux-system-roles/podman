@@ -1,4 +1,4 @@
-# Role Name
+# podman
 ![CI Testing](https://github.com/linux-system-roles/podman/workflows/tox/badge.svg)
 
 This role manages `podman` configuration, containers, and systemd services which
