@@ -292,12 +292,16 @@
           failed_when:
             - not __output.stderr is search(__err_pat1)
             - not __output.stderr is search(__err_pat2)
+            - not __output.stderr is search(__err_pat3)
+            - not __output.stderr is search(__err_pat4)
           become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
           vars:
             __fmt: "{{ '{' ~ '{.State}' ~ '}' }}"
-            __err_pat1: "Error: error creating tmpdir:"
+            __err_pat1: "Error: (error )?creating tmpdir:"
             __err_pat2: "no such pod$"
+            __err_pat3: "Error: creating events dirs"
+            __err_pat4: "Error: inspecting object: no such pod"
           loop: "{{ test_names_users }}"
 
         - name: Check Services should be absent
@@ -309,6 +313,7 @@
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
           register: __output
           failed_when: not __output is failed
+          changed_when: false
           environment:
             XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
           loop: "{{ test_names_users }}"

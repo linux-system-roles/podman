@@ -14,8 +14,8 @@ galaxy_info:
         - 38
     - name: EL
       versions:
-        - 8
-        - 9
+        - "8"
+        - "9"
 
   galaxy_tags: [podman, containers]
 
