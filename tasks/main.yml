@@ -18,7 +18,7 @@
   changed_when: false
   register: __podman_version_output
 
-- name: podman package version must be 4.2 or later
+- name: Podman package version must be 4.2 or later
   fail:
     msg: >
       podman package version {{ __podman_version }} is too old -
