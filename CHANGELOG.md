@@ -1,6 +1,23 @@
 Changelog
 =========
 
+[1.0.1] - 2022-11-17
+--------------------
+
+### New Features
+
+- none
+
+### Bug Fixes
+
+- ensure role works with podman 4.3
+- ensure role works with ansible-core 2.14
+- ensure role passes ansible-lint 6.x
+
+### Other Changes
+
+- fix role name
+
 [1.0.0] - 2022-11-01
 --------------------
 
