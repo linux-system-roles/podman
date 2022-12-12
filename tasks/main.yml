@@ -28,18 +28,11 @@
     __podman_version: "{{
       (__podman_version_output.stdout.split())[2] }}"
 
-- name: Get user information
-  getent:
-    database: passwd
-    key: "{{ podman_run_as_user }}"
-    fail_key: false
-
-- name: Fail if user does not exist
-  fail:
-    msg: >
-      The given podman user [{{ podman_run_as_user }}] does not exist -
-      cannot continue
-  when: not ansible_facts['getent_passwd'][podman_run_as_user]
+- name: Check user and group information
+  include_tasks: handle_user_group.yml
+  vars:
+    __podman_user: "{{ podman_run_as_user }}"
+    __podman_kube_spec_item: {}
 
 - name: Set config file paths
   set_fact:
