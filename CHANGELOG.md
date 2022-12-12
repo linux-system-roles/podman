@@ -1,6 +1,25 @@
 Changelog
 =========
 
+[1.1.0] - 2022-12-12
+--------------------
+
+### New Features
+
+
+- add checking for subuid, subgid
+
+Ensure that the specified user is present in `/etc/subuid`.
+Ensure that the specified group is present in `/etc/subgid`.
+
+### Bug Fixes
+
+- none
+
+### Other Changes
+
+- none
+
 [1.0.1] - 2022-11-17
 --------------------
 
