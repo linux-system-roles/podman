@@ -16,6 +16,18 @@ Use this to install the collections:
 ansible-galaxy collection install -vv -r meta/collection-requirements.yml
 ```
 
+### Users, groups, subuid, subgid
+
+Users and groups specified in `podman_run_as_user`, `podman_run_as_group`, and
+specified in a kube spec as `run_as_user` and `run_as_group` have the following
+restrictions:
+* They must be already present on the system - the role will not create the
+  users or groups - the role will exit with an error if a non-existent user or
+  group is specified
+* They must already exist in `/etc/subuid` and `/etc/subgid` - the role will
+  exit with an error if a specified user is not present in `/etc/subuid`, or if
+  a specified group is not in `/etc/subgid`
+
 ## Role Variables
 
 ### podman_kube_specs
@@ -29,11 +41,11 @@ except for the following:
 * `run_as_user` - Use this to specify a per-pod user.  If you do not
   specify this, then the global default `podman_run_as_user` value will be used.
   Otherwise, `root` will be used.  NOTE: The user must already exist - the role
-  will not create.
+  will not create.  The user must be present in `/etc/subuid`.
 * `run_as_group` - Use this to specify a per-pod group.  If you do not
   specify this, then the global default `podman_run_as_group` value will be
   used.  Otherwise, `root` will be used.  NOTE: The group must already exist -
-  the role will not create.
+  the role will not create.  The group must be present in `/etc/subgid`.
 * `systemd_unit_scope` - The scope to use for the systemd unit.  If you do not
   specify this, then the global default `podman_systemd_unit_scope` will be
   used.  Otherwise, the scope will be `system` for root containers, and `user`
@@ -136,13 +148,15 @@ podman_selinux_ports:
 
 This is the name of the user to use for all rootless containers.  You can also
 specify per-container username with `run_as_user` in `podman_kube_specs`.  NOTE:
-  The user must already exist - the role will not create.
+The user must already exist - the role will not create.  The user must be
+present in `/etc/subuid`.
 
 ### podman_run_as_group
 
 This is the name of the group to use for all rootless containers.  You can also
 specify per-container group name with `run_as_group` in `podman_kube_specs`.
-  NOTE: The group must already exist - the role will not create.
+NOTE: The group must already exist - the role will not create.  The group must
+be present in `/etc/subgid`.
 
 ### podman_systemd_unit_scope
 
