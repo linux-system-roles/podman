@@ -229,8 +229,9 @@ None
 
 None.
 
-## Example Playbook
+## Example Playbooks
 
+Create rootless container with volume mount:
 ```yaml
 - hosts: all
   vars:
@@ -272,6 +273,38 @@ None.
         kube_file_src: /path/to/webapp.yml
   roles:
     - linux-system-roles.podman
+```
+
+Create container running as root with Podman volume:
+```yaml
+- hosts: all
+  vars:
+    podman_firewall:
+      - port: 8080/tcp
+        state: enabled
+    podman_kube_specs:
+      - state: started
+        kube_file_content:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: ubi8-httpd
+          spec:
+            containers:
+              - name: ubi8-httpd
+                image: registry.access.redhat.com/ubi8/httpd-24
+                ports:
+                  - containerPort: 8080
+                    hostPort: 8080
+                volumeMounts:
+                  - mountPath: /var/www/html:Z
+                    name: ubi8-html
+            volumes:
+              - name: ubi8-html
+                persistentVolumeClaim:
+                  claimName: ubi8-html-volume
+  roles:
+    - linux_system_roles.podman
 ```
 
 ## License
