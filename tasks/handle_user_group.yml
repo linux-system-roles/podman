@@ -1,3 +1,4 @@
+---
 - name: Get user information
   getent:
     database: passwd

@@ -1,3 +1,4 @@
+---
 - name: Stop and disable service
   systemd:
     name: "{{ __podman_service_name.stdout }}"
