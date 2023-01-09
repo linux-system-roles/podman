@@ -1,3 +1,4 @@
+---
 - name: Check if user is lingering
   stat:
     path: "/var/lib/systemd/linger/{{ __podman_user }}"

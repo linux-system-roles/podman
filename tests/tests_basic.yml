@@ -160,6 +160,7 @@
           copy:
             content: "{{ __podman_kube_file_content }}"
             dest: "{{ __kube_file_src.path }}"
+            mode: 0600
           delegate_to: localhost
 
         - name: Create host directories for data
@@ -205,6 +206,7 @@
             set -euo pipefail
             systemctl --{{ __state }} list-units -a -l --plain | \
               grep -E '{{ __regex }} '
+          changed_when: false
           become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
           environment:
@@ -227,6 +229,7 @@
         - name: Check host directories
           command: ls -alrtF /tmp/{{ item[0] }}-create
           loop: "{{ test_names_users }}"
+          changed_when: false
 
         - name: Run role again to test for idempotency
           include_role:
@@ -251,6 +254,7 @@
             set -euo pipefail
             systemctl --{{ __state }} list-units -a -l --plain | \
               grep -E '{{ __regex }} '
+          changed_when: false
           become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
           environment:
@@ -278,6 +282,7 @@
           include_role:
             name: linux-system-roles.podman
           vars:
+            # noqa jinja[spacing]
             podman_kube_specs: "{{ __podman_kube_specs |
               union([__podman_use_kube_file]) |
               map('combine', {'state':'absent'}) | list }}"
