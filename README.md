@@ -10,7 +10,7 @@ The role requires podman version 4.2 or later.
 
 The role requires the following collections:
 * `containers.podman`
-* `fedora.linux_system_roles` 
+* `fedora.linux_system_roles`
 Use this to install the collections:
 ```
 ansible-galaxy collection install -vv -r meta/collection-requirements.yml
@@ -38,6 +38,10 @@ mostly like the [podman_play
 module](https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_play_module.html#ansible-collections-containers-podman-podman-play-module)
 except for the following:
 
+* `state` - default is `created`.  This takes 3 values:
+  * `started` - Create the pods and systemd services, and start them running
+  * `created` - Create the pods and systemd services, but do not start them
+  * `absent` - Remove the pods and systemd services
 * `run_as_user` - Use this to specify a per-pod user.  If you do not
   specify this, then the global default `podman_run_as_user` value will be used.
   Otherwise, `root` will be used.  NOTE: The user must already exist - the role
