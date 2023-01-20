@@ -81,7 +81,7 @@
     state: directory
     owner: "{{ __podman_user }}"
     group: "{{ __podman_group }}"
-    mode: "0700"
+    mode: "0755"
   when: not __podman_kube is none
 
 - name: Ensure kubernetes yaml files are present
@@ -90,7 +90,7 @@
     dest: "{{ __podman_kube_file }}"
     owner: "{{ __podman_user }}"
     group: "{{ __podman_group }}"
-    mode: "0600"
+    mode: "0644"
   register: __podman_copy
   when: not __podman_kube is none
 
