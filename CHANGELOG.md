@@ -1,6 +1,23 @@
 Changelog
 =========
 
+[1.1.1] - 2023-01-20
+--------------------
+
+### New Features
+
+- none
+
+### Bug Fixes
+
+- Ease permissions on kube spec dir and files (#44)
+
+### Other Changes
+
+- Add another example that shows using a Podman volume
+- ansible-lint 6.x fixes
+- add docs for state parameter (#43)
+
 [1.1.0] - 2022-12-12
 --------------------
 
