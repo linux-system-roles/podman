@@ -308,7 +308,7 @@ Create container running as root with Podman volume:
                 persistentVolumeClaim:
                   claimName: ubi8-html-volume
   roles:
-    - linux_system_roles.podman
+    - linux-system-roles.podman
 ```
 
 ## License
