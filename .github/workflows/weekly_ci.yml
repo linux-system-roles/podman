@@ -16,6 +16,11 @@ jobs:
   weekly_ci:
     runs-on: ubuntu-latest
     steps:
+      - name: Update pip, git
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y git
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -23,26 +28,10 @@ jobs:
         run: |
           set -euxo pipefail
 
-          get_main_branch() {
-              local br
-              br=$(git branch --list main)
-              if [ -n "$br" ]; then
-                  echo main
-                  return 0
-              fi
-              br=$(git branch --list master)
-              if [ -n "$br" ]; then
-                  echo master
-                  return 0
-              fi
-              echo UNKNOWN
-              return 1
-          }
-
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout ${{ env.BRANCH_NAME }} || git checkout -b ${{ env.BRANCH_NAME }}
-          git rebase $(get_main_branch)
+          git rebase main
           git commit --allow-empty -m "${{ env.COMMIT_MESSAGE }}"
           git push -f --set-upstream origin ${{ env.BRANCH_NAME }}
 

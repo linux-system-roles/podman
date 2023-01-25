@@ -5,12 +5,16 @@ on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - main
-      - master
   workflow_dispatch:
 jobs:
   ansible_lint:
     runs-on: ubuntu-latest
     steps:
+      - name: Update pip, git
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y git
       - name: Checkout repo
         uses: actions/checkout@v3
       - name: Fix up role meta/main.yml namespace and name
