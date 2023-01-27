@@ -1,6 +1,21 @@
 Changelog
 =========
 
+[1.1.2] - 2023-01-26
+--------------------
+
+### New Features
+
+- none
+
+### Bug Fixes
+
+- fix typo in README (#46)
+
+### Other Changes
+
+- none
+
 [1.1.1] - 2023-01-20
 --------------------
 
