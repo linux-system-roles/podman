@@ -1,4 +1,5 @@
 {{ ansible_managed | comment }}
+{{ "system_role:podman" | comment(prefix="", postfix="") }}
 {% if __conf is defined and __conf is iterable %}
 {% for section in __conf %}
 [{{ section }}]
