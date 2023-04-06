@@ -1,6 +1,14 @@
 Changelog
 =========
 
+[1.1.3] - 2023-04-06
+--------------------
+
+### Other Changes
+
+- Add README-ansible.md to refer Ansible intro page on linux-system-roles.github.io (#54)
+- Fingerprint RHEL System Role managed config files (#55)
+
 [1.1.2] - 2023-01-26
 --------------------
 
