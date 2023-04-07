@@ -134,14 +134,17 @@
         - name: Enable podman copr
           command: dnf copr enable rhcontainerbot/podman-next -y
           when: podman_use_copr | d(false)
+          changed_when: true
 
         - name: Install podman from updates-testing
           command: dnf -y install podman
           when: podman_use_copr | d(false)
+          changed_when: true
 
         - name: Podman version
           command: podman --version
           when: podman_use_copr | d(false)
+          changed_when: false
 
         - name: Create user
           user:

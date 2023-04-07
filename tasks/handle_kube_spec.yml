@@ -105,6 +105,7 @@
     {{ __podman_kube_file | quote }}
   register: __podman_service_name
   when: __podman_activate_systemd_unit | bool
+  changed_when: false
 
 - name: Cleanup containers and services
   include_tasks: cleanup_kube_spec.yml
