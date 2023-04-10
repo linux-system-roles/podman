@@ -10,6 +10,7 @@
   when:
     - __podman_rootless | bool
     - not __podman_user_lingering.stat.exists
+  changed_when: true
 
 - name: Get the host mount volumes
   set_fact:
