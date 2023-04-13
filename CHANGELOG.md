@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[1.1.4] - 2023-04-13
+--------------------
+
+### Other Changes
+
+- ansible-lint - changed_when required even with conditional tasks (#57)
+
 [1.1.3] - 2023-04-06
 --------------------
 
