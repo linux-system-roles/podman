@@ -14,7 +14,7 @@
 - name: Set per-container variables part 0
   set_fact:
     __podman_kube_spec: "{{ __podman_kube_spec_item |
-      dict2items | rejectattr('key', 'in', __del_params) |
+      dict2items | rejectattr('key', 'match', __del_params) |
       list | items2dict }}"
     __podman_kube_str: "{{ __podman_kube_spec_item['kube_file_content']
       if 'kube_file_content' in __podman_kube_spec_item
@@ -27,12 +27,8 @@
       and __podman_kube_spec_item['kube_file_src'] is exists
       else none }}"
   vars:
-    __del_params:
-      - kube_file_src
-      - kube_file_content
-      - run_as_user
-      - run_as_group
-      - systemd_unit_scope
+    __del_params: ^(kube_file_src|kube_file_content|run_as_user|run_as_group|\
+      systemd_unit_scope)$
 
 - name: Set per-container variables part 1
   set_fact:
