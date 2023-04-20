@@ -15,6 +15,7 @@
     podman_storage_conf:
       storage:
         runroot: /tmp
+        graphroot: /var/lib/containers/storage
     podman_policy_json:
       default:
         type: insecureAcceptAnything
