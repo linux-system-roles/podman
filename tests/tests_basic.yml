@@ -294,22 +294,17 @@
             podman_selinux_ports: []
 
         - name: Check that pods are not running
-          command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
+          command: podman pod exists {{ item[0] }}
           changed_when: false
           register: __output
           failed_when:
-            - not __output.stderr is search(__err_pat1)
-            - not __output.stderr is search(__err_pat2)
-            - not __output.stderr is search(__err_pat3)
-            - not __output.stderr is search(__err_pat4)
+            - not __output is failed
+            - item[1] == "root" or
+              not __output.stderr is search(__err_pat)
           become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
           become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
           vars:
-            __fmt: "{{ '{' ~ '{.State}' ~ '}' }}"
-            __err_pat1: "Error: (error )?creating tmpdir:"
-            __err_pat2: "no such pod$"
-            __err_pat3: "Error: creating events dirs"
-            __err_pat4: "Error: inspecting object: no such pod"
+            __err_pat: "Error: creating events dirs"
           loop: "{{ test_names_users }}"
 
         - name: Check Services should be absent
