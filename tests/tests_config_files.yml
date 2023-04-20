@@ -77,7 +77,7 @@
         - "{{ __podman_storage_conf_system }}"
         - "{{ __podman_policy_json_system }}"
 
-    - name: Run the role again with user config
+    - name: Run the role again with root config
       include_role:
         name: linux-system-roles.podman
         public: true
@@ -95,3 +95,17 @@
         - "{{ __podman_registries_conf_system }}"
         - "{{ __podman_storage_conf_system }}"
         - "{{ __podman_policy_json_system }}"
+
+    - name: Check for ansible_managed, fingerprint in generated files
+      include_tasks: tasks/check_header.yml
+      loop:
+        - /home/user1/{{ __podman_containers_conf_user }}
+        - /home/user1/{{ __podman_registries_conf_user }}
+        - /home/user1/{{ __podman_storage_conf_user }}
+        - "{{ __podman_containers_conf_system }}"
+        - "{{ __podman_registries_conf_system }}"
+        - "{{ __podman_storage_conf_system }}"
+      loop_control:
+        loop_var: __file
+      vars:
+        __fingerprint: "system_role:podman"
