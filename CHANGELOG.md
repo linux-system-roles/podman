@@ -1,6 +1,21 @@
 Changelog
 =========
 
+[1.1.5] - 2023-04-27
+--------------------
+
+### Bug Fixes
+
+- fix: graphroot required in storage.conf on Fedora 37
+- fix: Use match instead of in for test for jinja 2.7 support
+
+### Other Changes
+
+- test: use podman pod exists to check if pods absent/stopped
+- test: check generated files for ansible_managed, fingerprint
+- test: ensure the test works with ANSIBLE_GATHERING=explicit
+- ci: Add commitlint GitHub action to ensure conventional commits with feedback
+
 [1.1.4] - 2023-04-13
 --------------------
 
