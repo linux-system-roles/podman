@@ -1,4 +1,5 @@
 # podman
+
 ![CI Testing](https://github.com/linux-system-roles/podman/workflows/tox/badge.svg)
 
 This role manages `podman` configuration, containers, and systemd services which
@@ -8,10 +9,15 @@ run `podman` containers.
 
 The role requires podman version 4.2 or later.
 
+### Collection requirements
+
 The role requires the following collections:
+
 * `containers.podman`
 * `fedora.linux_system_roles`
+
 Use this to install the collections:
+
 ```
 ansible-galaxy collection install -vv -r meta/collection-requirements.yml
 ```
@@ -21,6 +27,7 @@ ansible-galaxy collection install -vv -r meta/collection-requirements.yml
 Users and groups specified in `podman_run_as_user`, `podman_run_as_group`, and
 specified in a kube spec as `run_as_user` and `run_as_group` have the following
 restrictions:
+
 * They must be already present on the system - the role will not create the
   users or groups - the role will exit with an error if a non-existent user or
   group is specified
@@ -39,9 +46,9 @@ module](https://docs.ansible.com/ansible/latest/collections/containers/podman/po
 except for the following:
 
 * `state` - default is `created`.  This takes 3 values:
-  * `started` - Create the pods and systemd services, and start them running
-  * `created` - Create the pods and systemd services, but do not start them
-  * `absent` - Remove the pods and systemd services
+   * `started` - Create the pods and systemd services, and start them running
+   * `created` - Create the pods and systemd services, but do not start them
+   * `absent` - Remove the pods and systemd services
 * `run_as_user` - Use this to specify a per-pod user.  If you do not
   specify this, then the global default `podman_run_as_user` value will be used.
   Otherwise, `root` will be used.  NOTE: The user must already exist - the role
@@ -69,12 +76,13 @@ except for the following:
   do not have to specify this.  It is highly recommended to omit `kube_file` and
   instead specify either `kube_file_src` or `kube_file_content` and let the role
   manage the file path and name.
-  * The file basename will be the `metadata.name` value from the K8s yaml, with a
+   * The file basename will be the `metadata.name` value from the K8s yaml, with a
     `.yml` suffix appended to it.
-  * The directory will be `/etc/containers/ansible-kubernetes.d` for system services.
-  * The directory will be `$HOME/.config/containers/ansible-kubernetes.d` for user services.
+   * The directory will be `/etc/containers/ansible-kubernetes.d` for system services.
+   * The directory will be `$HOME/.config/containers/ansible-kubernetes.d` for user services.
 
 For example, if you have
+
 ```yaml
     podman_kube_specs:
       - state: started
@@ -84,6 +92,7 @@ For example, if you have
           metadata:
             name: myappname
 ```
+
 This will be copied to the file `/etc/containers/ansible-kubernetes.d/myappname.yml` on
 the managed node.
 
@@ -121,6 +130,7 @@ podman_host_directories:
     group: root
     mode: "0644"
 ```
+
 The role will use `dbuser:dbgroup` `0600` for `/var/lib/data`, and `root:root`
 `0644` for all other host directories created by the role.
 
@@ -229,15 +239,13 @@ podman_policy_json:
 
 None
 
-## Dependencies
-
-None.
-
 ## Example Playbooks
 
 Create rootless container with volume mount:
+
 ```yaml
-- hosts: all
+- name: Manage podman containers and services
+  hosts: all
   vars:
     podman_create_host_directories: true
     podman_firewall:
@@ -280,8 +288,10 @@ Create rootless container with volume mount:
 ```
 
 Create container running as root with Podman volume:
+
 ```yaml
-- hosts: all
+- name: Manage podman root containers and services
+  hosts: all
   vars:
     podman_firewall:
       - port: 8080/tcp
