@@ -130,6 +130,10 @@
               path: /tmp/httpd3-create
   tasks:
     - name: Run basic tests
+      vars:
+        __podman_use_kube_file:
+          state: started
+          kube_file_src: "{{ __kube_file_src.path }}"
       block:
         - name: Enable podman copr
           command: dnf copr enable rhcontainerbot/podman-next -y
@@ -187,9 +191,6 @@
             name: linux-system-roles.podman
             public: true
           vars:
-            __podman_use_kube_file:
-              state: started
-              kube_file_src: "{{ __kube_file_src.path }}"
             podman_kube_specs: "{{ __podman_kube_specs |
               union([__podman_use_kube_file]) | list }}"
 
