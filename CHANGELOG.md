@@ -1,6 +1,18 @@
 Changelog
 =========
 
+[1.1.6] - 2023-05-26
+--------------------
+
+### Bug Fixes
+
+- fix: make role work on ansible-core 2.15
+
+### Other Changes
+
+- docs: Consistent contributing.md for all roles - allow role specific contributing.md section
+- docs: remove unused Dependencies section in README
+
 [1.1.5] - 2023-04-27
 --------------------
 
