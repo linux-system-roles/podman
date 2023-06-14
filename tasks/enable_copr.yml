@@ -1,0 +1,13 @@
+---
+# Primarily for testing unreleased versions
+- name: Enable podman copr on EL
+  command: >-
+    dnf -y copr enable rhcontainerbot/podman-next
+    centos-stream+epel-next-{{ ansible_facts['distribution_major_version'] }}
+  when: ansible_facts['distribution'] in ['RedHat', 'CentOS', 'Alma', 'Rocky']
+  changed_when: true
+
+- name: Enable podman copr on Fedora
+  command: dnf -y copr enable rhcontainerbot/podman-next
+  when: ansible_facts['distribution'] == 'Fedora'
+  changed_when: true

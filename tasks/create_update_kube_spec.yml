@@ -1,16 +1,9 @@
 ---
-- name: Check if user is lingering
-  stat:
-    path: "/var/lib/systemd/linger/{{ __podman_user }}"
-  register: __podman_user_lingering
-  when: __podman_rootless | bool
-
 - name: Enable lingering if needed
   command: loginctl enable-linger {{ __podman_user }}
-  when:
-    - __podman_rootless | bool
-    - not __podman_user_lingering.stat.exists
-  changed_when: true
+  when: __podman_rootless | bool
+  args:
+    creates: /var/lib/systemd/linger/{{ __podman_user }}
 
 - name: Get the host mount volumes
   set_fact:
@@ -73,7 +66,7 @@
     path: "{{ __podman_kube_file }}"
   register: __podman_kube_stat
   failed_when:
-    - __podman_kube is none
+    - not __podman_kube
     - not __podman_kube_stat.stat.exists
 
 - name: Ensure the kubernetes directory is present
@@ -83,7 +76,7 @@
     owner: "{{ __podman_user }}"
     group: "{{ __podman_group }}"
     mode: "0755"
-  when: not __podman_kube is none
+  when: __podman_kube | length > 0
 
 - name: Ensure kubernetes yaml files are present
   copy:
@@ -93,7 +86,7 @@
     group: "{{ __podman_group }}"
     mode: "0644"
   register: __podman_copy
-  when: not __podman_kube is none
+  when: __podman_kube | length > 0
 
 - name: Update containers/pods
   containers.podman.podman_play: "{{ __podman_kube_spec |

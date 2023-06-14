@@ -1,0 +1,202 @@
+# SPDX-License-Identifier: MIT
+---
+# file_src: path to a file on the controller to be copied to file on
+#   the managed node
+# file_content: a string or YAML dict representation of the content of
+#   file on the managed node
+# e.g. file_src corresponds to the `src` parameter of the Ansible `copy`
+#   module
+# file_content corresponds to the `content` parameter of the Ansible
+#   `copy` module
+# The goal here is that __podman_quadlet_spec contains only the items we want
+# in the final quadlet file - all of the other "meta" parameters managed by
+# the role are filtered out
+- name: Set per-container variables part 0
+  set_fact:
+    __podman_quadlet_spec: "{{ __podman_quadlet_spec_item |
+      dict2items | rejectattr('key', 'match', __del_params) |
+      list | items2dict }}"
+    # NOTE: the ini lookup only works with local files, and you must
+    # provide the section - you cannot parse an ini formatted string
+    __podman_quadlet_str: "{{ __podman_quadlet_spec_item['file_content']
+      if 'file_content' in __podman_quadlet_spec_item
+      else lookup('file', __podman_quadlet_spec_item['file_src'])
+      if 'file_src' in __podman_quadlet_spec_item
+      else lookup('template', __podman_quadlet_spec_item['template_src'])
+      if 'template_src' in __podman_quadlet_spec_item
+      else none }}"
+    __podman_quadlet_file_src: "{{ __podman_quadlet_spec_item['file_src']
+      if 'file_src' in __podman_quadlet_spec_item
+      else none }}"
+    __podman_quadlet_template_src: "{{
+      __podman_quadlet_spec_item['template_src']
+      if 'template_src' in __podman_quadlet_spec_item
+      else none }}"
+  vars:
+    __del_params: "^(file_src|file_content|file|run_as_user|run_as_group|\
+      systemd_unit_scope|name|type|state|activate_systemd_unit|template_src)$"
+
+- name: Fail if no quadlet spec is given
+  fail:
+    msg: >-
+      No quadlet spec given.  You must provide one of:
+      file, file_src, template_src, or a spec containing a name, type, and
+      fields for the quadlet
+  when:
+    - __podman_quadlet_spec | length == 0
+    - not __podman_quadlet_file_src
+    - not __podman_quadlet_str
+    - not __podman_quadlet_template_src
+
+- name: Set per-container variables part 1
+  set_fact:
+    __podman_user: "{{ __podman_quadlet_spec_item['run_as_user'] |
+      d(podman_run_as_user) }}"
+    __podman_systemd_unit_scope: "{{
+      __podman_quadlet_spec_item['systemd_unit_scope'] |
+      d(podman_systemd_unit_scope) }}"
+    __podman_state: "{{ __state }}"
+  vars:
+    __state: "{{ ((__podman_quadlet_spec_item['state'] | d('')) == 'absent') |
+      ternary('absent', 'created') }}"
+
+- name: Set per-container variables part 2
+  set_fact:
+    __podman_rootless: "{{ __podman_user != 'root' }}"
+    __podman_quadlet_name: "{{ __podman_quadlet_spec_item['name']
+      if 'name' in __podman_quadlet_spec_item else
+      __file | basename | splitext | first
+      if __file else
+      __podman_quadlet_file_src | basename | splitext | first
+      if __podman_quadlet_file_src else
+      __template_base | basename | splitext | first
+      if __template_base else none }}"
+    __podman_quadlet_type: "{{ __podman_quadlet_spec_item['type']
+      if 'type' in __podman_quadlet_spec_item else
+      __file | basename | splitext | last | replace('.', '')
+      if __file else
+      __podman_quadlet_file_src | basename | splitext | last | replace('.', '')
+      if __podman_quadlet_file_src else
+      __template_base | basename | splitext | last | replace('.', '')
+      if __template_base else none }}"
+    __podman_images_found: "{{ [__podman_quadlet_spec['Image']]
+      if 'Image' in __podman_quadlet_spec else none }}"
+  vars:
+    __file: "{{ __podman_quadlet_spec_item['file']
+      if 'file' in __podman_quadlet_spec_item
+      else none }}"
+    __template_base: "{{ __podman_quadlet_template_src |
+      regex_replace('[.]j2$', '')
+      if __podman_quadlet_template_src else '' }}"
+
+- name: Check user and group information
+  include_tasks: handle_user_group.yml
+  vars:
+    __podman_spec_item: "{{ __podman_quadlet_spec_item }}"
+
+- name: Set per-container variables part 3
+  set_fact:
+    __podman_xdg_runtime_dir: >-
+      /run/user/{{ ansible_facts["getent_passwd"][__podman_user][1] }}
+    __podman_user_home_dir: "{{
+      ansible_facts['getent_passwd'][__podman_user][4] }}"
+    __podman_systemd_scope: "{{ __podman_systemd_unit_scope
+      if __podman_systemd_unit_scope
+      and __podman_systemd_unit_scope | length > 0
+      else __podman_rootless | ternary('user', 'system') }}"
+    __podman_activate_systemd_unit: "{{
+      __podman_quadlet_spec_item['activate_systemd_unit'] |
+      d(podman_activate_systemd_unit) }}"
+    __podman_images_found: "{{ __podman_quadlet_str |
+      regex_search('(?m)^Image=\"?([^\"]+?)\"?$', '\\1')
+      if __podman_quadlet_str
+      and __podman_quadlet_type == 'container'
+      else __podman_quadlet_spec['Image'] | d(none) }}"
+    __podman_kube_yamls_raw: "{{ __podman_quadlet_str |
+      regex_search('(?m)^Yaml=\"?([^\"]+?)\"?$', '\\1')
+      if __podman_quadlet_str
+      and __podman_quadlet_type == 'kube'
+      else __podman_quadlet_spec['Yaml'] | d(none) }}"
+    __podman_service_name: "{{
+      __podman_quadlet_name ~ '.service'
+      if __podman_quadlet_type in ['container', 'kube', 'volume']
+      else none }}"
+
+- name: Set per-container variables part 4
+  set_fact:
+    __podman_quadlet_path: "{{ __podman_user_home_dir ~
+      __podman_user_quadlet_path
+      if __podman_rootless else __podman_system_quadlet_path }}"
+
+- name: Get kube yaml contents
+  slurp:
+    path: "{{ (__kube_yaml is abs) |
+      ternary(__kube_yaml, __podman_quadlet_path ~ '/' ~ __kube_yaml) }}"
+  register: __podman_kube_content
+  when:
+    - __podman_state != "absent"
+    - __podman_kube_yamls_raw | length > 0
+  vars:
+    __kube_yaml: "{{ __podman_kube_yamls_raw[0] }}"
+
+- name: Set per-container variables part 5
+  set_fact:
+    __podman_quadlet_file: "{{ __file if __file and __file is abs
+      else __podman_quadlet_path ~ '/' ~ __file
+      if __file
+      else __podman_quadlet_path ~ '/' ~ __podman_quadlet_name ~
+      '.' ~ __podman_quadlet_type }}"
+    __podman_images: "{{ __podman_images_found
+      if __podman_images_found
+      else __images + __init_images }}"
+    __podman_volumes: "{{ __volumes_from_unit_spec +
+      __volumes_from_kube_spec
+      if podman_create_host_directories else [] }}"
+  vars:
+    __file: "{{ __podman_quadlet_spec_item['file']
+      if 'file' in __podman_quadlet_spec_item
+      else none }}"
+    __podman_kube: "{{ __podman_kube_content.content | b64decode |
+      from_yaml_all if __podman_kube_content.content is defined
+      else none }}"
+    __images: "{{ __podman_kube | selectattr('spec', 'defined') |
+      map(attribute='spec') | selectattr('containers', 'defined') |
+      map(attribute='containers') | flatten | selectattr('image', 'defined') |
+      map(attribute='image') | list
+      if __podman_kube }}"
+    __init_images: "{{ __podman_kube | selectattr('spec', 'defined') |
+      map(attribute='spec') | selectattr('initContainers', 'defined') |
+      map(attribute='initContainers') | flatten |
+      selectattr('image', 'defined') | map(attribute='image') | list
+      if __podman_kube }}"
+    __volumes_from_unit_spec: "{{ __podman_quadlet_str |
+      regex_findall('(?m)^Volume=\"?([^:]+):.+$') |
+      reject('search', '[.]volume$') | list
+      if __podman_quadlet_str
+      and __podman_quadlet_type == 'container'
+      and podman_create_host_directories
+      else __podman_quadlet_spec.get('Container', {}).get('Volume', []) |
+        map('regex_search', '^([^:]+):.+$') | reject('search', '[.]volume$') |
+        select | list
+      if podman_create_host_directories else [] }}"
+    __host_paths: "{{ __podman_kube | selectattr('spec', 'defined') |
+      map(attribute='spec') | selectattr('volumes', 'defined') |
+      map(attribute='volumes') | flatten | map('dict2items') | list | flatten |
+      selectattr('key', 'match', '^hostPath$') | map(attribute='value') |
+      list if __podman_kube }}"
+    __dir_vols: "{{ __host_paths | selectattr('type', 'defined') |
+      selectattr('type', 'match', '^Directory') | list
+      if __podman_kube }}"
+    __notype_vols: "{{ __host_paths | rejectattr('type', 'defined') | list }}"
+    __volumes_from_kube_spec: "{{ (__dir_vols + __notype_vols) |
+      map(attribute='path') | unique | list
+      if __podman_kube
+      and podman_create_host_directories else [] }}"
+
+- name: Cleanup quadlets
+  include_tasks: cleanup_quadlet_spec.yml
+  when: __podman_state == "absent"
+
+- name: Create and update quadlets
+  include_tasks: create_update_quadlet_spec.yml
+  when: __podman_state != "absent"

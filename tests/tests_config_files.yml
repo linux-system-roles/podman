@@ -20,92 +20,131 @@
       default:
         type: insecureAcceptAnything
   tasks:
-    - name: Create user
-      user:
-        name: user1
-
-    - name: Run the role with user config
-      include_role:
-        name: linux-system-roles.podman
-        public: true
-
-    - name: Check that files exist and are non-null
-      stat:
-        path: "{{ item }}"
-      register: __stat
-      failed_when: not __stat.stat.exists or
-        __stat.stat.size == 0
-      loop:
-        - /home/user1/{{ __podman_containers_conf_user }}
-        - /home/user1/{{ __podman_registries_conf_user }}
-        - /home/user1/{{ __podman_storage_conf_user }}
-        - /home/user1/{{ __podman_policy_json_user }}
-
-    - name: Run the role again with user config
-      include_role:
-        name: linux-system-roles.podman
-        public: true
-
-    - name: Check that files still exist and are non-null
-      stat:
-        path: "{{ item }}"
-      register: __stat
-      failed_when: not __stat.stat.exists or
-        __stat.stat.size == 0
-      loop:
-        - /home/user1/{{ __podman_containers_conf_user }}
-        - /home/user1/{{ __podman_registries_conf_user }}
-        - /home/user1/{{ __podman_storage_conf_user }}
-        - /home/user1/{{ __podman_policy_json_user }}
-
-    - name: Run the role with root config
-      include_role:
-        name: linux-system-roles.podman
-        public: true
+    - name: Run the tests
       vars:
-        podman_run_as_user: root
+        __tmp_dir: "{{ __podman_tmp_dir.path }}"
+        __tar_file: "{{ __tmp_dir ~ '/backup.tar' }}"
+        __system_files:
+          - "{{ __podman_containers_conf_system }}"
+          - "{{ __podman_registries_conf_system }}"
+          - "{{ __podman_storage_conf_system }}"
+          - "{{ __podman_policy_json_system }}"
+        __user_files:
+          - /home/user1/{{ __podman_containers_conf_user }}
+          - /home/user1/{{ __podman_registries_conf_user }}
+          - /home/user1/{{ __podman_storage_conf_user }}
+          - /home/user1/{{ __podman_policy_json_user }}
+      block:
+        - name: Run the role with no config to get private vars
+          include_role:
+            name: linux-system-roles.podman
+            public: true
+          vars:
+            podman_run_as_user: root
+            podman_containers_conf: {}
+            podman_registries_conf: {}
+            podman_storage_conf: {}
+            podman_policy_json: {}
 
-    - name: Check that files exist and are non-null
-      stat:
-        path: "{{ item }}"
-      register: __stat
-      failed_when: not __stat.stat.exists or
-        __stat.stat.size == 0
-      loop:
-        - "{{ __podman_containers_conf_system }}"
-        - "{{ __podman_registries_conf_system }}"
-        - "{{ __podman_storage_conf_system }}"
-        - "{{ __podman_policy_json_system }}"
+        - name: Create temp directory
+          tempfile:
+            state: directory
+            prefix: lsr_podman_config_
+          register: __podman_tmp_dir
 
-    - name: Run the role again with root config
-      include_role:
-        name: linux-system-roles.podman
-        public: true
-      vars:
-        podman_run_as_user: root
+        - name: Create backup
+          # noqa command-instead-of-module
+          command: >-
+            tar --ignore-failed-read -c -P -v -p -f {{ __tar_file }}
+            {{ __system_files | join(" ") }}
+          changed_when: false
 
-    - name: Check that files still exist and are non-null
-      stat:
-        path: "{{ item }}"
-      register: __stat
-      failed_when: not __stat.stat.exists or
-        __stat.stat.size == 0
-      loop:
-        - "{{ __podman_containers_conf_system }}"
-        - "{{ __podman_registries_conf_system }}"
-        - "{{ __podman_storage_conf_system }}"
-        - "{{ __podman_policy_json_system }}"
+        - name: Create user
+          user:
+            name: user1
 
-    - name: Check for ansible_managed, fingerprint in generated files
-      include_tasks: tasks/check_header.yml
-      loop:
-        - /home/user1/{{ __podman_containers_conf_user }}
-        - /home/user1/{{ __podman_registries_conf_user }}
-        - /home/user1/{{ __podman_storage_conf_user }}
-        - "{{ __podman_containers_conf_system }}"
-        - "{{ __podman_registries_conf_system }}"
-        - "{{ __podman_storage_conf_system }}"
-      loop_control:
-        loop_var: __file
-      vars:
-        __fingerprint: "system_role:podman"
+        - name: Run the role with user config
+          include_role:
+            name: linux-system-roles.podman
+            public: true
+
+        - name: Check that files exist and are non-null
+          stat:
+            path: "{{ item }}"
+          register: __stat
+          failed_when: not __stat.stat.exists or
+            __stat.stat.size == 0
+          loop: "{{ __user_files }}"
+
+        - name: Run the role again with user config
+          include_role:
+            name: linux-system-roles.podman
+            public: true
+
+        - name: Check that files still exist and are non-null
+          stat:
+            path: "{{ item }}"
+          register: __stat
+          failed_when: not __stat.stat.exists or
+            __stat.stat.size == 0
+          loop: "{{ __user_files }}"
+
+        - name: Run the role with root config
+          include_role:
+            name: linux-system-roles.podman
+            public: true
+          vars:
+            podman_run_as_user: root
+
+        - name: Check that files exist and are non-null
+          stat:
+            path: "{{ item }}"
+          register: __stat
+          failed_when: not __stat.stat.exists or
+            __stat.stat.size == 0
+          loop: "{{ __system_files }}"
+
+        - name: Run the role again with root config
+          include_role:
+            name: linux-system-roles.podman
+            public: true
+          vars:
+            podman_run_as_user: root
+
+        - name: Check that files still exist and are non-null
+          stat:
+            path: "{{ item }}"
+          register: __stat
+          failed_when: not __stat.stat.exists or
+            __stat.stat.size == 0
+          loop: "{{ __system_files }}"
+
+        - name: Check for ansible_managed, fingerprint in generated files
+          include_tasks: tasks/check_header.yml
+          loop:
+            - /home/user1/{{ __podman_containers_conf_user }}
+            - /home/user1/{{ __podman_registries_conf_user }}
+            - /home/user1/{{ __podman_storage_conf_user }}
+            - "{{ __podman_containers_conf_system }}"
+            - "{{ __podman_registries_conf_system }}"
+            - "{{ __podman_storage_conf_system }}"
+          loop_control:
+            loop_var: __file
+          vars:
+            __fingerprint: "system_role:podman"
+      always:
+        - name: Remove test config files
+          file:
+            state: absent
+            path: "{{ item }}"
+          loop: "{{ __system_files + __user_files }}"
+
+        - name: Restore system config files
+          # noqa command-instead-of-module
+          command: tar xfvpP {{ __tar_file }}
+          changed_when: false
+
+        - name: Remove temp directory
+          file:
+            state: absent
+            path: "{{ __tmp_dir }}"

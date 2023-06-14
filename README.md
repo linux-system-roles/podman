@@ -8,6 +8,10 @@ run `podman` containers.
 ## Requirements
 
 The role requires podman version 4.2 or later.
+The role requires podman version 4.4 or later for quadlet support and secret
+support.
+The role requires podman version 4.5 or later for support for using healthchecks
+(only supported when using quadlet Container types).
 
 ### Collection requirements
 
@@ -61,6 +65,9 @@ except for the following:
   specify this, then the global default `podman_systemd_unit_scope` will be
   used.  Otherwise, the scope will be `system` for root containers, and `user`
   for user containers.
+* `activate_systemd_unit` - Whether or not to activate the systemd unit when it
+  is created.  If you do not specify this, then the global default
+  `podman_activate_systemd_unit` will be used, which is `true` by default.
 * `kube_file_src` - This is the name of a file on the controller node which will
   be copied to `kube_file` on the managed node.  This is a file in Kubernetes
   YAML format.  Do not specify this if you specify `kube_file_content`.
@@ -96,17 +103,105 @@ For example, if you have
 This will be copied to the file `/etc/containers/ansible-kubernetes.d/myappname.yml` on
 the managed node.
 
+### podman_quadlet_specs
+
+List of [Quadlet specifications]
+(https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+A quadlet spec is uniquely identified by a name and a type, where type is one of
+the types of units like container, kube, network, volume, etc.  You can either
+pass in `name` and `type` explicitly, or the `name` and `type` will be derived
+from the file name given in `file`, `file_src`, or `template_src`.
+
+By default, the files will be copied to or created in
+`/etc/containers/systemd/$name.$type` for root containers, and
+`$HOME/.config/containers/systemd/$name.$type` for rootless containers, on the
+managed node.  You can provide a different location by using `file`, but then
+you will likely need to change the systemd configuration to find the file, which
+is not supported by this role.
+
+When a quadlet spec depends on some other file e.g. a `quadlet.kube` that
+depends on the `Yaml` file or a `ConfigMap`, then that file must be specified in
+the `podman_quadlet_specs` list *before* the file that uses it.  For example, if
+you have a file `my-app.kube`:
+
+```ini
+[Kube]
+ConfigMap=my-app-config.yml
+Yaml=my-app.yml
+...
+```
+
+Then you must specify `my-app-config.yml` and `my-app.yml` before `my-app.kube`:
+
+```yaml
+podman_quadlet_specs:
+  - file_src: my-app-config.yml
+  - file_src: my-app.yml
+  - file_src: my-app.kube
+```
+
+Most of the parameters for each quadlet spec are the same as for
+`podman_kube_spec` above except that the `*kube*` parameters are not supported,
+and the following are:
+
+* `name` - The name of the unit.  If not given, it will be derived from `file`,
+  `file_src`, or `template_src`.  For example, if you specify
+  `file_src: /path/to/my-container.container` then the `name` will
+  be `my-container`.
+* `type` - The type of unit (container, kube, volume, etc.).  If not given, it
+  will be derived from `file`, `file_src`, or `template_src`.  For example, if
+  you specify `file_src: /path/to/my-container.container` then the `type` will
+  be `container`.  If the derived type is not recognized as a valid quadlet type,
+  for example, if you specify `file_src: my-kube.yml`, then it will just be copied
+  and not processed as a quadlet spec.
+* `file_src` - The name of the file on the control node to copy to the managed
+  node to use as the source of the quadlet unit.  If this file is in the quadlet
+  unit format and has a valid quadlet unit suffix, it will be used as a quadlet
+  unit, otherwise, it will just be copied.
+* `file` - The name of the file on the managed node to use as the source of the
+  quadlet unit.  If this file is in the quadlet unit format and has a valid
+  quadlet unit suffix, it will be used as a quadlet unit, otherwise, it will be
+  treated as a regular file.
+* `file_content` - The contents of a file to copy to the managed node, in string
+  format.  This is useful to pass in short files that can easily be specified
+  inline.  You must also specify `name` and `type`.
+* `template_src` - The name of the file on the control node which will be
+  processed as a Jinja `template` file then copied to the managed node to use as
+  the source of the quadlet unit.  If this file is in the quadlet unit format
+  and has a valid quadlet unit suffix, it will be used as a quadlet unit,
+  otherwise, it will just be copied.  If the file has a `.j2` suffix, that
+  suffix will be stripped to determine the quadlet file type.
+
+For example, if you specify:
+
+```yaml
+podman_quadlet_specs:
+  - template_src: my-app.container.j2
+```
+
+Then the local file `templates/my-app.container.j2` will be processed as a Jinja
+template file, then copied to `/etc/containers/systemd/my-app.container` as a
+quadlet container unit spec on the managed node.
+
+### podman_secrets
+
+This is a list of secret specs in the same format as used by
+[podman_secret](https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_secret_module.html#ansible-collections-containers-podman-podman-secret-module)
+You are *strongly* encouraged to use Ansible Vault to encrypt the value of the
+`data` field.
+
 ### podman_create_host_directories
 
 This is a boolean, default value is `false`.  If `true`, the role will ensure
 host directories specified in host mounts in `volumes.hostPath` specifications
-in the Kubernetes YAML given in `podman_kube_specs`.  NOTE: Directories must be
-specified as absolute paths (for root containers), or paths relative to the home
-directory (for non-root containers), in order for the role to manage them.
-Anything else will be assumed to be some other sort of volume and will be
-ignored. The role will apply its default ownership/permissions to the
-directories. If you need to set ownership/permissions, see
-`podman_host_directories`.
+in the Kubernetes YAML given in `podman_kube_specs`, and from `Volume`
+configuration in quadlet Container specification where a host path is specified.
+NOTE: Directories must be specified as absolute paths (for root containers), or
+paths relative to the home directory (for non-root containers), in order for the
+role to manage them. Anything else will be assumed to be some other sort of
+volume and will be ignored. The role will apply its default
+ownership/permissions to the directories. If you need to set
+ownership/permissions, see `podman_host_directories`.
 
 ### podman_host_directories
 
@@ -235,9 +330,47 @@ podman_policy_json:
     type: insecureAcceptAnything
 ```
 
+### podman_use_copr (EXPERIMENTAL)
+
+Boolean - default is unset - if you want to enable the copr repo to use the
+latest development version of podman, use `podman_use_copr: true`
+
+### podman_fail_if_too_old (EXPERIMENTAL)
+
+Boolean - default is unset - by default, the role will fail with an error if you
+are using an older version of podman and try to use a feature only supported by
+a newer version.  For example, if you attempt to manage quadlet or secrets with
+podman 4.3 or earlier, the role will fail with an error. If you want the role to
+be skipped instead, use `podman_fail_if_too_old: false`.
+
 ## Variables Exported by the Role
 
-None
+### podman_version
+
+This is the version string of the version used by podman.  You can generally
+use this in your templates.  For example, if you want to specify a quadlet
+`template_src` for a container, and have it use healthchecks and secrets if
+using podman 4.5 or later:
+
+```yaml
+podman_quadlet_specs:
+  - template_src: my-app.container.j2
+podman_secrets:
+  - name: my-app-pwd
+    data: .....
+```
+
+my-app.container.j2:
+```ini
+[Container]
+{% if podman_version is version("4.5", ">=") %}
+Secret=my-app-pwd,type=env,target=MYAPP_PASSWORD
+HealthCmd=/usr/bin/test -f /path/to/my-app.file
+HealthOnFailure=kill
+{% else %}
+PodmanArgs=--secret=my-app-pwd,type=env,target=MYAPP_PASSWORD
+{% endif %}
+```
 
 ## Example Playbooks
 
@@ -319,6 +452,62 @@ Create container running as root with Podman volume:
                   claimName: ubi8-html-volume
   roles:
     - linux-system-roles.podman
+```
+
+Create quadlet application with secrets.  Defer starting the application until
+all of the units have been created.  Note the order of the files in
+`podman_quadlet_specs` are in dependency order.  Using
+`podman_create_host_directories: true` will create any host mounted directories
+specified by a `Volume=` directive in the container spec.
+
+```yaml
+podman_create_host_directories: true
+podman_activate_systemd_unit: false
+podman_quadlet_specs:
+  - name: quadlet-demo
+    type: network
+    file_content: |
+      [Network]
+      Subnet=192.168.30.0/24
+      Gateway=192.168.30.1
+      Label=app=wordpress
+  - file_src: quadlet-demo-mysql.volume
+  - template_src: quadlet-demo-mysql.container.j2
+  - file_src: envoy-proxy-configmap.yml
+  - file_src: quadlet-demo.yml
+  - file_src: quadlet-demo.kube
+    activate_systemd_unit: true
+podman_firewall:
+  - port: 8000/tcp
+    state: enabled
+  - port: 9000/tcp
+    state: enabled
+podman_secrets:
+  - name: mysql-root-password-container
+    state: present
+    skip_existing: true
+    data: "{{ root_password_from_vault }}"
+  - name: mysql-root-password-kube
+    state: present
+    skip_existing: true
+    data: |
+      apiVersion: v1
+      data:
+        password: "{{ root_password_from_vault | b64encode }}"
+      kind: Secret
+      metadata:
+        name: mysql-root-password-kube
+  - name: envoy-certificates
+    state: present
+    skip_existing: true
+    data: |
+      apiVersion: v1
+      data:
+        certificate.key: {{ key_from_vault | b64encode }}
+        certificate.pem: {{ cert_from_vault | b64encode }}
+      kind: Secret
+      metadata:
+        name: envoy-certificates
 ```
 
 ## License

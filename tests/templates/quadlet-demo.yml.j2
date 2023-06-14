@@ -1,0 +1,73 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wp-pv-claim
+  labels:
+    app: wordpress
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: quadlet-demo
+spec:
+  containers:
+  - name: wordpress
+    image: {{ wordpress_image }}
+    env:
+    - name: WORDPRESS_DB_HOST
+      value: quadlet-demo-mysql
+    - name: WORDPRESS_DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: mysql-root-password-kube
+          key: password
+    volumeMounts:
+    - name: wordpress-persistent-storage
+      mountPath: /var/www/html
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+  - name: envoy
+    image: {{ envoy_image }}
+    volumeMounts:
+    - name: config-volume
+      mountPath: /etc/envoy
+    - name: certificates
+      mountPath: /etc/envoy-certificates
+    env:
+    - name: ENVOY_UID
+      value: "0"
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+  volumes:
+  - name: config-volume
+    configMap:
+      name: envoy-proxy-config
+  - name: certificates
+    secret:
+      secretName: envoy-certificates
+  - name: wordpress-persistent-storage
+    persistentVolumeClaim:
+      claimName: wp-pv-claim
+  - name: www  # not used - for testing hostpath
+    hostPath:
+      path: /tmp/httpd3
+  - name: create  # not used - for testing hostpath
+    hostPath:
+      path: /tmp/httpd3-create

@@ -1,0 +1,62 @@
+---
+# NOTE: Stopping, disabling, and removing units should also stop
+# and remove any pods and containers as well.
+- name: Stop and disable service
+  systemd:
+    name: "{{ __podman_service_name }}"
+    scope: "{{ __podman_systemd_scope }}"
+    state: stopped
+    enabled: false
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  register: __podman_service_status
+  when: __podman_service_name | length > 0
+  failed_when:
+    - __podman_service_status is failed
+    - not __podman_service_status.stdout is search(__service_error)
+  vars:
+    __service_error: Could not find the requested service
+
+- name: Remove quadlet file
+  file:
+    path: "{{ __podman_quadlet_file }}"
+    state: absent
+  register: __podman_file_removed
+
+- name: Reload systemctl  # noqa no-handler
+  systemd:
+    daemon_reload: true
+    scope: "{{ __podman_systemd_scope }}"
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  when: __podman_file_removed is changed
+
+- name: Cleanup container resources
+  when: __podman_file_removed is changed  # noqa no-handler
+  block:
+    - name: Gather facts for all containers
+      containers.podman.podman_container_info:
+      environment:
+        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+      become: "{{ __podman_rootless | ternary(true, omit) }}"
+      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+      register: __podman_container_info
+
+    - name: Cancel linger if no more containers are running
+      command: loginctl disable-linger {{ __podman_user }}
+      when:
+        - __podman_rootless | bool
+        - __podman_container_info.containers | length == 0
+      changed_when: true
+
+    - name: Prune images no longer in use
+      command: podman image prune -f
+      environment:
+        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+      become: "{{ __podman_rootless | ternary(true, omit) }}"
+      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+      changed_when: true

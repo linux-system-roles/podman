@@ -5,6 +5,11 @@
 
 - name: Gather the package facts
   package_facts:
+  no_log: true
+
+- name: Enable copr if requested
+  include_tasks: enable_copr.yml
+  when: podman_use_copr | d(false)
 
 - name: Ensure required packages are installed
   package:
@@ -18,21 +23,39 @@
   changed_when: false
   register: __podman_version_output
 
+- name: Set podman version
+  set_fact:
+    podman_version: "{{ (__podman_version_output.stdout.split())[2] }}"
+
 - name: Podman package version must be 4.2 or later
   fail:
     msg: >
-      podman package version {{ __podman_version }} is too old -
+      podman package version {{ podman_version }} is too old -
       must be 4.2 or later
-  when: __podman_version is version("4.2", "<")
-  vars:
-    __podman_version: "{{
-      (__podman_version_output.stdout.split())[2] }}"
+  when: podman_version is version("4.2", "<")
+
+- name: Podman package version must be 4.4 or later for quadlet, secrets
+  fail:
+    msg: >
+      podman package version {{ podman_version }} is too old -
+      must be 4.4 or later to use quadlet or secrets
+  when:
+    - (podman_quadlet_specs | length > 0) or (podman_secrets | length > 0)
+    - podman_version is version("4.4", "<")
+    - podman_fail_if_too_old | d(true)
+
+- name: Podman package version must be 4.4 or later for quadlet, secrets
+  meta: end_host
+  when:
+    - (podman_quadlet_specs | length > 0) or (podman_secrets | length > 0)
+    - podman_version is version("4.4", "<")
+    - not podman_fail_if_too_old | d(true)
 
 - name: Check user and group information
   include_tasks: handle_user_group.yml
   vars:
     __podman_user: "{{ podman_run_as_user }}"
-    __podman_kube_spec_item: {}
+    __podman_spec_item: {}
 
 - name: Set config file paths
   set_fact:
@@ -81,8 +104,17 @@
     selinux_ports: "{{ podman_selinux_ports }}"
   when: podman_selinux_ports | length > 0
 
+- name: Handle secrets
+  include_tasks: handle_secrets.yml
+
 - name: Handle Kubernetes specifications
   include_tasks: handle_kube_spec.yml
   loop: "{{ podman_kube_specs }}"
   loop_control:
     loop_var: __podman_kube_spec_item
+
+- name: Handle Quadlet specifications
+  include_tasks: handle_quadlet_spec.yml
+  loop: "{{ podman_quadlet_specs }}"
+  loop_control:
+    loop_var: __podman_quadlet_spec_item

@@ -1,0 +1,25 @@
+{{ ansible_managed | comment }}
+{{ "system_role:podman" | comment(prefix="", postfix="") }}
+{% macro render_option(key, value) %}
+{%   if value is defined %}
+{%     if value is sameas true %}
+{{ key }}=true
+{%     elif value is sameas false %}
+{{ key }}=false
+{%     elif value is string %}
+{{ key }}={{ value }}
+{%     elif value is number %}
+{{ key }}={{ value | string }}
+{%     else %}
+{%       for item in value %}
+{{ render_option(key, item) -}}
+{%       endfor %}
+{%     endif %}
+{%   endif %}
+{% endmacro %}
+{% for section, data in __podman_quadlet_spec.items() %}
+[{{ section }}]
+{%   for key, value in data.items() %}
+{{ render_option(key, value) -}}
+{%   endfor %}
+{% endfor %}

@@ -1,0 +1,18 @@
+[Install]
+WantedBy=default.target
+
+[Unit]
+Requires=quadlet-demo-mysql.service
+After=quadlet-demo-mysql.service
+
+[Kube]
+# Point to the yaml file in the same directory
+Yaml=quadlet-demo.yml
+# Use the quadlet-demo network
+Network=quadlet-demo.network
+# Publish the envoy proxy data port
+PublishPort=8000:8080
+# Publish the envoy proxy admin port
+PublishPort=9000:9901
+# Use the envoy proxy config map in the same directory
+ConfigMap=envoy-proxy-configmap.yml
