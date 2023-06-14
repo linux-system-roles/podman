@@ -69,3 +69,9 @@ __podman_system_kube_path: "/etc/containers/ansible-kubernetes.d"
 
 # location for user kubernetes yaml files
 __podman_user_kube_path: "/.config/containers/ansible-kubernetes.d"
+
+# location for system quadlet files
+__podman_system_quadlet_path: "/etc/containers/systemd"
+
+# location for user kubernetes yaml files
+__podman_user_quadlet_path: "/.config/containers/systemd"

@@ -2,6 +2,8 @@
 ---
 - name: Ensure that the role runs with default parameters
   hosts: all
+  vars_files:
+    - test_vars.yml
   vars:
     podman_host_directories:
       "/tmp/httpd1-create":
@@ -34,7 +36,7 @@
           spec:
             containers:
               - name: httpd1
-                image: quay.io/libpod/testimage:20210610
+                image: "{{ test_image }}"
                 command:
                   - /bin/busybox-extras
                   - httpd
@@ -71,7 +73,7 @@
           spec:
             containers:
               - name: httpd2
-                image: quay.io/libpod/testimage:20210610
+                image: "{{ test_image }}"
                 command:
                   - /bin/busybox-extras
                   - httpd
@@ -105,7 +107,7 @@
       spec:
         containers:
           - name: httpd3
-            image: quay.io/libpod/testimage:20210610
+            image: {{ test_image }}
             command:
               - /bin/busybox-extras
               - httpd

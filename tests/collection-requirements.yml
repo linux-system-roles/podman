@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT
+---
+collections:
+  - containers.podman
+  - fedora.linux_system_roles

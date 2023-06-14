@@ -27,8 +27,8 @@
       and __podman_kube_spec_item['kube_file_src'] is exists
       else none }}"
   vars:
-    __del_params: ^(kube_file_src|kube_file_content|run_as_user|run_as_group|\
-      systemd_unit_scope)$
+    __del_params: "^(kube_file_src|kube_file_content|run_as_user|run_as_group|\
+      systemd_unit_scope|activate_systemd_unit)$"
 
 - name: Set per-container variables part 1
   set_fact:
@@ -36,7 +36,7 @@
       if 'kube_file_content' in __podman_kube_spec_item
       and __podman_kube_spec_item['kube_file_content'] is mapping
       else __podman_kube_str | from_yaml
-      if not __podman_kube_str is none
+      if __podman_kube_str
       else none }}"
     __podman_kube_file: "{{ __podman_kube_spec_item['kube_file']
       if 'kube_file' in __podman_kube_spec_item
@@ -55,10 +55,12 @@
   set_fact:
     __podman_rootless: "{{ __podman_user != 'root' }}"
     __podman_kube_name: "{{ __podman_kube['metadata']['name']
-      if not __podman_kube is none else none }}"
+      if __podman_kube else none }}"
 
 - name: Check user and group information
   include_tasks: handle_user_group.yml
+  vars:
+    __podman_spec_item: "{{ __podman_kube_spec_item }}"
 
 - name: Fail if no kube spec is given
   fail:
@@ -66,8 +68,8 @@
       One of kube_file, kube_file_src, or kube_file_content must
       be given
   when:
-    - __podman_kube is none
-    - __podman_kube_file is none
+    - not __podman_kube
+    - not __podman_kube_file
 
 - name: Set per-container variables part 3
   set_fact:
@@ -76,10 +78,12 @@
     __podman_user_home_dir: "{{
       ansible_facts['getent_passwd'][__podman_user][4] }}"
     __podman_systemd_scope: "{{ __podman_systemd_unit_scope
-      if not __podman_systemd_unit_scope is none
+      if __podman_systemd_unit_scope
       and __podman_systemd_unit_scope | length > 0
       else __podman_rootless | ternary('user', 'system') }}"
-    __podman_activate_systemd_unit: true
+    __podman_activate_systemd_unit: "{{
+      __podman_kube_spec_item['activate_systemd_unit'] |
+      d(podman_activate_systemd_unit) }}"
 
 - name: Set per-container variables part 4
   set_fact:

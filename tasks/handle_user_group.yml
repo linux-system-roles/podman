@@ -17,8 +17,8 @@
 - name: Set group for podman user
   set_fact:
     __podman_group: |-
-      {%- if "run_as_group" in __podman_kube_spec_item -%}
-      {{ __podman_kube_spec_item["run_as_group"] }}
+      {%- if "run_as_group" in __podman_spec_item -%}
+      {{ __podman_spec_item["run_as_group"] }}
       {%- elif podman_run_as_group is not none -%}
       {{ podman_run_as_group }}
       {%- else -%}

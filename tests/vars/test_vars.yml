@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: MIT
+---
+wordpress_image: quay.io/linux-system-roles/wordpress:4.8-apache
+mysql_image: quay.io/linux-system-roles/mysql:5.6
+envoy_image: quay.io/linux-system-roles/envoyproxy:v1.25.0
+test_image: quay.io/libpod/testimage:20210610
