@@ -30,6 +30,12 @@ __podman_required_facts:
   - distribution_version
   - os_family
 
+# the subsets of ansible_facts that need to be gathered in case any of the
+# facts in required_facts is missing; see the documentation of
+# the 'gather_subset' parameter of the 'setup' module
+__podman_required_facts_subsets: "{{ ['!all', '!min'] +
+  __podman_required_facts }}"
+
 __podman_containers_conf_file_name: 50-systemroles.conf
 __podman_containers_conf_system: >-
   /etc/containers/containers.conf.d/{{ __podman_containers_conf_file_name }}
