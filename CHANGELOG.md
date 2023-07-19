@@ -1,6 +1,23 @@
 Changelog
 =========
 
+[1.2.0] - 2023-07-19
+--------------------
+
+### New Features
+
+- feat: add support for quadlet, secrets (#78)
+
+### Bug Fixes
+
+- fix: facts being gathered unnecessarily (#80)
+
+### Other Changes
+
+- ci: Add pull request template and run commitlint on PR title only (#76)
+- ci: Rename commitlint to PR title Lint, echo PR titles from env var (#77)
+- ci: ansible-lint - ignore var-naming[no-role-prefix] (#79)
+
 [1.1.6] - 2023-05-26
 --------------------
 
