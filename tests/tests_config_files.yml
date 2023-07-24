@@ -2,23 +2,6 @@
 ---
 - name: Ensure that the role can manage its config files
   hosts: all
-  vars:
-    podman_run_as_user: user1
-    podman_containers_conf:
-      containers:
-        annotations:
-          environment: production
-          status: tier2
-    podman_registries_conf:
-      aliases:
-        myregistry: registry.example.com
-    podman_storage_conf:
-      storage:
-        runroot: /tmp
-        graphroot: /var/lib/containers/storage
-    podman_policy_json:
-      default:
-        type: insecureAcceptAnything
   tasks:
     - name: Run the tests
       vars:
@@ -34,6 +17,21 @@
           - /home/user1/{{ __podman_registries_conf_user }}
           - /home/user1/{{ __podman_storage_conf_user }}
           - /home/user1/{{ __podman_policy_json_user }}
+        podman_containers_conf:
+          containers:
+            annotations:
+              environment: production
+              status: tier2
+        podman_registries_conf:
+          aliases:
+            myregistry: registry.example.com
+        podman_storage_conf:
+          storage:
+            runroot: /tmp
+            graphroot: /var/lib/containers/storage
+        podman_policy_json:
+          default:
+            type: insecureAcceptAnything
       block:
         - name: Run the role with no config to get private vars
           include_role:
@@ -67,6 +65,8 @@
           include_role:
             name: linux-system-roles.podman
             public: true
+          vars:
+            podman_run_as_user: user1
 
         - name: Check that files exist and are non-null
           stat:
@@ -80,6 +80,8 @@
           include_role:
             name: linux-system-roles.podman
             public: true
+          vars:
+            podman_run_as_user: user1
 
         - name: Check that files still exist and are non-null
           stat:

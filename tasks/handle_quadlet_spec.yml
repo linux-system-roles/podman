@@ -34,7 +34,25 @@
       else none }}"
   vars:
     __del_params: "^(file_src|file_content|file|run_as_user|run_as_group|\
-      systemd_unit_scope|name|type|state|activate_systemd_unit|template_src)$"
+      systemd_unit_scope|name|type|state|activate_systemd_unit|template_src|\
+      pull_image|continue_if_pull_fails)$"
+
+- name: Set per-container variables part 1
+  set_fact:
+    __podman_user: "{{ __podman_quadlet_spec_item['run_as_user'] |
+      d(podman_run_as_user) }}"
+    __podman_systemd_unit_scope: "{{
+      __podman_quadlet_spec_item['systemd_unit_scope'] |
+      d(podman_systemd_unit_scope) }}"
+    __podman_state: "{{ __state }}"
+    __podman_pull_image: "{{ __podman_quadlet_spec_item['pull_image'] |
+      d(podman_pull_image) }}"
+    __podman_continue_if_pull_fails: "{{
+      __podman_quadlet_spec_item['continue_if_pull_fails'] |
+      d(podman_continue_if_pull_fails) }}"
+  vars:
+    __state: "{{ ((__podman_quadlet_spec_item['state'] | d('')) == 'absent') |
+      ternary('absent', 'created') }}"
 
 - name: Fail if no quadlet spec is given
   fail:
@@ -47,18 +65,7 @@
     - not __podman_quadlet_file_src
     - not __podman_quadlet_str
     - not __podman_quadlet_template_src
-
-- name: Set per-container variables part 1
-  set_fact:
-    __podman_user: "{{ __podman_quadlet_spec_item['run_as_user'] |
-      d(podman_run_as_user) }}"
-    __podman_systemd_unit_scope: "{{
-      __podman_quadlet_spec_item['systemd_unit_scope'] |
-      d(podman_systemd_unit_scope) }}"
-    __podman_state: "{{ __state }}"
-  vars:
-    __state: "{{ ((__podman_quadlet_spec_item['state'] | d('')) == 'absent') |
-      ternary('absent', 'created') }}"
+    - __podman_state != "absent"
 
 - name: Set per-container variables part 2
   set_fact:
@@ -79,8 +86,6 @@
       if __podman_quadlet_file_src else
       __template_base | basename | splitext | last | replace('.', '')
       if __template_base else none }}"
-    __podman_images_found: "{{ [__podman_quadlet_spec['Image']]
-      if 'Image' in __podman_quadlet_spec else none }}"
   vars:
     __file: "{{ __podman_quadlet_spec_item['file']
       if 'file' in __podman_quadlet_spec_item
@@ -111,7 +116,9 @@
       regex_search('(?m)^Image=\"?([^\"]+?)\"?$', '\\1')
       if __podman_quadlet_str
       and __podman_quadlet_type == 'container'
-      else __podman_quadlet_spec['Image'] | d(none) }}"
+      else [__podman_quadlet_spec['Container']['Image']]
+      if __podman_quadlet_spec.get('Container', {}).get('Image')
+      else [] }}"
     __podman_kube_yamls_raw: "{{ __podman_quadlet_str |
       regex_search('(?m)^Yaml=\"?([^\"]+?)\"?$', '\\1')
       if __podman_quadlet_str
@@ -157,7 +164,7 @@
       if 'file' in __podman_quadlet_spec_item
       else none }}"
     __podman_kube: "{{ __podman_kube_content.content | b64decode |
-      from_yaml_all if __podman_kube_content.content is defined
+      from_yaml_all | list if __podman_kube_content.content is defined
       else none }}"
     __images: "{{ __podman_kube | selectattr('spec', 'defined') |
       map(attribute='spec') | selectattr('containers', 'defined') |
