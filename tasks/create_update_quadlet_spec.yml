@@ -30,6 +30,10 @@
     username: "{{ container_image_user | default(omit) }}"
     password: "{{ container_image_password | default(omit) }}"
   register: __podman_image_updated
+  when: __podman_pull_image | bool
+  failed_when:
+    - __podman_image_updated is failed
+    - not __podman_continue_if_pull_fails
   environment:
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   become: "{{ __podman_rootless | ternary(true, omit) }}"

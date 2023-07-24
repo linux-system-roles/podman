@@ -93,3 +93,14 @@ podman_secrets: []
 # then set `activate_systemd_unit: false` for each one
 # except the last one uses `activate_systemd_unit: true`
 podman_activate_systemd_unit: true
+
+# Ensure images used are present
+# Look at the specs, and pull images that are specified there
+# You can also do this on a per-spec basis using pull_images
+podman_pull_image: true
+
+# Continue if the image pull fails
+# If pulling the image fails, do not fail the role - continue
+# running the role.
+# You can do this on a per-spec basis using continue_if_pull_fails
+podman_continue_if_pull_fails: false

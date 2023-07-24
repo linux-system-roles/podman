@@ -68,6 +68,13 @@ except for the following:
 * `activate_systemd_unit` - Whether or not to activate the systemd unit when it
   is created.  If you do not specify this, then the global default
   `podman_activate_systemd_unit` will be used, which is `true` by default.
+* `pull_image` - Ensure the image is pulled before use.  If you do not specify
+  this, then the global default `podman_pull_image` will be used, which is
+  `true` by default.
+* `continue_if_pull_fails` - If pulling the image, and the pull fails, do not
+  treat this as a fatal error, and continue with the role.  If you do not
+  specify this, then the global default `podman_continue_if_pull_fails` will be
+  used, which is `false` by default.
 * `kube_file_src` - This is the name of a file on the controller node which will
   be copied to `kube_file` on the managed node.  This is a file in Kubernetes
   YAML format.  Do not specify this if you specify `kube_file_content`.
@@ -273,6 +280,31 @@ This is systemd scope to use by default for all systemd units.  You can also
 specify per-container scope with `systemd_unit_scope` in `podman_kube_specs`. By
 default, rootless containers will use `user` and root containers will use
 `system`.
+
+### podman_activate_systemd_units
+
+Activate each systemd unit as soon as it is created.  The default is `true`. You
+can also do this on a per-unit basis by using `activate_systemd_units` in the
+spec for each unit. For example, if you are deploying several specs, and you
+only want the last one in the list to activate which will trigger the others to
+activate via dependencies, then set `activate_systemd_unit: false` for each one
+except the last one uses `activate_systemd_unit: true`.  *NOTE*: quadlet units
+are implicitly enabled when created - you cannot currently use
+`activate_systemd_unit` to disable those units - you can use
+`activate_systemd_unit` to create units stopped or started.
+
+### podman_pull_image
+
+Ensure that each image mentioned in a kube or quadlet spec is present by pulling
+the image before it is used.  The default is `true`.  Use `false` if the managed
+node already has the correct version, or is not able to pull images.  You can also
+specify this on a per-unit basis with `pull_image`.
+
+### podman_continue_if_pull_fails
+
+If the image pull attempt fails, do not treat this as a fatal error, and continue
+with the role run.  The default is `false` - a pull attempt failure is a fatal
+error.  You can set this on a per-unit basis with `continue_if_pull_fails`.
 
 ### podman_containers_conf
 

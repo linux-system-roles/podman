@@ -3,7 +3,7 @@
 - name: Deploy the quadlet demo app
   hosts: all
   vars_files:
-    - test_vars.yml
+    - vars/test_vars.yml
   vars:
     # NOTE: Currently need to use copr for EL testing for
     # healthcheck, Secret= directive.

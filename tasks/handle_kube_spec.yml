@@ -28,7 +28,8 @@
       else none }}"
   vars:
     __del_params: "^(kube_file_src|kube_file_content|run_as_user|run_as_group|\
-      systemd_unit_scope|activate_systemd_unit)$"
+      systemd_unit_scope|activate_systemd_unit|pull_image|\
+      continue_if_pull_fails)$"
 
 - name: Set per-container variables part 1
   set_fact:
@@ -47,6 +48,11 @@
       __podman_kube_spec_item['systemd_unit_scope'] |
       d(podman_systemd_unit_scope) }}"
     __podman_state: "{{ __state }}"
+    __podman_pull_image: "{{ __podman_kube_spec_item['pull_image'] |
+      d(podman_pull_image) }}"
+    __podman_continue_if_pull_fails: "{{
+      __podman_kube_spec_item['continue_if_pull_fails'] |
+      d(podman_continue_if_pull_fails) }}"
   vars:
     __state: "{{ ((__podman_kube_spec_item['state'] | d('')) == 'absent') |
       ternary('absent', 'created') }}"

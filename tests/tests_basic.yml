@@ -3,7 +3,7 @@
 - name: Ensure that the role runs with default parameters
   hosts: all
   vars_files:
-    - test_vars.yml
+    - vars/test_vars.yml
   vars:
     podman_host_directories:
       "/tmp/httpd1-create":
@@ -187,6 +187,84 @@
             mode: "0644"
             owner: "{{ item[1] }}"
           loop: "{{ test_names_users }}"
+
+        - name: See if not pulling images fails
+          block:
+            - name: Run role - do not pull images
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_kube_specs:
+                  - state: created
+                    pull_image: false
+                    activate_systemd_unit: false
+                    kube_file_content: |
+                      apiVersion: v1
+                      kind: Pod
+                      metadata:
+                        labels:
+                          app: test
+                          io.containers.autoupdate: registry
+                        name: nopull
+                      spec:
+                        containers:
+                          - name: nopull
+                            image: {{ test_image }}
+
+            - name: Verify image not pulled
+              assert:
+                that: __podman_image_updated.results[0] is skipped
+
+            - name: Run role - verify continue if pull fails
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_kube_specs:
+                  - state: created
+                    continue_if_pull_fails: true
+                    activate_systemd_unit: false
+                    kube_file_content: |
+                      apiVersion: v1
+                      kind: Pod
+                      metadata:
+                        labels:
+                          app: test
+                          io.containers.autoupdate: registry
+                        name: bogus
+                      spec:
+                        containers:
+                          - name: bogus
+                            image: this_is_a_bogus_image
+
+          rescue:
+            - name: Verify image not pulled
+              assert:
+                that:
+                  - not __podman_image_updated.results[0] is changed
+                  - not __podman_image_updated.results[0] is skipped
+
+          always:
+            - name: Cleanup
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_kube_specs:
+                  - state: absent
+                    kube_file_content: |
+                      apiVersion: v1
+                      kind: Pod
+                      metadata:
+                        labels:
+                          app: test
+                          io.containers.autoupdate: registry
+                        name: {{ item }}
+                      spec:
+                        containers:
+                          - name: {{ item }}
+                            image: {{ test_image }}
+              loop:
+                - nopull
+                - bogus
 
         - name: Run role
           include_role:

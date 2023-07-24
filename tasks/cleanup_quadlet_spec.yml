@@ -15,7 +15,7 @@
   when: __podman_service_name | length > 0
   failed_when:
     - __podman_service_status is failed
-    - not __podman_service_status.stdout is search(__service_error)
+    - not __podman_service_status.msg is search(__service_error)
   vars:
     __service_error: Could not find the requested service
 

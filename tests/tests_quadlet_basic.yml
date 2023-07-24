@@ -3,7 +3,7 @@
 - name: Ensure that the role can manage quadlet specs
   hosts: all
   vars_files:
-    - test_vars.yml
+    - vars/test_vars.yml
   vars:
     podman_use_copr: false  # disable copr for CI testing
     podman_fail_if_too_old: false
@@ -40,6 +40,63 @@
             - FOO=/bin/busybox-extras
             - BAZ=test
   tasks:
+    - name: See if not pulling images fails
+      block:
+        - name: Run role - do not pull images
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_quadlet_specs:
+              - name: nopull
+                type: container
+                state: created
+                pull_image: false
+                activate_systemd_unit: false
+                Install:
+                  WantedBy: default.target
+                Container:
+                  Image: "{{ test_image }}"
+                  ContainerName: nopull
+
+        - name: Verify image not pulled
+          assert:
+            that: __podman_image_updated.results[0] is skipped
+
+        - name: Run role - try to pull bogus image
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_quadlet_specs:
+              - name: bogus
+                type: container
+                state: created
+                continue_if_pull_fails: true
+                activate_systemd_unit: false
+                Install:
+                  WantedBy: default.target
+                Container:
+                  Image: this_is_a_bogus_image
+                  ContainerName: bogus
+
+        - name: Verify image not pulled and no error
+          assert:
+            that:
+              - not __podman_image_updated.results[0] is changed
+              - not __podman_image_updated.results[0] is skipped
+
+      always:
+        - name: Cleanup
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_quadlet_specs:
+              - state: absent
+                name: "{{ item }}"
+                type: container
+          loop:
+            - nopull
+            - bogus
+
     - name: Run the role
       include_role:
         name: linux-system-roles.podman
