@@ -25,6 +25,12 @@
         podman_registries_conf:
           aliases:
             myregistry: registry.example.com
+          unqualified-search-registries:
+            - registry-1.example.com
+            - registry-2.example.com
+          credential-helpers:
+            - cred-helper-1
+            - cred-helper-2
         podman_storage_conf:
           storage:
             runroot: /tmp

@@ -165,17 +165,17 @@
       else none }}"
     __podman_kube: "{{ __podman_kube_content.content | b64decode |
       from_yaml_all | list if __podman_kube_content.content is defined
-      else none }}"
+      else [] }}"
     __images: "{{ __podman_kube | selectattr('spec', 'defined') |
       map(attribute='spec') | selectattr('containers', 'defined') |
       map(attribute='containers') | flatten | selectattr('image', 'defined') |
       map(attribute='image') | list
-      if __podman_kube }}"
+      if __podman_kube else [] }}"
     __init_images: "{{ __podman_kube | selectattr('spec', 'defined') |
       map(attribute='spec') | selectattr('initContainers', 'defined') |
       map(attribute='initContainers') | flatten |
       selectattr('image', 'defined') | map(attribute='image') | list
-      if __podman_kube }}"
+      if __podman_kube else [] }}"
     __volumes_from_unit_spec: "{{ __podman_quadlet_str |
       regex_findall('(?m)^Volume=\"?([^:]+):.+$') |
       reject('search', '[.]volume$') | list
@@ -190,10 +190,10 @@
       map(attribute='spec') | selectattr('volumes', 'defined') |
       map(attribute='volumes') | flatten | map('dict2items') | list | flatten |
       selectattr('key', 'match', '^hostPath$') | map(attribute='value') |
-      list if __podman_kube }}"
+      list if __podman_kube else [] }}"
     __dir_vols: "{{ __host_paths | selectattr('type', 'defined') |
       selectattr('type', 'match', '^Directory') | list
-      if __podman_kube }}"
+      if __podman_kube else [] }}"
     __notype_vols: "{{ __host_paths | rejectattr('type', 'defined') | list }}"
     __volumes_from_kube_spec: "{{ (__dir_vols + __notype_vols) |
       map(attribute='path') | unique | list
