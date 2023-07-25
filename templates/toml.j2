@@ -1,17 +1,26 @@
 {{ ansible_managed | comment }}
 {{ "system_role:podman" | comment(prefix="", postfix="") }}
+{% macro render_option(key, value) %}
+{%   if (value is iterable and ((value is not string) and (value is not mapping))) %}
+{{ key }}={{ value }}
+{%   elif value is mapping and value is not string %}
+{{ key }} = [{%- for k in value %} "{{k}}={{value[k]}}", {%- endfor %}]
+{%   else %}
+{{ key }}="{{ value }}"
+{%   endif %}
+{% endmacro %}
 {% if __conf is defined and __conf is iterable %}
-{% for section in __conf %}
-[{{ section }}]
-{%   for key in __conf[section] %}
-{% if (__conf[section][key] is iterable and ((__conf[section][key] is not string) and (__conf[section][key] is not mapping)))  %}
-{{ key }}={{ __conf[section][key] }}
-{% elif __conf[section][key] is mapping and __conf[section][key] is not string %}
-{% set value_list = [] %}
-{{ key }} = [{%- for k in __conf[section][key] %} "{{k}}={{__conf[section][key][k]}}", {%- endfor %}]
-{% else %}
-{{ key }}="{{ __conf[section][key] }}"
-{% endif %}
+{%   for key in __globals | d([]) %}
+{%     if key in __conf %}
+{{ render_option(key, __conf[key]) -}}
+{%     endif %}
 {%   endfor %}
-{% endfor %}
+{%   for section in __conf %}
+{%     if not section in __globals | d([]) %}
+[{{ section }}]
+{%       for key in __conf[section] %}
+{{ render_option(key, __conf[section][key]) -}}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
 {% endif %}

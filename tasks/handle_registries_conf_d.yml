@@ -21,3 +21,6 @@
         mode: "0644"
       vars:
         __conf: "{{ podman_registries_conf }}"
+        __globals:
+          - unqualified-search-registries
+          - credential-helpers
