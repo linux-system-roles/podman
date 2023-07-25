@@ -17,7 +17,6 @@ skip_list:
   - var-naming[no-role-prefix]
 exclude_paths:
   - tests/roles/
-  - tests/files/
   - .github/
   - examples/roles/
 mock_roles:
