@@ -17,8 +17,8 @@ skip_list:
   - var-naming[no-role-prefix]
 exclude_paths:
   - tests/roles/
-  - tests/files/
   - .github/
   - examples/roles/
+  - tests/files/
 mock_roles:
   - linux-system-roles.podman
