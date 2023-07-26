@@ -35,9 +35,12 @@ restrictions:
 * They must be already present on the system - the role will not create the
   users or groups - the role will exit with an error if a non-existent user or
   group is specified
-* They must already exist in `/etc/subuid` and `/etc/subgid` - the role will
-  exit with an error if a specified user is not present in `/etc/subuid`, or if
-  a specified group is not in `/etc/subgid`
+* They must already exist in `/etc/subuid` and `/etc/subgid`, or are otherwise
+  provided by your identity management system - the role will exit with an error
+  if a specified user is not present in `/etc/subuid`, or if a specified group
+  is not in `/etc/subgid`.  The role uses `getsubids` to check the user and
+  group if available, or checks the files directly if `getsubids` is not
+  available.
 
 ## Role Variables
 
