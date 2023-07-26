@@ -3,7 +3,8 @@
 # Put the role's internal variables here that are not distribution specific.
 # You can override these by defining the same variable with a different
 # value in a platform/version specific file in vars/
-__podman_packages: [podman]
+__podman_packages:
+  - podman
 
 # Default values to use when creating host directories for bind mounts
 # User can override these in podman_host_directories

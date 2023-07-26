@@ -38,38 +38,57 @@
     __podman_group_name: "{{ ansible_facts['getent_group'].keys() |
       list | first }}"
 
-- name: Check if user is in subuid file
-  find:
-    path: /etc
-    pattern: subuid
-    use_regex: true
-    contains: "^{{ __podman_user }}:.*$"
-  register: __podman_uid_line_found
-  when: __podman_user not in ["root", "0"]
+- name: See if getsubids exists
+  stat:
+    path: /usr/bin/getsubids
+  register: __podman_stat_getsubids
 
-- name: Fail if user not in subuid file
-  fail:
-    msg: >
-      The given podman user [{{ __podman_user }}] is not in the
-      /etc/subuid file - cannot continue
+# does not work for root
+- name: Use getsubids if available
   when:
     - __podman_user not in ["root", "0"]
-    - not __podman_uid_line_found.matched
+    - __podman_stat_getsubids.stat.exists
+  block:
+    - name: Check user with getsubids
+      command: getsubids {{ __podman_user | quote }}
+      changed_when: false
 
-- name: Check if group is in subgid file
-  find:
-    path: /etc
-    pattern: subgid
-    use_regex: true
-    contains: "^{{ __podman_group_name }}:.*$"
-  register: __podman_gid_line_found
-  when: __podman_group not in ["root", "0"]
+    - name: Check group with getsubids
+      command: getsubids -g {{ __podman_group_name | quote }}
+      changed_when: false
 
-- name: Fail if group not in subgid file
-  fail:
-    msg: >
-      The given podman group [{{ __podman_group_name }}] is not in the
-      /etc/subgid file - cannot continue
+- name: Check subuid, subgid files if no getsubids
   when:
+    - not __podman_stat_getsubids.stat.exists
+    - __podman_user not in ["root", "0"]
     - __podman_group not in ["root", "0"]
-    - not __podman_gid_line_found.matched
+  block:
+    - name: Check if user is in subuid file
+      find:
+        path: /etc
+        pattern: subuid
+        use_regex: true
+        contains: "^{{ __podman_user }}:.*$"
+      register: __podman_uid_line_found
+
+    - name: Fail if user not in subuid file
+      fail:
+        msg: >
+          The given podman user [{{ __podman_user }}] is not in the
+          /etc/subuid file - cannot continue
+      when: not __podman_uid_line_found.matched
+
+    - name: Check if group is in subgid file
+      find:
+        path: /etc
+        pattern: subgid
+        use_regex: true
+        contains: "^{{ __podman_group_name }}:.*$"
+      register: __podman_gid_line_found
+
+    - name: Fail if group not in subgid file
+      fail:
+        msg: >
+          The given podman group [{{ __podman_group_name }}] is not in the
+          /etc/subgid file - cannot continue
+      when: not __podman_gid_line_found.matched
