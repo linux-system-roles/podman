@@ -1,6 +1,21 @@
 Changelog
 =========
 
+[1.3.0] - 2023-07-27
+--------------------
+
+### New Features
+
+- feat: allow not pulling images, continue if pull fails (#82)
+
+### Bug Fixes
+
+- fix: support global options in config files (#83)
+
+### Other Changes
+
+- refactor: use getsubids to check subuid and subgid (#86)
+
 [1.2.0] - 2023-07-19
 --------------------
 
