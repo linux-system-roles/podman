@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 ---
 __podman_packages:
+  - crun
   - podman
   - podman-plugins
   - shadow-utils-subid
