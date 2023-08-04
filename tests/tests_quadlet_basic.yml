@@ -8,12 +8,12 @@
     podman_use_copr: false  # disable copr for CI testing
     podman_fail_if_too_old: false
     podman_activate_systemd_unit: false
-    podman_secrets:
+    __podman_secrets:
       - name: mysql_container_root_password
         state: present
         skip_existing: true
         data: the_root_password_vault_encrypted
-    podman_quadlet_specs:
+    __podman_quadlet_specs:
       - name: quadlet-basic
         type: network
         Network:
@@ -97,31 +97,69 @@
             - nopull
             - bogus
 
-    - name: Run the role
+    - name: Create user for testing
+      user:
+        name: user_quadlet_basic
+        uid: 1111
+
+    - name: Run the role - user
       include_role:
         name: linux-system-roles.podman
+      vars:
+        podman_run_as_user: user_quadlet_basic
+        podman_secrets: "{{ __podman_secrets }}"
+        podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
 
-    - name: Check container
-      command: cat /etc/containers/systemd/quadlet-basic-mysql.container
+    - name: Check files
+      command: cat {{ __dir }}/{{ item }}
       changed_when: false
+      vars:
+        __dir: /home/user_quadlet_basic/.config/containers/systemd
+      loop:
+        - quadlet-basic-mysql.container
+        - quadlet-basic.network
+        - quadlet-basic-mysql.volume
 
-    - name: Check network
-      command: cat /etc/containers/systemd/quadlet-basic.network
-      changed_when: false
-
-    - name: Check volume
-      command: cat /etc/containers/systemd/quadlet-basic-mysql.volume
-      changed_when: false
-
-    - name: Prepare for Cleanup
-      set_fact:
-        podman_secrets: "{{ podman_secrets | map('combine', __absent) |
+    # must clean up networks last - cannot remove a network
+    # in use by a container
+    - name: Cleanup user
+      include_role:
+        name: linux-system-roles.podman
+      vars:
+        podman_run_as_user: user_quadlet_basic
+        __absent: {"state":"absent"}
+        podman_secrets: "{{ __podman_secrets | map('combine', __absent) |
           list }}"
-        podman_quadlet_specs: "{{ podman_quadlet_specs |
-          map('combine', __absent) | list }}"
+        podman_quadlet_specs: "{{ ((__podman_quadlet_specs |
+          rejectattr('type', 'match', '^network$') | list) +
+          (__podman_quadlet_specs | selectattr('type', 'match', '^network$') |
+           list)) | map('combine', __absent) | list }}"
+
+    - name: Run the role - root
+      include_role:
+        name: linux-system-roles.podman
+      vars:
+        podman_secrets: "{{ __podman_secrets }}"
+        podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
+
+    - name: Check files
+      command: cat {{ __dir }}/{{ item }}
+      changed_when: false
+      vars:
+        __dir: /etc/containers/systemd
+      loop:
+        - quadlet-basic-mysql.container
+        - quadlet-basic.network
+        - quadlet-basic-mysql.volume
+
+    - name: Cleanup system - root
+      include_role:
+        name: linux-system-roles.podman
       vars:
         __absent: {"state":"absent"}
-
-    - name: Cleanup
-      include_role:
-        name: linux-system-roles.podman
+        podman_secrets: "{{ __podman_secrets | map('combine', __absent) |
+          list }}"
+        podman_quadlet_specs: "{{ ((__podman_quadlet_specs |
+          rejectattr('type', 'match', '^network$') | list) +
+          (__podman_quadlet_specs | selectattr('type', 'match', '^network$') |
+          list)) | map('combine', __absent) | list }}"

@@ -105,7 +105,10 @@
   when: podman_selinux_ports | length > 0
 
 - name: Handle secrets
-  include_tasks: handle_secrets.yml
+  include_tasks: handle_secret.yml
+  loop: "{{ podman_secrets }}"
+  loop_control:
+    loop_var: __podman_secret_item
 
 - name: Handle Kubernetes specifications
   include_tasks: handle_kube_spec.yml
