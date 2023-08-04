@@ -25,19 +25,35 @@
     state: absent
   register: __podman_file_removed
 
-- name: Reload systemctl  # noqa no-handler
-  systemd:
-    daemon_reload: true
-    scope: "{{ __podman_systemd_scope }}"
-  become: "{{ __podman_rootless | ternary(true, omit) }}"
-  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-  when: __podman_file_removed is changed
-
 - name: Cleanup container resources
   when: __podman_file_removed is changed  # noqa no-handler
   block:
+    - name: Reload systemctl  # noqa no-handler
+      systemd:
+        daemon_reload: true
+        scope: "{{ __podman_systemd_scope }}"
+      become: "{{ __podman_rootless | ternary(true, omit) }}"
+      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+      environment:
+        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+
+    - name: Prune images no longer in use
+      command: podman image prune -f
+      environment:
+        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+      become: "{{ __podman_rootless | ternary(true, omit) }}"
+      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+      changed_when: true
+
+    - name: Remove network
+      command: podman network rm systemd-{{ __podman_quadlet_name }}
+      changed_when: true
+      when: __podman_quadlet_type == "network"
+      environment:
+        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+      become: "{{ __podman_rootless | ternary(true, omit) }}"
+      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+
     - name: Gather facts for all containers
       containers.podman.podman_container_info:
       environment:
@@ -46,17 +62,20 @@
       become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
       register: __podman_container_info
 
-    - name: Cancel linger if no more containers are running
-      command: loginctl disable-linger {{ __podman_user }}
-      when:
-        - __podman_rootless | bool
-        - __podman_container_info.containers | length == 0
-      changed_when: true
-
-    - name: Prune images no longer in use
-      command: podman image prune -f
+    - name: Gather facts for networks
+      command: podman network ls -q
+      register: __podman_networks
+      changed_when: false
       environment:
         XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
       become: "{{ __podman_rootless | ternary(true, omit) }}"
       become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+
+    - name: Cancel linger if no more resources are in use
+      command: loginctl disable-linger {{ __podman_user }}
+      when:
+        - __podman_rootless | bool
+        - __podman_container_info.containers | length == 0
+        - __podman_networks.stdout_lines | reject('match', '^podman$') |
+          list | length == 0
       changed_when: true

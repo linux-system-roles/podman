@@ -59,11 +59,11 @@ except for the following:
 * `run_as_user` - Use this to specify a per-pod user.  If you do not
   specify this, then the global default `podman_run_as_user` value will be used.
   Otherwise, `root` will be used.  NOTE: The user must already exist - the role
-  will not create.  The user must be present in `/etc/subuid`.
+  will not create one.  The user must be present in `/etc/subuid`.
 * `run_as_group` - Use this to specify a per-pod group.  If you do not
   specify this, then the global default `podman_run_as_group` value will be
   used.  Otherwise, `root` will be used.  NOTE: The group must already exist -
-  the role will not create.  The group must be present in `/etc/subgid`.
+  the role will not create one.  The group must be present in `/etc/subgid`.
 * `systemd_unit_scope` - The scope to use for the systemd unit.  If you do not
   specify this, then the global default `podman_systemd_unit_scope` will be
   used.  Otherwise, the scope will be `system` for root containers, and `user`
@@ -193,10 +193,20 @@ Then the local file `templates/my-app.container.j2` will be processed as a Jinja
 template file, then copied to `/etc/containers/systemd/my-app.container` as a
 quadlet container unit spec on the managed node.
 
+*NOTE*: When removing quadlets, you must remove networks *last*.  You cannot
+remove a network that is in use by a container.
+
 ### podman_secrets
 
-This is a list of secret specs in the same format as used by
+This is a list of secret specs in almost the same format as used by
 [podman_secret](https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_secret_module.html#ansible-collections-containers-podman-podman-secret-module)
+There is an additional field:
+
+* `run_as_user` - Use this to specify a secret for a specific user.  If you do
+  not specify this, then the global default `podman_run_as_user` value will be
+  used. Otherwise, `root` will be used.  NOTE: The user must already exist - the
+  role will not create one.
+
 You are *strongly* encouraged to use Ansible Vault to encrypt the value of the
 `data` field.
 
@@ -267,14 +277,14 @@ podman_selinux_ports:
 
 This is the name of the user to use for all rootless containers.  You can also
 specify per-container username with `run_as_user` in `podman_kube_specs`.  NOTE:
-The user must already exist - the role will not create.  The user must be
+The user must already exist - the role will not create one.  The user must be
 present in `/etc/subuid`.
 
 ### podman_run_as_group
 
 This is the name of the group to use for all rootless containers.  You can also
 specify per-container group name with `run_as_group` in `podman_kube_specs`.
-NOTE: The group must already exist - the role will not create.  The group must
+NOTE: The group must already exist - the role will not create one.  The group must
 be present in `/etc/subgid`.
 
 ### podman_systemd_unit_scope

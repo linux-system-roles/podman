@@ -130,8 +130,6 @@
         name: linux-system-roles.podman
       vars:
         podman_quadlet_specs:
-          - file_src: quadlet-demo.network
-            state: absent
           - file_src: quadlet-demo-mysql.volume
             state: absent
           - template_src: quadlet-demo-mysql.container.j2
@@ -141,6 +139,8 @@
           - template_src: quadlet-demo.yml.j2
             state: absent
           - file_src: quadlet-demo.kube
+            state: absent
+          - file_src: quadlet-demo.network
             state: absent
         podman_secrets:
           - name: mysql-root-password-container
