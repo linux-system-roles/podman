@@ -22,7 +22,7 @@ The role requires the following collections:
 
 Use this to install the collections:
 
-```
+```bash
 ansible-galaxy collection install -vv -r meta/collection-requirements.yml
 ```
 
@@ -53,9 +53,9 @@ module](https://docs.ansible.com/ansible/latest/collections/containers/podman/po
 except for the following:
 
 * `state` - default is `created`.  This takes 3 values:
-   * `started` - Create the pods and systemd services, and start them running
-   * `created` - Create the pods and systemd services, but do not start them
-   * `absent` - Remove the pods and systemd services
+  * `started` - Create the pods and systemd services, and start them running
+  * `created` - Create the pods and systemd services, but do not start them
+  * `absent` - Remove the pods and systemd services
 * `run_as_user` - Use this to specify a per-pod user.  If you do not
   specify this, then the global default `podman_run_as_user` value will be used.
   Otherwise, `root` will be used.  NOTE: The user must already exist - the role
@@ -93,10 +93,10 @@ except for the following:
   do not have to specify this.  It is highly recommended to omit `kube_file` and
   instead specify either `kube_file_src` or `kube_file_content` and let the role
   manage the file path and name.
-   * The file basename will be the `metadata.name` value from the K8s yaml, with a
+  * The file basename will be the `metadata.name` value from the K8s yaml, with a
     `.yml` suffix appended to it.
-   * The directory will be `/etc/containers/ansible-kubernetes.d` for system services.
-   * The directory will be `$HOME/.config/containers/ansible-kubernetes.d` for user services.
+  * The directory will be `/etc/containers/ansible-kubernetes.d` for system services.
+  * The directory will be `$HOME/.config/containers/ansible-kubernetes.d` for user services.
 
 For example, if you have
 
@@ -116,7 +116,7 @@ the managed node.
 ### podman_quadlet_specs
 
 List of [Quadlet specifications]
-(https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+(<https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html>)
 A quadlet spec is uniquely identified by a name and a type, where type is one of
 the types of units like container, kube, network, volume, etc.  You can either
 pass in `name` and `type` explicitly, or the `name` and `type` will be derived
@@ -406,6 +406,7 @@ podman_secrets:
 ```
 
 my-app.container.j2:
+
 ```ini
 [Container]
 {% if podman_version is version("4.5", ">=") %}
