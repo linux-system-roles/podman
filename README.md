@@ -2,8 +2,6 @@
 
 [![ansible-lint.yml](https://github.com/linux-system-roles/podman/actions/workflows/ansible-lint.yml/badge.svg)](https://github.com/linux-system-roles/podman/actions/workflows/ansible-lint.yml) [![ansible-test.yml](https://github.com/linux-system-roles/podman/actions/workflows/ansible-test.yml/badge.svg)](https://github.com/linux-system-roles/podman/actions/workflows/ansible-test.yml) [![markdownlint.yml](https://github.com/linux-system-roles/podman/actions/workflows/markdownlint.yml/badge.svg)](https://github.com/linux-system-roles/podman/actions/workflows/markdownlint.yml) [![woke.yml](https://github.com/linux-system-roles/podman/actions/workflows/woke.yml/badge.svg)](https://github.com/linux-system-roles/podman/actions/workflows/woke.yml)
 
----
-
 This role manages `podman` configuration, containers, and systemd services which
 run `podman` containers.
 
