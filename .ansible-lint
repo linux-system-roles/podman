@@ -23,5 +23,3 @@ exclude_paths:
   - tests/files/
 mock_roles:
   - linux-system-roles.podman
-mock_modules:
-  - ansible.utils.update_fact

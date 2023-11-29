@@ -2,6 +2,5 @@
 ---
 collections:
   - ansible.posix
-  - ansible.utils
   - containers.podman
   - fedora.linux_system_roles
