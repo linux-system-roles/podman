@@ -12,7 +12,7 @@
       - name: mysql_container_root_password
         state: present
         skip_existing: true
-        data: the_root_password_vault_encrypted
+        data: "{{ mysql_container_root_password }}"
     __podman_quadlet_specs:
       - name: quadlet-basic
         type: network

@@ -111,6 +111,7 @@
   loop: "{{ podman_secrets }}"
   loop_control:
     loop_var: __podman_secret_item
+  no_log: true
 
 - name: Handle Kubernetes specifications
   include_tasks: handle_kube_spec.yml
