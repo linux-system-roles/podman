@@ -61,6 +61,7 @@
       become: "{{ __podman_rootless | ternary(true, omit) }}"
       become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
       register: __podman_container_info
+      no_log: true
 
     - name: Gather facts for networks
       command: podman network ls -q

@@ -41,10 +41,6 @@
         certificate_test_mode: true
         certificate_test_remove_files: true
 
-    - name: Create random string and save it in root_password
-      set_fact:
-        root_password: "{{ lookup('lines', 'openssl rand -base64 48') }}"
-
     - name: Run the role
       include_role:
         name: linux-system-roles.podman
@@ -53,14 +49,14 @@
           - name: mysql-root-password-container
             state: present
             skip_existing: true
-            data: "{{ root_password }}"
+            data: "{{ mysql_container_root_password }}"
           - name: mysql-root-password-kube
             state: present
             skip_existing: true
             data: |
               apiVersion: v1
               data:
-                password: "{{ root_password | b64encode }}"
+                password: "{{ mysql_container_root_password | b64encode }}"
               kind: Secret
               metadata:
                 name: mysql-root-password-kube
