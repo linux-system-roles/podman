@@ -1,6 +1,5 @@
-# SPDX-License-Identifier: MIT
 ---
-- name: Test role variable override
+- name: Test role include variable override
   hosts: all
   gather_facts: true
   tasks:
@@ -39,9 +38,18 @@
         varfiles: "{{ [facts['distribution']] | product(separators) |
           map('join') | product(versions) | map('join') | list +
           [facts['distribution'], facts['os_family']] }}"
+      register: __varfiles_created
 
     - name: Import role
       import_role:
         name: caller
       vars:
         roletoinclude: linux-system-roles.podman
+
+    - name: Cleanup
+      file:
+        path: "{{ item.dest }}"
+        state: absent
+      loop: "{{ __varfiles_created.results }}"
+      delegate_to: localhost
+      when: inventory_hostname == ansible_play_hosts_all[0]
