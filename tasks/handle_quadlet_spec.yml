@@ -127,7 +127,7 @@
     __podman_service_name: "{{
       __podman_quadlet_name ~ '.service'
       if __podman_quadlet_type in ['container', 'kube']
-      else __podman_quadlet_name ~ '.volume'
+      else __podman_quadlet_name ~ '-volume.service'
       if __podman_quadlet_type in ['volume']
       else none }}"
 

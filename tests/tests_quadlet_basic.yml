@@ -7,7 +7,6 @@
   vars:
     podman_use_copr: false  # disable copr for CI testing
     podman_fail_if_too_old: false
-    podman_activate_systemd_unit: false
     __podman_secrets:
       - name: mysql_container_root_password
         state: present
@@ -25,7 +24,6 @@
         Volume: {}
       - name: quadlet-basic-mysql
         type: container
-        activate_systemd_unit: true
         Install:
           WantedBy: default.target
         Container:
