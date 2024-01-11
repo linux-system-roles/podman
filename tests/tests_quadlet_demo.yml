@@ -11,7 +11,6 @@
     podman_use_copr: false  # disable copr for CI testing
     podman_fail_if_too_old: false
     podman_create_host_directories: true
-    podman_activate_systemd_unit: false
     podman_quadlet_specs:
       - file_src: quadlet-demo.network
       - file_src: quadlet-demo-mysql.volume
@@ -19,7 +18,6 @@
       - file_src: envoy-proxy-configmap.yml
       - template_src: quadlet-demo.yml.j2
       - file_src: quadlet-demo.kube
-        activate_systemd_unit: true
     podman_firewall:
       - port: 8000/tcp
         state: enabled
