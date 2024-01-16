@@ -1,6 +1,18 @@
 Changelog
 =========
 
+[1.4.3] - 2024-01-16
+--------------------
+
+### Bug Fixes
+
+- fix: name of volume quadlet service should be basename-volume.service (#119)
+
+### Other Changes
+
+- ci: support ansible-lint and ansible-test 2.16 (#116)
+- ci: Use supported ansible-lint action; run ansible-lint against the collection (#117)
+
 [1.4.2] - 2023-12-12
 --------------------
 
