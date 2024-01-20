@@ -133,12 +133,36 @@
           (__podman_quadlet_specs | selectattr('type', 'match', '^network$') |
            list)) | map('combine', __absent) | list }}"
 
+    - name: Set vars for root testing
+      set_fact:
+        __root_podman_secrets: "{{ __podman_secrets + __json_secret }}"
+        __root_podman_quadlet_specs: "{{ __podman_quadlet_specs +
+          __json_container }}"
+        __root_json_data: '{"test": "json"}'
+      vars:
+        __json_secret:
+          - name: json_secret
+            state: present
+            data: '{"test": "json"}'
+        __json_container:
+          - name: json_container
+            type: container
+            Install:
+              WantedBy: default.target
+            Container:
+              Image: "{{ mysql_image }}"
+              ContainerName: json_container
+              # Once 4.5 is released change this line to use the quadlet Secret
+              PodmanArgs: "--secret=mysql_container_root_password,type=env,\
+                target=MYSQL_ROOT_PASSWORD --secret=json_secret,type=mount,\
+                target=/tmp/test.json"
+
     - name: Run the role - root
       include_role:
         name: linux-system-roles.podman
       vars:
-        podman_secrets: "{{ __podman_secrets }}"
-        podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
+        podman_secrets: "{{ __root_podman_secrets }}"
+        podman_quadlet_specs: "{{ __root_podman_quadlet_specs }}"
 
     - name: Check files
       command: cat {{ __dir }}/{{ item }}
@@ -150,14 +174,21 @@
         - quadlet-basic.network
         - quadlet-basic-mysql.volume
 
+    - name: Check JSON
+      command: podman exec json_container cat /tmp/test.json
+      register: __result
+      failed_when: __result.stdout != __root_json_data
+      changed_when: false
+
     - name: Cleanup system - root
       include_role:
         name: linux-system-roles.podman
       vars:
         __absent: {"state":"absent"}
-        podman_secrets: "{{ __podman_secrets | map('combine', __absent) |
+        podman_secrets: "{{ __root_podman_secrets | map('combine', __absent) |
           list }}"
-        podman_quadlet_specs: "{{ ((__podman_quadlet_specs |
+        podman_quadlet_specs: "{{ ((__root_podman_quadlet_specs |
           rejectattr('type', 'match', '^network$') | list) +
-          (__podman_quadlet_specs | selectattr('type', 'match', '^network$') |
-          list)) | map('combine', __absent) | list }}"
+          (__root_podman_quadlet_specs |
+           selectattr('type', 'match', '^network$') | list)) |
+          map('combine', __absent) | list }}"
