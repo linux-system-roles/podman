@@ -7,11 +7,13 @@
   vars:
     podman_use_copr: false  # disable copr for CI testing
     podman_fail_if_too_old: false
+    __secret_password_env: "{{ lookup('env', 'SYSTEM_ROLES_PODMAN_PASSWORD') }}"
     __podman_secrets:
       - name: mysql_container_root_password
         state: present
         skip_existing: true
-        data: "{{ mysql_container_root_password }}"
+        data: "{{ (__secret_password_env | length > 0) |
+          ternary(__secret_password_env, mysql_container_root_password) }}"
     __podman_quadlet_specs:
       - name: quadlet-basic
         type: network
@@ -133,17 +135,22 @@
           (__podman_quadlet_specs | selectattr('type', 'match', '^network$') |
            list)) | map('combine', __absent) | list }}"
 
-    - name: Set vars for root testing
+    - name: Set secret var for root testing
       set_fact:
         __root_podman_secrets: "{{ __podman_secrets + __json_secret }}"
-        __root_podman_quadlet_specs: "{{ __podman_quadlet_specs +
-          __json_container }}"
         __root_json_data: '{"test": "json"}'
       vars:
         __json_secret:
           - name: json_secret
             state: present
             data: '{"test": "json"}'
+      no_log: true
+
+    - name: Set container vars for root testing
+      set_fact:
+        __root_podman_quadlet_specs: "{{ __podman_quadlet_specs +
+          __json_container }}"
+      vars:
         __json_container:
           - name: json_container
             type: container
