@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[1.4.4] - 2024-01-23
+--------------------
+
+### Bug Fixes
+
+- fix: cast secret data to string in order to allow JSON valued strings (#122)
+
 [1.4.3] - 2024-01-16
 --------------------
 
