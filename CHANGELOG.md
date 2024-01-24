@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[1.4.5] - 2024-01-24
+--------------------
+
+### Other Changes
+
+- test: allow testing to see if secrets are logged (#125)
+
 [1.4.4] - 2024-01-23
 --------------------
 
