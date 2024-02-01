@@ -234,7 +234,8 @@
                       spec:
                         containers:
                           - name: bogus
-                            image: this_is_a_bogus_image
+                            image: >-
+                              quay.io/linux-system-roles/this_is_a_bogus_image:latest
 
           rescue:
             - name: Verify image not pulled
@@ -273,6 +274,7 @@
           vars:
             podman_kube_specs: "{{ __podman_kube_specs |
               union([__podman_use_kube_file]) | list }}"
+            podman_pull_retry: true
 
         - name: Check if pods are running
           command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
@@ -407,6 +409,12 @@
               ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
               ]+active
 
+      rescue:
+        - name: Dump journal
+          command: journalctl -ex
+          changed_when: false
+          failed_when: true
+
       always:
         # have to clean up storage.conf - otherwise, get this message:
         # A storage.conf file exists at /etc/containers/storage.conf
@@ -430,3 +438,4 @@
           file:
             path: "{{ __kube_file_src.path }}"
             state: absent
+          delegate_to: localhost

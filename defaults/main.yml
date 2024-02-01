@@ -104,3 +104,8 @@ podman_pull_image: true
 # running the role.
 # You can do this on a per-spec basis using continue_if_pull_fails
 podman_continue_if_pull_fails: false
+
+# Retry failed pulls
+# If true, if a pull attempt fails, it will be retried according
+# to the default Ansible `until` behavior.
+podman_pull_retry: false

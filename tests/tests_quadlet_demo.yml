@@ -28,140 +28,150 @@
       "/tmp/quadlet_demo":
         mode: "0777"
   tasks:
-    - name: Generate certificates
-      include_role:
-        name: fedora.linux_system_roles.certificate
-      vars:
-        certificate_requests:
-          - name: "{{ __test_cert_name }}"
-            dns: ["localhost"]
-            ca: self-sign
-        certificate_test_mode: true
-        certificate_test_remove_files: true
+    - name: Run tests
+      block:
+        - name: Generate certificates
+          include_role:
+            name: fedora.linux_system_roles.certificate
+          vars:
+            certificate_requests:
+              - name: "{{ __test_cert_name }}"
+                dns: ["localhost"]
+                ca: self-sign
+            certificate_test_mode: true
+            certificate_test_remove_files: true
 
-    - name: Run the role
-      include_role:
-        name: linux-system-roles.podman
-      vars:
-        podman_secrets:
-          - name: mysql-root-password-container
-            state: present
-            skip_existing: true
-            data: "{{ mysql_container_root_password }}"
-          - name: mysql-root-password-kube
-            state: present
-            skip_existing: true
-            data: |
-              apiVersion: v1
-              data:
-                password: "{{ mysql_container_root_password | b64encode }}"
-              kind: Secret
-              metadata:
-                name: mysql-root-password-kube
-          - name: envoy-certificates
-            state: present
-            skip_existing: true
-            data: |
-              apiVersion: v1
-              data:
-                certificate.key: {{
-                  certificate_test_certs[__test_cert_name]['key_content'] |
-                  b64encode }}
-                certificate.pem: {{
-                  certificate_test_certs[__test_cert_name]['cert_content'] |
-                  b64encode }}
-              kind: Secret
-              metadata:
-                name: envoy-certificates
+        - name: Run the role
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_pull_retry: true
+            podman_secrets:
+              - name: mysql-root-password-container
+                state: present
+                data: "{{ mysql_container_root_password }}"
+              - name: mysql-root-password-kube
+                state: present
+                data: |
+                  apiVersion: v1
+                  data:
+                    password: "{{ mysql_container_root_password | b64encode }}"
+                  kind: Secret
+                  metadata:
+                    name: mysql-root-password-kube
+              - name: envoy-certificates
+                state: present
+                data: |
+                  apiVersion: v1
+                  data:
+                    certificate.key: {{
+                      certificate_test_certs[__test_cert_name]['key_content'] |
+                      b64encode }}
+                    certificate.pem: {{
+                      certificate_test_certs[__test_cert_name]['cert_content'] |
+                      b64encode }}
+                  kind: Secret
+                  metadata:
+                    name: envoy-certificates
 
-    - name: Check
-      command: ls -alrtF /etc/containers/systemd
-      changed_when: false
+        - name: Check quadlet files
+          command: ls -alrtF /etc/containers/systemd
+          changed_when: false
 
-    - name: Check containers
-      command: podman ps -a
-      changed_when: false
-      failed_when: false
+        - name: Check containers
+          command: podman ps -a
+          changed_when: false
+          failed_when: false
 
-    - name: Check pods
-      command: podman pod ps --ctr-ids --ctr-names --ctr-status
-      changed_when: false
-      failed_when: false
+        - name: Check pods
+          command: podman pod ps --ctr-ids --ctr-names --ctr-status
+          changed_when: false
+          failed_when: false
 
-    - name: Check systemd
-      # noqa command-instead-of-module
-      shell: set -euo pipefail; systemctl list-units | grep quadlet
-      changed_when: false
-      failed_when: false
+        - name: Check systemd
+          # noqa command-instead-of-module
+          shell: set -euo pipefail; systemctl list-units | grep quadlet
+          changed_when: false
+          failed_when: false
 
-    - name: Check web
-      get_url:
-        url: https://localhost:8000
-        dest: /run/out
-        mode: 0600
-        validate_certs: false
-      register: __web_status
-      until: __web_status is success
-      retries: 6
-      delay: 5
+        - name: Check web
+          get_url:
+            url: https://localhost:8000
+            dest: /run/out
+            mode: 0600
+            validate_certs: false
+          register: __web_status
+          until: __web_status is success
+          retries: 6
+          delay: 5
 
-    - name: Show web
-      command: cat /run/out
-      changed_when: false
-      when: __web_status is success
+        - name: Show web
+          command: cat /run/out
+          changed_when: false
+          when: __web_status is success
 
-    - name: Show errors
-      command: journalctl -xe
-      changed_when: false
-      when: __web_status is failed
+        - name: Error
+          fail:
+          when: __web_status is failed
 
-    - name: Exit
-      fail:
-      when: __web_status is failed
+      rescue:
+        - name: Dump journal
+          command: journalctl -ex
+          changed_when: false
+          failed_when: true
 
-    - name: Cleanup
-      include_role:
-        name: linux-system-roles.podman
-      vars:
-        podman_quadlet_specs:
-          - file_src: quadlet-demo-mysql.volume
-            state: absent
-          - template_src: quadlet-demo-mysql.container.j2
-            state: absent
-          - file_src: envoy-proxy-configmap.yml
-            state: absent
-          - template_src: quadlet-demo.yml.j2
-            state: absent
-          - file_src: quadlet-demo.kube
-            state: absent
-          - file_src: quadlet-demo.network
-            state: absent
-        podman_secrets:
-          - name: mysql-root-password-container
-            state: absent
-          - name: mysql-root-password-kube
-            state: absent
-          - name: envoy-certificates
-            state: absent
+      always:
+        - name: Check
+          command: podman ps -a
+          changed_when: false
 
-    - name: Check
-      command: podman ps -a
-      changed_when: false
+        - name: Check pods
+          command: podman pod ps --ctr-ids --ctr-names --ctr-status
+          changed_when: false
+          failed_when: false
 
-    - name: Check pods
-      command: podman pod ps --ctr-ids --ctr-names --ctr-status
-      changed_when: false
-      failed_when: false
+        - name: Check systemd
+          # noqa command-instead-of-module
+          shell: >-
+            set -euo pipefail;
+            systemctl list-units --all | grep quadlet
+          changed_when: false
+          failed_when: false
 
-    - name: Check systemd
-      # noqa command-instead-of-module
-      shell: >-
-        set -euo pipefail;
-        systemctl list-units --all --with-dependencies | grep quadlet
-      changed_when: false
-      failed_when: false
+        - name: LS
+          command: ls -alrtF /etc/systemd/system
+          changed_when: false
+          failed_when: false
 
-    - name: LS
-      command: ls -alrtF /etc/systemd/system
-      changed_when: false
-      failed_when: false
+        - name: Cleanup
+          block:
+            - name: Cleanup
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_quadlet_specs:
+                  - template_src: quadlet-demo-mysql.container.j2
+                    state: absent
+                  - file_src: quadlet-demo-mysql.volume
+                    state: absent
+                  - file_src: envoy-proxy-configmap.yml
+                    state: absent
+                  - file_src: quadlet-demo.kube
+                    state: absent
+                  - template_src: quadlet-demo.yml.j2
+                    state: absent
+                  - file_src: quadlet-demo.network
+                    state: absent
+                podman_secrets:
+                  - name: mysql-root-password-container
+                    state: absent
+                  - name: mysql-root-password-kube
+                    state: absent
+                  - name: envoy-certificates
+                    state: absent
+
+          rescue:
+            - name: Get journald
+              command: journalctl -ex
+              changed_when: false
+              failed_when: true

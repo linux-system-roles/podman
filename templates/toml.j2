@@ -5,6 +5,8 @@
 {{ key }}={{ value }}
 {%   elif value is mapping and value is not string %}
 {{ key }} = [{%- for k in value %} "{{k}}={{value[k]}}", {%- endfor %}]
+{%   elif value is not string %}
+{{ key }} = {{ value }}
 {%   else %}
 {{ key }}="{{ value }}"
 {%   endif %}
