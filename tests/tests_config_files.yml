@@ -140,6 +140,13 @@
             loop_var: __file
           vars:
             __fingerprint: "system_role:podman"
+
+      rescue:
+        - name: Dump journal
+          command: journalctl -ex
+          changed_when: false
+          failed_when: true
+
       always:
         - name: Remove test config files
           file:

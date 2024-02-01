@@ -106,6 +106,10 @@
     selinux_ports: "{{ podman_selinux_ports }}"
   when: podman_selinux_ports | length > 0
 
+- name: Keep track of users that need to cancel linger
+  set_fact:
+    __podman_cancel_user_linger: []
+
 - name: Handle secrets
   include_tasks: handle_secret.yml
   loop: "{{ podman_secrets }}"
@@ -124,3 +128,9 @@
   loop: "{{ podman_quadlet_specs }}"
   loop_control:
     loop_var: __podman_quadlet_spec_item
+
+- name: Cancel linger
+  include_tasks: cancel_linger.yml
+  loop: "{{ __podman_cancel_user_linger }}"
+  loop_control:
+    loop_var: __podman_linger_user

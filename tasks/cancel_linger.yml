@@ -1,0 +1,62 @@
+---
+# Input:
+# * __podman_linger_user - username
+- name: Get user information
+  getent:
+    database: passwd
+    key: "{{ __podman_linger_user }}"
+    fail_key: true
+  when: "'getent_passwd' not in ansible_facts or
+    __podman_linger_user not in ansible_facts['getent_passwd']"
+
+- name: Set cancel linger vars
+  set_fact:
+    __podman_xdg_runtime_dir: >-
+      /run/user/{{ ansible_facts["getent_passwd"][__podman_linger_user][1] }}
+
+- name: Stat XDG_RUNTIME_DIR
+  stat:
+    path: "{{ __podman_xdg_runtime_dir }}"
+  register: __podman_xdg_stat
+
+- name: Gather facts for containers
+  containers.podman.podman_container_info:
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  become: true
+  become_user: "{{ __podman_linger_user }}"
+  when: __podman_xdg_stat.stat.exists
+  register: __podman_container_info
+
+- name: Gather facts for networks
+  command: podman network ls -q
+  register: __podman_networks
+  changed_when: false
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  become: true
+  become_user: "{{ __podman_linger_user }}"
+  when: __podman_xdg_stat.stat.exists
+
+- name: Gather secrets
+  command: podman secret ls -n -q
+  register: __podman_linger_secrets
+  changed_when: false
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  become: true
+  become_user: "{{ __podman_linger_user }}"
+  when: __podman_xdg_stat.stat.exists
+
+- name: Cancel linger if no more resources are in use
+  command: loginctl disable-linger {{ __podman_linger_user }}
+  when:
+    - __podman_xdg_stat.stat.exists
+    - __podman_container_info.containers | length == 0
+    - __podman_networks.stdout_lines | reject("match", "^podman$") |
+      reject("match", "^podman-default-kube-network$") |
+      list | length == 0
+    - __podman_linger_secrets.stdout == ""
+  changed_when: true
+  args:
+    removes: /var/lib/systemd/linger/{{ __podman_user }}

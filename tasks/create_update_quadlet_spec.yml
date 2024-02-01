@@ -1,9 +1,8 @@
 ---
-- name: Enable lingering if needed
-  command: loginctl enable-linger {{ __podman_user }}
-  when: __podman_rootless | bool
-  args:
-    creates: /var/lib/systemd/linger/{{ __podman_user }}
+- name: Manage linger
+  include_tasks: manage_linger.yml
+  vars:
+    __podman_item_state: present
 
 - name: Create host directories
   file: "{{ __defaults | combine(podman_host_directories[__hostitem])
@@ -31,6 +30,8 @@
     password: "{{ container_image_password | default(omit) }}"
   register: __podman_image_updated
   when: __podman_pull_image | bool
+  until: __podman_image_updated is success
+  retries: "{{ podman_pull_retry | ternary(3, 0) }}"
   failed_when:
     - __podman_image_updated is failed
     - not __podman_continue_if_pull_fails

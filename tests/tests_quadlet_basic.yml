@@ -7,13 +7,16 @@
   vars:
     podman_use_copr: false  # disable copr for CI testing
     podman_fail_if_too_old: false
+    __json_secret_data: '{"test": "json"}'
     __secret_password_env: "{{ lookup('env', 'SYSTEM_ROLES_PODMAN_PASSWORD') }}"
     __podman_secrets:
       - name: mysql_container_root_password
         state: present
-        skip_existing: true
         data: "{{ (__secret_password_env | length > 0) |
           ternary(__secret_password_env, mysql_container_root_password) }}"
+      - name: json_secret
+        state: present
+        data: "{{ __json_secret_data | string }}"
     __podman_quadlet_specs:
       - name: quadlet-basic
         type: network
@@ -34,168 +37,253 @@
           Volume: quadlet-basic-mysql.volume:/var/lib/mysql
           Network: quadlet-basic.network
           # Once 4.5 is released change this line to use the quadlet Secret key
-          PodmanArgs: "--secret=mysql_container_root_password,type=env,\
-            target=MYSQL_ROOT_PASSWORD"
+          PodmanArgs: >-
+            --secret=mysql_container_root_password,type=env,target=MYSQL_ROOT_PASSWORD
+            --secret=json_secret,type=mount,target=/tmp/test.json
           Environment:
             - FOO=/bin/busybox-extras
             - BAZ=test
   tasks:
-    - name: See if not pulling images fails
+    - name: Run test
       block:
-        - name: Run role - do not pull images
+        - name: See if not pulling images fails
+          block:
+            - name: Run role - do not pull images
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_quadlet_specs:
+                  - name: nopull
+                    type: container
+                    state: created
+                    pull_image: false
+                    activate_systemd_unit: false
+                    Install:
+                      WantedBy: default.target
+                    Container:
+                      Image: "{{ test_image }}"
+                      ContainerName: nopull
+
+            - name: Verify image not pulled
+              assert:
+                that: __podman_image_updated.results[0] is skipped
+
+            - name: Run role - try to pull bogus image
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_quadlet_specs:
+                  - name: bogus
+                    type: container
+                    state: created
+                    continue_if_pull_fails: true
+                    activate_systemd_unit: false
+                    Install:
+                      WantedBy: default.target
+                    Container:
+                      Image: this_is_a_bogus_image
+                      ContainerName: bogus
+
+            - name: Verify image not pulled and no error
+              assert:
+                that:
+                  - not __podman_image_updated.results[0] is changed
+                  - not __podman_image_updated.results[0] is skipped
+
+          always:
+            - name: Cleanup
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_quadlet_specs:
+                  - state: absent
+                    name: "{{ item }}"
+                    type: container
+              loop:
+                - nopull
+                - bogus
+
+        - name: Create user for testing
+          user:
+            name: user_quadlet_basic
+            uid: 1111
+
+        # try to workaround the rootless containers error
+        # Error:
+        # mkdir /sys/fs/cgroup/devices/user.slice/runtime: permission denied
+        - name: Enable EL8 system to support rootless quadlets
+          when:
+            - ansible_facts["os_family"] == "RedHat"
+            - ansible_facts["distribution_version"] is version("9", "<")
+          block:
+            - name: Get local machine ID
+              slurp:
+                path: /etc/machine-id
+              register: __local_mach_id_enc
+              delegate_to: localhost
+
+            - name: Skip test if cannot reboot
+              meta: end_host
+              when: ansible_facts["machine_id"] == __local_mac_id
+              vars:
+                __local_mac_id: "{{ __local_mach_id_enc.content | b64decode |
+                  trim }}"
+
+            - name: Enable cgroup controllers
+              changed_when: true
+              shell: |
+                set -euxo pipefail
+                cat > /etc/systemd/system/user-0.slice <<EOF
+                [Unit]
+                Before=systemd-logind.service
+                [Slice]
+                Slice=user.slice
+                [Install]
+                WantedBy=multi-user.target
+                EOF
+                if [ ! -d /etc/systemd/system/user@.service.d ]; then
+                  mkdir -p /etc/systemd/system/user@.service.d
+                fi
+                cat > /etc/systemd/system/user@.service.d/delegate.conf <<EOF
+                [Service]
+                Delegate=memory pids
+                EOF
+                if [ ! -d /etc/systemd/system/user-.slice.d ]; then
+                  mkdir -p /etc/systemd/system/user-.slice.d
+                fi
+                cat > /etc/systemd/system/user-.slice.d/override.conf <<EOF
+                [Slice]
+                Slice=user.slice
+                CPUAccounting=yes
+                MemoryAccounting=yes
+                IOAccounting=yes
+                TasksAccounting=yes
+                EOF
+                systemctl daemon-reload
+
+            - name: Configure cgroups in kernel
+              command: >-
+                grubby --update-kernel=ALL
+                --args=systemd.unified_cgroup_hierarchy=1
+              changed_when: true
+
+            - name: Reboot
+              reboot:
+
+        - name: Run the role - user
           include_role:
             name: linux-system-roles.podman
           vars:
-            podman_quadlet_specs:
-              - name: nopull
-                type: container
-                state: created
-                pull_image: false
-                activate_systemd_unit: false
-                Install:
-                  WantedBy: default.target
-                Container:
-                  Image: "{{ test_image }}"
-                  ContainerName: nopull
+            podman_run_as_user: user_quadlet_basic
+            podman_secrets: "{{ __podman_secrets }}"
+            podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
+            podman_pull_retry: true
 
-        - name: Verify image not pulled
-          assert:
-            that: __podman_image_updated.results[0] is skipped
+        - name: Check files
+          command: cat {{ __dir }}/{{ item }}
+          changed_when: false
+          vars:
+            __dir: /home/user_quadlet_basic/.config/containers/systemd
+          loop:
+            - quadlet-basic-mysql.container
+            - quadlet-basic.network
+            - quadlet-basic-mysql.volume
 
-        - name: Run role - try to pull bogus image
+        - name: Ensure linger
+          stat:
+            path: /var/lib/systemd/linger/user_quadlet_basic
+          register: __stat
+          failed_when: not __stat.stat.exists
+
+        # must clean up networks last - cannot remove a network
+        # in use by a container
+        - name: Cleanup user
           include_role:
             name: linux-system-roles.podman
           vars:
-            podman_quadlet_specs:
-              - name: bogus
-                type: container
-                state: created
-                continue_if_pull_fails: true
-                activate_systemd_unit: false
-                Install:
-                  WantedBy: default.target
-                Container:
-                  Image: this_is_a_bogus_image
-                  ContainerName: bogus
+            podman_run_as_user: user_quadlet_basic
+            __absent: {"state":"absent"}
+            podman_secrets: "{{ __podman_secrets | map('combine', __absent) |
+              list }}"
+            podman_quadlet_specs: "{{ ((__podman_quadlet_specs |
+              rejectattr('type', 'match', '^network$') | list) +
+              (__podman_quadlet_specs |
+               selectattr('type', 'match', '^network$') | list)) |
+              map('combine', __absent) | list }}"
 
-        - name: Verify image not pulled and no error
-          assert:
-            that:
-              - not __podman_image_updated.results[0] is changed
-              - not __podman_image_updated.results[0] is skipped
+        - name: Ensure no linger
+          stat:
+            path: /var/lib/systemd/linger/user_quadlet_basic
+          register: __stat
+          failed_when: __stat.stat.exists
+
+        - name: Run the role - root
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_secrets: "{{ __podman_secrets }}"
+            podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
+
+        - name: Check files
+          command: cat {{ __dir }}/{{ item }}
+          changed_when: false
+          vars:
+            __dir: /etc/containers/systemd
+          loop:
+            - quadlet-basic-mysql.container
+            - quadlet-basic.network
+            - quadlet-basic-mysql.volume
+
+        - name: Check JSON
+          command: podman exec quadlet-basic-mysql cat /tmp/test.json
+          register: __result
+          failed_when: __result.stdout != __json_secret_data
+          changed_when: false
+
+      rescue:
+        - name: Dump journal
+          command: journalctl -ex
+          changed_when: false
+          failed_when: true
 
       always:
         - name: Cleanup
-          include_role:
-            name: linux-system-roles.podman
-          vars:
-            podman_quadlet_specs:
-              - state: absent
-                name: "{{ item }}"
-                type: container
-          loop:
-            - nopull
-            - bogus
+          block:
+            - name: Cleanup user
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_run_as_user: user_quadlet_basic
+                __absent: {"state":"absent"}
+                podman_secrets: "{{ __podman_secrets |
+                  map('combine', __absent) | list }}"
+                podman_quadlet_specs: "{{ ((__podman_quadlet_specs |
+                  rejectattr('type', 'match', '^network$') | list) +
+                  (__podman_quadlet_specs |
+                  selectattr('type', 'match', '^network$') | list)) |
+                  map('combine', __absent) | list }}"
 
-    - name: Create user for testing
-      user:
-        name: user_quadlet_basic
-        uid: 1111
+            - name: Remove test user
+              user:
+                name: user_quadlet_basic
+                uid: 1111
+                state: absent
 
-    - name: Run the role - user
-      include_role:
-        name: linux-system-roles.podman
-      vars:
-        podman_run_as_user: user_quadlet_basic
-        podman_secrets: "{{ __podman_secrets }}"
-        podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
+            - name: Cleanup system - root
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                __absent: {"state":"absent"}
+                podman_secrets: "{{ __podman_secrets |
+                  map('combine', __absent) | list }}"
+                podman_quadlet_specs: "{{ ((__podman_quadlet_specs |
+                  rejectattr('type', 'match', '^network$') | list) +
+                  (__podman_quadlet_specs |
+                  selectattr('type', 'match', '^network$') | list)) |
+                  map('combine', __absent) | list }}"
 
-    - name: Check files
-      command: cat {{ __dir }}/{{ item }}
-      changed_when: false
-      vars:
-        __dir: /home/user_quadlet_basic/.config/containers/systemd
-      loop:
-        - quadlet-basic-mysql.container
-        - quadlet-basic.network
-        - quadlet-basic-mysql.volume
-
-    # must clean up networks last - cannot remove a network
-    # in use by a container
-    - name: Cleanup user
-      include_role:
-        name: linux-system-roles.podman
-      vars:
-        podman_run_as_user: user_quadlet_basic
-        __absent: {"state":"absent"}
-        podman_secrets: "{{ __podman_secrets | map('combine', __absent) |
-          list }}"
-        podman_quadlet_specs: "{{ ((__podman_quadlet_specs |
-          rejectattr('type', 'match', '^network$') | list) +
-          (__podman_quadlet_specs | selectattr('type', 'match', '^network$') |
-           list)) | map('combine', __absent) | list }}"
-
-    - name: Set secret var for root testing
-      set_fact:
-        __root_podman_secrets: "{{ __podman_secrets + __json_secret }}"
-        __root_json_data: '{"test": "json"}'
-      vars:
-        __json_secret:
-          - name: json_secret
-            state: present
-            data: '{"test": "json"}'
-      no_log: true
-
-    - name: Set container vars for root testing
-      set_fact:
-        __root_podman_quadlet_specs: "{{ __podman_quadlet_specs +
-          __json_container }}"
-      vars:
-        __json_container:
-          - name: json_container
-            type: container
-            Install:
-              WantedBy: default.target
-            Container:
-              Image: "{{ mysql_image }}"
-              ContainerName: json_container
-              # Once 4.5 is released change this line to use the quadlet Secret
-              PodmanArgs: "--secret=mysql_container_root_password,type=env,\
-                target=MYSQL_ROOT_PASSWORD --secret=json_secret,type=mount,\
-                target=/tmp/test.json"
-
-    - name: Run the role - root
-      include_role:
-        name: linux-system-roles.podman
-      vars:
-        podman_secrets: "{{ __root_podman_secrets }}"
-        podman_quadlet_specs: "{{ __root_podman_quadlet_specs }}"
-
-    - name: Check files
-      command: cat {{ __dir }}/{{ item }}
-      changed_when: false
-      vars:
-        __dir: /etc/containers/systemd
-      loop:
-        - quadlet-basic-mysql.container
-        - quadlet-basic.network
-        - quadlet-basic-mysql.volume
-
-    - name: Check JSON
-      command: podman exec json_container cat /tmp/test.json
-      register: __result
-      failed_when: __result.stdout != __root_json_data
-      changed_when: false
-
-    - name: Cleanup system - root
-      include_role:
-        name: linux-system-roles.podman
-      vars:
-        __absent: {"state":"absent"}
-        podman_secrets: "{{ __root_podman_secrets | map('combine', __absent) |
-          list }}"
-        podman_quadlet_specs: "{{ ((__root_podman_quadlet_specs |
-          rejectattr('type', 'match', '^network$') | list) +
-          (__root_podman_quadlet_specs |
-           selectattr('type', 'match', '^network$') | list)) |
-          map('combine', __absent) | list }}"
+          rescue:
+            - name: Dump journal
+              command: journalctl -ex
+              changed_when: false
+              failed_when: true
