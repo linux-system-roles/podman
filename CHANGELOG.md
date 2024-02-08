@@ -1,6 +1,17 @@
 Changelog
 =========
 
+[1.4.6] - 2024-02-08
+--------------------
+
+### Bug Fixes
+
+- fix: ensure user linger is enabled and disabled correctly (#127)
+
+### Other Changes
+
+- ci: fix python unit test - copy pytest config to tests/unit (#128)
+
 [1.4.5] - 2024-01-24
 --------------------
 
