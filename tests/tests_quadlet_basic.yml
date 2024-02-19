@@ -2,6 +2,7 @@
 ---
 - name: Ensure that the role can manage quadlet specs
   hosts: all
+  gather_facts: true  # for machine_id
   vars_files:
     - vars/test_vars.yml
   vars:
