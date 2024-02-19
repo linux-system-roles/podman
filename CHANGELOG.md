@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[1.4.7] - 2024-02-19
+--------------------
+
+### Other Changes
+
+- test: gather facts for quadlet_basic test (#130)
+
 [1.4.6] - 2024-02-08
 --------------------
 
