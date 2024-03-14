@@ -1,6 +1,17 @@
 Changelog
 =========
 
+[1.4.8] - 2024-03-14
+--------------------
+
+### Bug Fixes
+
+- fix: Add support for --check flag (#134)
+
+### Other Changes
+
+- ci: bump ansible/ansible-lint from 6 to 24 (#132)
+
 [1.4.7] - 2024-02-19
 --------------------
 
