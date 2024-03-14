@@ -21,6 +21,7 @@
   when: (__podman_packages | difference(ansible_facts.packages))
 
 - name: Get podman version
+  check_mode: false
   command: podman --version
   changed_when: false
   register: __podman_version_output
