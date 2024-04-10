@@ -59,4 +59,4 @@
     - __podman_linger_secrets.stdout == ""
   changed_when: true
   args:
-    removes: /var/lib/systemd/linger/{{ __podman_user }}
+    removes: /var/lib/systemd/linger/{{ __podman_linger_user }}
