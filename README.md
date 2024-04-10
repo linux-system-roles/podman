@@ -418,6 +418,34 @@ PodmanArgs=--secret=my-app-pwd,type=env,target=MYAPP_PASSWORD
 {% endif %}
 ```
 
+### podman_subuid_info, podman_subgid_info
+
+The role needs to ensure any users and groups are present in the subuid and
+subgid information.  Once it extracts this data, it will be available in
+`podman_subuid_info` and `podman_subgid_info`. These are dicts.  The key is the
+user or group name, and the value is a `dict` with two fields:
+
+* `start` - the start of the id range for that user or group, as an `int`
+* `range` - the id range for that user or group, as an `int`
+
+```yaml
+podman_host_directories:
+  "/var/lib/db":
+    mode: "0777"
+    owner: "{{ 1001 + podman_subuid_info['dbuser']['start'] - 1 }}"
+    group: "{{ 1001 + podman_subgid_info['dbgroup']['start'] - 1 }}"
+```
+
+Where `1001` is the uid for user `dbuser`, and `1001` is the gid for group
+`dbgroup`.
+
+**NOTE**: depending on the namespace used by your containers, you might not be
+able to use the subuid and subgid information, which comes from `getsubids` if
+available, or directly from the files `/etc/subuid` and `/etc/subgid` on the
+host.  See
+[podman user namespace modes](https://www.redhat.com/sysadmin/rootless-podman-user-namespace-modes)
+for more information.
+
 ## Example Playbooks
 
 Create rootless container with volume mount:
