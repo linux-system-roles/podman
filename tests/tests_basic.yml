@@ -8,6 +8,8 @@
     podman_host_directories:
       "/tmp/httpd1-create":
         mode: "0777"
+        owner: "{{ 1001 + podman_subuid_info['user1']['start'] - 1 }}"
+        group: "{{ 1001 + podman_subgid_info['user1']['start'] - 1 }}"
     podman_run_as_user: root
     test_names_users:
       - [httpd1, user1, 1001]

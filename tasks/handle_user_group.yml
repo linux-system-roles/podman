@@ -52,10 +52,26 @@
     - name: Check user with getsubids
       command: getsubids {{ __podman_user | quote }}
       changed_when: false
+      register: __podman_register_subuids
 
     - name: Check group with getsubids
       command: getsubids -g {{ __podman_group_name | quote }}
       changed_when: false
+      register: __podman_register_subgids
+
+    - name: Set user subuid and subgid info
+      set_fact:
+        podman_subuid_info: "{{ podman_subuid_info | d({}) |
+          combine({__podman_user:
+            {'start': __subuid_data[2] | int, 'range': __subuid_data[3] | int}})
+          if __subuid_data | length > 0 else podman_subuid_info | d({}) }}"
+        podman_subgid_info: "{{ podman_subgid_info | d({}) |
+          combine({__podman_group_name:
+            {'start': __subgid_data[2] | int, 'range': __subgid_data[3] | int}})
+          if __subgid_data | length > 0 else podman_subgid_info | d({}) }}"
+      vars:
+        __subuid_data: "{{ __podman_register_subuids.stdout.split() | list }}"
+        __subgid_data: "{{ __podman_register_subgids.stdout.split() | list }}"
 
 - name: Check subuid, subgid files if no getsubids
   when:
@@ -63,32 +79,48 @@
     - __podman_user not in ["root", "0"]
     - __podman_group not in ["root", "0"]
   block:
-    - name: Check if user is in subuid file
-      find:
-        path: /etc
-        pattern: subuid
-        use_regex: true
-        contains: "^{{ __podman_user }}:.*$"
-      register: __podman_uid_line_found
+    - name: Get subuid file
+      slurp:
+        path: /etc/subuid
+      register: __podman_register_subuids
+
+    - name: Get subgid file
+      slurp:
+        path: /etc/subgid
+      register: __podman_register_subgids
+
+    - name: Set user subuid and subgid info
+      set_fact:
+        podman_subuid_info: "{{ podman_subuid_info | d({}) |
+          combine({__podman_user:
+            {'start': __subuid_data[1] | int, 'range': __subuid_data[2] | int}})
+          if __subuid_data else podman_subuid_info | d({}) }}"
+        podman_subgid_info: "{{ podman_subgid_info | d({}) |
+          combine({__podman_group_name:
+            {'start': __subgid_data[1] | int, 'range': __subgid_data[2] | int}})
+          if __subgid_data else podman_subgid_info | d({}) }}"
+      vars:
+        __subuid_match_line: "{{
+          (__podman_register_subuids.content | b64decode).split('\n') | list |
+          select('match', '^' ~ __podman_user ~ ':') | list }}"
+        __subuid_data: "{{ __subuid_match_line[0].split(':') | list
+          if __subuid_match_line else null }}"
+        __subgid_match_line: "{{
+          (__podman_register_subgids.content | b64decode).split('\n') | list |
+          select('match', '^' ~ __podman_group_name ~ ':') | list }}"
+        __subgid_data: "{{ __subgid_match_line[0].split(':') | list
+          if __subgid_match_line else null }}"
 
     - name: Fail if user not in subuid file
       fail:
         msg: >
           The given podman user [{{ __podman_user }}] is not in the
           /etc/subuid file - cannot continue
-      when: not __podman_uid_line_found.matched
-
-    - name: Check if group is in subgid file
-      find:
-        path: /etc
-        pattern: subgid
-        use_regex: true
-        contains: "^{{ __podman_group_name }}:.*$"
-      register: __podman_gid_line_found
+      when: not __podman_user in podman_subuid_info
 
     - name: Fail if group not in subgid file
       fail:
         msg: >
           The given podman group [{{ __podman_group_name }}] is not in the
           /etc/subgid file - cannot continue
-      when: not __podman_gid_line_found.matched
+      when: not __podman_group_name in podman_subuid_info
