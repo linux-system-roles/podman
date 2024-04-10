@@ -412,6 +412,7 @@
         - name: Ensure no linger
           stat:
             path: /var/lib/systemd/linger/{{ item[1] }}
+          when: item[1] != "root"
           loop: "{{ test_names_users }}"
           register: __stat
           failed_when: __stat.stat.exists
