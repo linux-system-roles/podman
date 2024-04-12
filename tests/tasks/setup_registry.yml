@@ -1,0 +1,138 @@
+# SPDX-License-Identifier: MIT
+# set up a local registry for testing auth and tls
+# https://github.com/containers/podman/blob/d65f3996dd263eb875be623d1164ce7e9cbdc3bf/test/system/helpers.registry.bash
+---
+- name: Create a temporary directory
+  tempfile:
+    prefix: lsr_
+    suffix: _podman
+    state: directory
+  register: __podman_registry_tempfile
+
+- name: Set authdir
+  set_fact:
+    __podman_registry_authdir: "{{ __podman_registry_tempfile.path ~ '/auth' }}"
+    __podman_test_authfile: "{{ __podman_registry_tempfile.path ~ '/auth/auth.json' }}"
+
+- name: Create authdir
+  file:
+    path: "{{ __podman_registry_authdir }}"
+    state: directory
+    mode: "0700"
+
+- name: Generate certificates for registry
+  include_role:
+    name: fedora.linux_system_roles.certificate
+  vars:
+    certificate_requests:
+      - name: podman_registry
+        dns: ["localhost", "127.0.0.1"]
+        ca: self-sign
+    certificate_test_mode: true
+    certificate_test_remove_files: true
+
+- name: Write cert for registry
+  copy:
+    content: "{{ certificate_test_certs['podman_registry']['cert_content'] }}"
+    dest: "{{ __podman_registry_authdir ~ '/registry_cert.crt' }}"
+    mode: "0600"
+
+- name: Write key for registry
+  copy:
+    content: "{{ certificate_test_certs['podman_registry']['key_content'] }}"
+    dest: "{{ __podman_registry_authdir ~ '/registry_key.pem' }}"
+    mode: "0600"
+
+- name: Create cert dir for registry
+  file:
+    path: /etc/containers/certs.d/localhost:5000
+    state: directory
+    mode: "0755"
+
+- name: Write CA cert for registry
+  copy:
+    content: "{{ certificate_test_certs['podman_registry']['ca_content'] }}"
+    dest: /etc/containers/certs.d/localhost:5000/ca.crt
+    mode: "0644"
+
+- name: Ensure test packages
+  package:
+    name: [httpd-tools, skopeo]
+    state: present
+
+- name: Write user and password
+  shell: >-
+    htpasswd -Bbn {{ __podman_test_username | quote }}
+    {{ __podman_test_password | quote }} >
+    {{ __podman_registry_authdir ~ '/htpasswd' }}
+  changed_when: true
+  no_log: true
+
+- name: Create auth.json file
+  copy:
+    content: |
+      {
+        "auths": {
+          "localhost:5000": {
+            "auth": "{{ __auth }}"
+          }
+        }
+      }
+    dest: "{{ __podman_test_authfile }}"
+    mode: "0600"
+  vars:
+    __auth: "{{ (__podman_test_username ~ ':' ~ __podman_test_password) |
+      b64encode }}"
+  no_log: true
+
+- name: Set paths for cleanup
+  set_fact:
+    __podman_cleanup_paths:
+      - /etc/containers/certs.d/localhost:5000
+      - "{{ __podman_registry_tempfile.path }}"
+
+# # In case $PODMAN_TEST_KEEP_LOGIN_REGISTRY is set, for testing later
+# echo "${PODMAN_LOGIN_USER}:${PODMAN_LOGIN_PASS}" > $AUTHDIR/htpasswd-plaintext
+
+- name: Start registry
+  command: >-
+    podman run -d -p 127.0.0.1:5000:5000 --name podman_registry
+    -v {{ __podman_registry_authdir }}:/auth:Z -e REGISTRY_AUTH=htpasswd
+    -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm"
+    -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd
+    -e REGISTRY_HTTP_TLS_CERTIFICATE=/auth/registry_cert.crt
+    -e REGISTRY_HTTP_TLS_KEY=/auth/registry_key.pem
+    quay.io/libpod/registry:2.8.2
+  changed_when: true
+
+- name: Wait for port
+  wait_for:
+    port: 5000
+
+- name: Wait for readiness
+  command: podman logs podman_registry
+  changed_when: false
+  register: __podman_log
+  until: __podman_log.stderr is search("listening on .*:5000")
+
+- name: Convert test image names into local registry names
+  set_fact:
+    podman_local_test_images: "{{ __podman_test_images |
+      map('regex_replace', '^quay[.]io', 'localhost:5000') | list }}"
+
+- name: Push test images into local registry
+  shell: >-
+    podman pull {{ item.key }};
+    podman push --authfile="{{ __podman_test_authfile }}"
+    {{ item.key }} docker://{{ item.value }}
+  loop: "{{
+    dict(__podman_test_images | zip(podman_local_test_images)) |
+    dict2items | list }}"
+  changed_when: true
+
+- name: Verify test images in local registry
+  command: >-
+    skopeo inspect --authfile="{{ __podman_test_authfile }}"
+    docker://{{ item }}
+  changed_when: false
+  loop: "{{ podman_local_test_images }}"

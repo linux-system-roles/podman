@@ -123,12 +123,14 @@
   loop: "{{ podman_kube_specs }}"
   loop_control:
     loop_var: __podman_kube_spec_item
+  no_log: true
 
 - name: Handle Quadlet specifications
   include_tasks: handle_quadlet_spec.yml
   loop: "{{ podman_quadlet_specs }}"
   loop_control:
     loop_var: __podman_quadlet_spec_item
+  no_log: true
 
 - name: Cancel linger
   include_tasks: cancel_linger.yml

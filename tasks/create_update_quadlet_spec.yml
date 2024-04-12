@@ -24,8 +24,10 @@
   containers.podman.podman_image:
     name: "{{ item }}"
     force: true
-    username: "{{ container_image_user | default(omit) }}"
-    password: "{{ container_image_password | default(omit) }}"
+    username: "{{ __podman_registry_username
+      if __podman_registry_username | length > 0 else omit }}"
+    password: "{{ __podman_registry_password
+      if __podman_registry_password | length > 0 else omit }}"
   register: __podman_image_updated
   when: __podman_pull_image | bool
   until: __podman_image_updated is success
@@ -38,6 +40,7 @@
   become: "{{ __podman_rootless | ternary(true, omit) }}"
   become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
   loop: "{{ __podman_images | unique | list }}"
+  no_log: true
 
 - name: Ensure the quadlet directory is present
   file:

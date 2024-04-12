@@ -40,8 +40,10 @@
   containers.podman.podman_image:
     name: "{{ item }}"
     force: true
-    username: "{{ container_image_user | default(omit) }}"
-    password: "{{ container_image_password | default(omit) }}"
+    username: "{{ __podman_registry_username
+      if __podman_registry_username | length > 0 else omit }}"
+    password: "{{ __podman_registry_password
+      if __podman_registry_password | length > 0 else omit }}"
   register: __podman_image_updated
   when: __podman_pull_image | bool
   until: __podman_image_updated is success
@@ -63,6 +65,7 @@
       selectattr('image', 'defined') | map(attribute='image') | list
       if 'initContainers' in __podman_kube['spec']
       else [] }}"
+  no_log: true
 
 - name: Check the kubernetes yaml file
   stat:

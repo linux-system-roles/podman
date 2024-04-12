@@ -35,7 +35,7 @@
   vars:
     __del_params: "^(file_src|file_content|file|run_as_user|run_as_group|\
       systemd_unit_scope|name|type|state|activate_systemd_unit|template_src|\
-      pull_image|continue_if_pull_fails)$"
+      pull_image|continue_if_pull_fails|registry_username|registry_password)$"
 
 - name: Set per-container variables part 1
   set_fact:
@@ -201,6 +201,18 @@
       map(attribute='path') | unique | list
       if __podman_kube
       and podman_create_host_directories else [] }}"
+
+- name: Set per-container variables part 6
+  set_fact:
+    __podman_registry_username: "{{
+      __podman_quadlet_spec_item['registry_username']
+      if 'registry_username' in __podman_quadlet_spec_item
+      else podman_registry_username }}"
+    __podman_registry_password: "{{
+      __podman_quadlet_spec_item['registry_password']
+      if 'registry_password' in __podman_quadlet_spec_item
+      else podman_registry_password }}"
+  no_log: true
 
 - name: Cleanup quadlets
   include_tasks: cleanup_quadlet_spec.yml

@@ -1,0 +1,100 @@
+# SPDX-License-Identifier: MIT
+---
+- name: Test various aspects of authentication and security settings
+  hosts: all
+  vars_files:
+    - vars/test_vars.yml
+  vars:
+    __podman_test_username: podman_username
+    local_test_image: "{{ podman_local_test_images[0] }}"
+    podman_quadlet_spec_base:
+      type: container
+      state: created
+      activate_systemd_unit: false
+      Install:
+        WantedBy: default.target
+      Container:
+        Image: "{{ local_test_image }}"
+        ContainerName: auth_test_1_quadlet
+    podman_kube_spec_base:
+      state: started
+      registry_username: "{{ __podman_test_username }}"
+      registry_password: "{{ __podman_test_password }}"
+      kube_file_content:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          labels:
+            app: test
+            io.containers.autoupdate: registry
+          name: auth_test_1_kube
+        spec:
+          containers:
+            - name: auth_test_1_kube
+              image: "{{ local_test_image }}"
+    __test_creds:
+      registry_username: "{{ __podman_test_username }}"
+      registry_password: "{{ __podman_test_password }}"
+    podman_quadlet_spec_creds: "{{ podman_quadlet_spec_base |
+      combine(__test_creds) }}"
+    podman_kube_spec_creds: "{{ podman_kube_spec_base |
+      combine(__test_creds) }}"
+  tasks:
+    - name: Run the role with no config to install podman
+      include_role:
+        name: linux-system-roles.podman
+
+    - name: Setup registry
+      include_tasks: tasks/setup_registry.yml
+      vars:
+        __podman_test_images:
+          - "{{ test_image }}"
+
+    - name: Run the role with no credentials, should fail
+      block:
+        - name: Run the role with no credentials
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_quadlet_specs:
+              - "{{ podman_quadlet_spec_base }}"
+            podman_kube_specs:
+              - "{{ podman_kube_spec_base }}"
+
+        - name: Should not get here
+          fail:
+            msg: UNREACHABLE
+
+      rescue:
+        - name: Check error
+          fail:
+            msg: Role did not fail as expected
+          when: "'UNREACHABLE' in ansible_failed_result.msg"
+
+    - name: Run remaining tasks in block with cleanup
+      block:
+        - name: Run the role with credentials in spec
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_registry_username: bogus
+            podman_registry_password: bogus
+            podman_quadlet_specs:
+              - "{{ podman_quadlet_spec_creds }}"
+            podman_kube_specs:
+              - "{{ podman_kube_spec_creds }}"
+
+        - name: Run the role with credentials in global vars
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_registry_username: "{{ __podman_test_username }}"
+            podman_registry_password: "{{ __podman_test_password }}"
+            podman_quadlet_specs:
+              - "{{ podman_quadlet_spec_base }}"
+            podman_kube_specs:
+              - "{{ podman_kube_spec_base }}"
+
+      always:
+        - name: Clean up registry
+          include_tasks: tasks/cleanup_registry.yml

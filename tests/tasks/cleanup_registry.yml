@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT
+---
+- name: Destroy registry container
+  command: podman rm -f podman_registry
+  changed_when: true
+
+- name: Cleanup paths
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ __podman_cleanup_paths }}"
