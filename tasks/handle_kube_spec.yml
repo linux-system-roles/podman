@@ -29,7 +29,7 @@
   vars:
     __del_params: "^(kube_file_src|kube_file_content|run_as_user|run_as_group|\
       systemd_unit_scope|activate_systemd_unit|pull_image|\
-      continue_if_pull_fails)$"
+      continue_if_pull_fails|registry_username|registry_password)$"
 
 - name: Set per-container variables part 1
   set_fact:
@@ -104,6 +104,18 @@
       else __podman_kube_path ~ '/' ~ __podman_kube_file
       if __podman_kube_file
       else __podman_kube_path ~ '/' ~ __podman_kube_name ~ '.yml' }}"
+
+- name: Set per-container variables part 6
+  set_fact:
+    __podman_registry_username: "{{
+      __podman_kube_spec_item['registry_username']
+      if 'registry_username' in __podman_kube_spec_item
+      else podman_registry_username }}"
+    __podman_registry_password: "{{
+      __podman_kube_spec_item['registry_password']
+      if 'registry_password' in __podman_kube_spec_item
+      else podman_registry_password }}"
+  no_log: true
 
 - name: Get service name using systemd-escape
   command: >-

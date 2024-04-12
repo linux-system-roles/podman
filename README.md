@@ -388,6 +388,20 @@ a newer version.  For example, if you attempt to manage quadlet or secrets with
 podman 4.3 or earlier, the role will fail with an error. If you want the role to
 be skipped instead, use `podman_fail_if_too_old: false`.
 
+### podman_registry_username
+
+String - default is unset - username to use to authenticate to the registry. You
+must also set `podman_registry_password`.  You can override this on a per-spec
+basis with `registry_username`.  The use of `container_image_user` was
+unsupported and is deprecated.
+
+### podman_registry_password
+
+String - default is unset - password to use to authenticate to the registry. You
+must also set `podman_registry_username`.  You can override this on a per-spec
+basis with `registry_password`.  The use of `container_image_password` was
+unsupported and is deprecated.
+
 ## Variables Exported by the Role
 
 ### podman_version
