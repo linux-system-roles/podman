@@ -402,6 +402,62 @@ must also set `podman_registry_username`.  You can override this on a per-spec
 basis with `registry_password`.  The use of `container_image_password` was
 unsupported and is deprecated.
 
+### podman_credential_files
+
+This is a `list`.  Each element of the list is a `dict` describing a podman
+credential file used to authenticate to registries.  See `man
+containers-auth.json` and `man containers-registries.conf`:`credential-helpers`
+for more information about the format of these files, and the default directory
+search path.
+NOTE: These files contain authentication credentials.  Please be careful with
+them.  You are strongly encouraged to use Ansible Vault to encrypt them.
+The keys of each `dict` are as follows:
+
+* `state` - default is `present`.  Use `absent` to remove files.
+* `file_src` - This is the name of a file on the controller node which will be
+  copied to `file` on the managed node.  Do not specify this if you specify
+  `file_content` or `template_src`, which will take precedence over `file_src`.
+* `template_src` - This is the name of a file on the controller node which will
+  be templated using the `template` module and copied to `file` on the managed
+  node.  Do not specify this if you specify `file_content` or `file_src`.
+* `file_content` - This is a string in `containers-auth.json` format.  It will be
+  used as the contents of `file` on the managed node.  Do not specify this if
+  you specify `file_src` or `template_src`.
+* `file` - This is the name of a file on the managed node that will contain the
+  `auth.json` contents.  The default value will be
+  `$HOME/.config/containers/auth.json`. If you specify a relative path, it will
+  be relative to `$HOME/.config/containers`.  If you specify something other
+  than the defaults mentioned in `man containers-auth.json`, you will also need
+  to configure `credential-helpers` in `containers-registries.conf` using
+  `podman_registries_conf`.  Any missing parent directories will be created.
+* `run_as_user` - Use this to specify a per-credential file owner.  If you do
+  not specify this, then the global default `podman_run_as_user` value will be
+  used. Otherwise, `root` will be used.  NOTE: The user must already exist - the
+  role will not create one.  The user must be present in `/etc/subuid`. NOTE:
+  This is used as the user for the `$HOME` directory if `file` is not specified,
+  and as the owner of the file.  If you want the owner of the file to be
+  different than the user used for `$HOME`, specify `file` as an absolute path.
+* `run_as_group` - Use this to specify a per-credential file group.  If you do
+  not specify this, then the global default `podman_run_as_group` value will be
+  used. Otherwise, `root` will be used.  NOTE: The group must already exist -
+  the role will not create one.  The group must be present in `/etc/subgid`.
+* `mode` - The mode of the file - default is `"0600"`.
+
+For example, if you have
+
+```yaml
+    podman_credential_files:
+      - file_src: auth.json
+        run_as_user: my_user
+```
+
+The local file `auth.json` will be looked up in the usual Ansible `file` search
+paths and will be copied to the file
+`/home/my_user/.config/containers/auth.json` on the managed node.  The file
+owner will be `my_user` and the mode will be `"0600"`. The directories
+`/home/my_user/.config` and `/home/my_user/.config/containers` will be created
+if they do not exist.
+
 ## Variables Exported by the Role
 
 ### podman_version

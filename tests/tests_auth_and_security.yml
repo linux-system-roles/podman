@@ -18,8 +18,6 @@
         ContainerName: auth_test_1_quadlet
     podman_kube_spec_base:
       state: started
-      registry_username: "{{ __podman_test_username }}"
-      registry_password: "{{ __podman_test_password }}"
       kube_file_content:
         apiVersion: v1
         kind: Pod
@@ -68,11 +66,23 @@
       rescue:
         - name: Check error
           fail:
-            msg: Role did not fail as expected
-          when: "'UNREACHABLE' in ansible_failed_result.msg"
+            msg: >-
+              Role did not fail with the expected message {{ expected_msg }} but
+              instead failed with {{ ansible_failed_result | to_nice_json }}
+          when: not expected_msg in ansible_failed_result.results[0].msg | d("")
+          vars:
+            expected_msg: Failed to pull image
 
     - name: Run remaining tasks in block with cleanup
       block:
+        - name: Create a local tmpdir
+          tempfile:
+            prefix: lsr_
+            suffix: _podman
+            state: directory
+          register: __local_tmpdir
+          delegate_to: localhost
+
         - name: Run the role with credentials in spec
           include_role:
             name: linux-system-roles.podman
@@ -95,6 +105,77 @@
             podman_kube_specs:
               - "{{ podman_kube_spec_base }}"
 
+        - name: Get authfile locally
+          fetch:
+            src: "{{ __podman_test_authfile }}"
+            dest: "{{ __local_tmpdir.path ~ '/' }}"
+            flat: true
+
+        - name: Provide a credentials file - root
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_credential_files:
+              - file_src: "{{ __local_tmpdir.path ~ '/auth.json' }}"
+                file: /root/.config/containers/auth.json
+            podman_quadlet_specs:
+              - "{{ podman_quadlet_spec_base }}"
+            podman_kube_specs:
+              - "{{ podman_kube_spec_base }}"
+
+        - name: Create a user for rootless
+          user:
+            name: auth_test_user1
+            uid: 2001
+
+        - name: Provide a credentials file - rootless
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_credential_files:
+              - template_src: "{{ __local_tmpdir.path ~ '/auth.json' }}"
+                run_as_user: auth_test_user1
+            __run_as_user:
+              run_as_user: auth_test_user1
+            podman_quadlet_specs:
+              - "{{ podman_quadlet_spec_base | combine(__run_as_user) }}"
+            podman_kube_specs:
+              - "{{ podman_kube_spec_base | combine(__run_as_user) }}"
+
       always:
+        - name: Remove all container resources - root
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_kube_specs:
+              - "{{ podman_kube_spec_base | combine({'state': 'absent'}) }}"
+            podman_quadlet_specs:
+              - "{{ podman_quadlet_spec_base | combine({'state': 'absent'}) }}"
+            podman_credential_files:
+              - state: absent
+
+        - name: Remove pods and units - rootless
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_run_as_user: auth_test_user1
+            podman_kube_specs:
+              - "{{ podman_kube_spec_base | combine({'state': 'absent'}) }}"
+            podman_quadlet_specs:
+              - "{{ podman_quadlet_spec_base | combine({'state': 'absent'}) }}"
+            podman_credential_files:
+              - state: absent
+
+        - name: Remove user
+          user:
+            name: auth_test_user1
+            state: absent
+
+        - name: Remove local tmpdir
+          file:
+            path: "{{ __local_tmpdir.path }}"
+            state: absent
+          delegate_to: localhost
+
         - name: Clean up registry
           include_tasks: tasks/cleanup_registry.yml
