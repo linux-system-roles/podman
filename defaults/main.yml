@@ -117,3 +117,10 @@ podman_registry_username: "{{ container_image_user | d('') }}"
 # password to use to authenticate to the registry
 # override by specifying registry_password on a per-spec basis
 podman_registry_password: "{{ container_image_password | d('') }}"
+
+# List of files containing registry credentials
+# If not using the default containers-auth.json, you may need to
+# also provide an entry for "credential-helpers" in the registries.conf
+# For more information, see "man containers-auth.json" and
+# "man containers-registries.conf"
+podman_credential_files: []

@@ -118,6 +118,13 @@
     loop_var: __podman_secret_item
   no_log: true
 
+- name: Handle credential files
+  include_tasks: handle_credential_files.yml
+  loop: "{{ podman_credential_files }}"
+  loop_control:
+    loop_var: __podman_credential_item
+  no_log: true
+
 - name: Handle Kubernetes specifications
   include_tasks: handle_kube_spec.yml
   loop: "{{ podman_kube_specs }}"
