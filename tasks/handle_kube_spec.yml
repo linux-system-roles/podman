@@ -115,6 +115,9 @@
       __podman_kube_spec_item['registry_password']
       if 'registry_password' in __podman_kube_spec_item
       else podman_registry_password }}"
+    __podman_validate_certs: "{{ __podman_kube_spec_item['validate_certs']
+      if 'validate_certs' in __podman_kube_spec_item
+      else podman_validate_certs }}"
   no_log: true
 
 - name: Get service name using systemd-escape

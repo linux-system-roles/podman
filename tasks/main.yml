@@ -111,18 +111,29 @@
   set_fact:
     __podman_cancel_user_linger: []
 
+- name: Handle certs.d files - present
+  include_tasks: handle_certs_d.yml
+  vars:
+    __podman_handle_state: present
+  loop: "{{ podman_registry_certificates }}"
+  loop_control:
+    loop_var: __podman_cert_spec_item
+  no_log: true
+
+- name: Handle credential files - present
+  include_tasks: handle_credential_files.yml
+  vars:
+    __podman_handle_state: present
+  loop: "{{ podman_credential_files }}"
+  loop_control:
+    loop_var: __podman_credential_item
+  no_log: true
+
 - name: Handle secrets
   include_tasks: handle_secret.yml
   loop: "{{ podman_secrets }}"
   loop_control:
     loop_var: __podman_secret_item
-  no_log: true
-
-- name: Handle credential files
-  include_tasks: handle_credential_files.yml
-  loop: "{{ podman_credential_files }}"
-  loop_control:
-    loop_var: __podman_credential_item
   no_log: true
 
 - name: Handle Kubernetes specifications
@@ -144,3 +155,21 @@
   loop: "{{ __podman_cancel_user_linger }}"
   loop_control:
     loop_var: __podman_linger_user
+
+- name: Handle credential files - absent
+  include_tasks: handle_credential_files.yml
+  vars:
+    __podman_handle_state: absent
+  loop: "{{ podman_credential_files }}"
+  loop_control:
+    loop_var: __podman_credential_item
+  no_log: true
+
+- name: Handle certs.d files - absent
+  include_tasks: handle_certs_d.yml
+  vars:
+    __podman_handle_state: absent
+  loop: "{{ podman_registry_certificates }}"
+  loop_control:
+    loop_var: __podman_cert_spec_item
+  no_log: true

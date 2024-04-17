@@ -8,6 +8,7 @@
     __podman_test_username: podman_username
     local_test_image: "{{ podman_local_test_images[0] }}"
     podman_quadlet_spec_base:
+      name: auth_test_1_quadlet
       type: container
       state: created
       activate_systemd_unit: false
@@ -48,16 +49,43 @@
         __podman_test_images:
           - "{{ test_image }}"
 
-    - name: Run the role with no credentials, should fail
+    - name: Run the role with no credentials and no cert checking
       block:
-        - name: Run the role with no credentials
+        - name: Run the role with no credentials and no cert checking
           include_role:
             name: linux-system-roles.podman
           vars:
+            podman_validate_certs: false
             podman_quadlet_specs:
               - "{{ podman_quadlet_spec_base }}"
             podman_kube_specs:
               - "{{ podman_kube_spec_base }}"
+
+        - name: Should not get here
+          fail:
+            msg: UNREACHABLE
+
+      rescue:
+        - name: Check error
+          fail:
+            msg: >-
+              Role did not fail with the expected message {{ expected_msg }} but
+              instead failed with {{ ansible_failed_result | to_nice_json }}
+          when: not expected_msg in ansible_failed_result.results[0].msg | d("")
+          vars:
+            expected_msg: Failed to pull image
+
+    - name: Run the role with credentials and cert checking
+      block:
+        - name: Run the role with credentials and cert checking
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_validate_certs: true
+            podman_quadlet_specs:
+              - "{{ podman_quadlet_spec_creds }}"
+            podman_kube_specs:
+              - "{{ podman_kube_spec_creds }}"
 
         - name: Should not get here
           fail:
@@ -83,7 +111,7 @@
           register: __local_tmpdir
           delegate_to: localhost
 
-        - name: Run the role with credentials in spec
+        - name: Run the role with credentials in spec and CA cert
           include_role:
             name: linux-system-roles.podman
           vars:
@@ -93,6 +121,10 @@
               - "{{ podman_quadlet_spec_creds }}"
             podman_kube_specs:
               - "{{ podman_kube_spec_creds }}"
+            podman_registry_certificates:
+              - registry_host: localhost:5000
+                ca_cert_content: "{{
+                  certificate_test_certs['podman_registry']['ca_content'] }}"
 
         - name: Run the role with credentials in global vars
           include_role:
@@ -123,6 +155,20 @@
             podman_kube_specs:
               - "{{ podman_kube_spec_base }}"
 
+        - name: Remove all container resources - root
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_kube_specs:
+              - "{{ podman_kube_spec_base | combine({'state': 'absent'}) }}"
+            podman_quadlet_specs:
+              - "{{ podman_quadlet_spec_base | combine({'state': 'absent'}) }}"
+            podman_credential_files:
+              - state: absent
+            podman_registry_certificates:
+              - registry_host: localhost:5000
+                state: absent
+
         - name: Create a user for rootless
           user:
             name: auth_test_user1
@@ -141,8 +187,20 @@
               - "{{ podman_quadlet_spec_base | combine(__run_as_user) }}"
             podman_kube_specs:
               - "{{ podman_kube_spec_base | combine(__run_as_user) }}"
+            podman_registry_certificates:
+              - registry_host: localhost:5000
+                run_as_user: auth_test_user1
+                ca_cert_content: "{{
+                  certificate_test_certs['podman_registry']['ca_content'] }}"
+
+      rescue:
+        - name: Dump journal
+          command: journalctl -ex
+          changed_when: false
+          failed_when: true
 
       always:
+        # in case the test errored before this happened
         - name: Remove all container resources - root
           include_role:
             name: linux-system-roles.podman
@@ -153,8 +211,11 @@
               - "{{ podman_quadlet_spec_base | combine({'state': 'absent'}) }}"
             podman_credential_files:
               - state: absent
+            podman_registry_certificates:
+              - registry_host: localhost:5000
+                state: absent
 
-        - name: Remove pods and units - rootless
+        - name: Remove all container resources - rootless
           include_role:
             name: linux-system-roles.podman
           vars:
@@ -165,6 +226,9 @@
               - "{{ podman_quadlet_spec_base | combine({'state': 'absent'}) }}"
             podman_credential_files:
               - state: absent
+            podman_registry_certificates:
+              - registry_host: localhost:5000
+                state: absent
 
         - name: Remove user
           user:
