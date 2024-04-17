@@ -6,13 +6,16 @@
     - vars/test_vars.yml
   vars:
     podman_host_directories:
-      "/tmp/httpd1-create":
+      "{{ __test_tmpdir.path ~ '/httpd1-create' }}":
         mode: "0777"
-        owner: "{{ 1001 + podman_subuid_info['user1']['start'] - 1 }}"
-        group: "{{ 1001 + podman_subgid_info['user1']['start'] - 1 }}"
+        owner: "{{ 1001 +
+          podman_subuid_info[__podman_test_username]['start'] - 1 }}"
+        group: "{{ 1001 +
+          podman_subgid_info[__podman_test_username]['start'] - 1 }}"
     podman_run_as_user: root
+    __podman_test_username: podman_basic_user
     test_names_users:
-      - [httpd1, user1, 1001]
+      - [httpd1, "{{ __podman_test_username }}", 1001]
       - [httpd2, root, 0]
       - [httpd3, root, 0]
     podman_create_host_directories: true
@@ -26,7 +29,7 @@
       - state: started
         debug: true
         log_level: debug
-        run_as_user: user1
+        run_as_user: "{{ __podman_test_username }}"
         kube_file_content:
           apiVersion: v1
           kind: Pod
@@ -57,10 +60,10 @@
             volumes:
               - name: www
                 hostPath:
-                  path: /tmp/httpd1
+                  path: "{{ __test_tmpdir.path ~ '/httpd1' }}"
               - name: create
                 hostPath:
-                  path: /tmp/httpd1-create
+                  path: "{{ __test_tmpdir.path ~ '/httpd1-create' }}"
       - state: started
         debug: true
         log_level: debug
@@ -94,10 +97,10 @@
             volumes:
               - name: www
                 hostPath:
-                  path: /tmp/httpd2
+                  path: "{{ __test_tmpdir.path ~ '/httpd2' }}"
               - name: create
                 hostPath:
-                  path: /tmp/httpd2-create
+                  path: "{{ __test_tmpdir.path ~ '/httpd2-create' }}"
     __podman_kube_file_content: |
       apiVersion: v1
       kind: Pod
@@ -128,11 +131,23 @@
         volumes:
           - name: www
             hostPath:
-              path: /tmp/httpd3
+              path: "{{ __test_tmpdir.path ~ '/httpd3' }}"
           - name: create
             hostPath:
-              path: /tmp/httpd3-create
+              path: "{{ __test_tmpdir.path ~ '/httpd3-create' }}"
   tasks:
+    - name: Create tmpdir for testing
+      tempfile:
+        state: directory
+        prefix: lsr_
+        suffix: _podman
+      register: __test_tmpdir
+
+    - name: Change tmpdir permissions
+      file:
+        path: "{{ __test_tmpdir.path }}"
+        mode: "0777"
+
     - name: Run basic tests
       vars:
         __podman_use_kube_file:
@@ -156,7 +171,7 @@
 
         - name: Create user
           user:
-            name: user1
+            name: "{{ __podman_test_username }}"
             uid: 1001
 
         - name: Create tempfile for kube_src
@@ -171,12 +186,12 @@
           copy:
             content: "{{ __podman_kube_file_content }}"
             dest: "{{ __kube_file_src.path }}"
-            mode: 0600
+            mode: "0600"
           delegate_to: localhost
 
         - name: Create host directories for data
           file:
-            path: /tmp/{{ item[0] }}
+            path: "{{ __test_tmpdir.path ~ '/' ~ item[0] }}"
             state: directory
             mode: "0755"
             owner: "{{ item[1] }}"
@@ -184,7 +199,7 @@
 
         - name: Create data files
           copy:
-            dest: /tmp/{{ item[0] }}/index.txt
+            dest: "{{ __test_tmpdir.path ~ '/' ~ item[0] ~ '/index.txt' }}"
             content: "123"
             mode: "0644"
             owner: "{{ item[1] }}"
@@ -315,7 +330,7 @@
           loop: [15001, 15002]
 
         - name: Check host directories
-          command: ls -alrtF /tmp/{{ item[0] }}-create
+          command: ls -alrtF {{ __test_tmpdir.path ~ '/' ~ item[0] }}-create
           loop: "{{ test_names_users }}"
           changed_when: false
 
@@ -419,6 +434,18 @@
           register: __stat
           failed_when: __stat.stat.exists
 
+        - name: Remove pods and units again - test idempotence
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            # noqa jinja[spacing]
+            podman_kube_specs: "{{ __podman_kube_specs |
+              union([__podman_use_kube_file]) |
+              map('combine', {'state':'absent'}) | list }}"
+            podman_create_host_directories: false
+            podman_firewall: []
+            podman_selinux_ports: []
+
       rescue:
         - name: Dump journal
           command: journalctl -ex
@@ -438,9 +465,8 @@
 
         - name: Clean up host directories
           file:
-            path: /tmp/{{ item }}
+            path: "{{ __test_tmpdir.path }}"
             state: absent
-          loop: [httpd1, httpd2, httpd3]
           tags:
             - tests::cleanup
 
