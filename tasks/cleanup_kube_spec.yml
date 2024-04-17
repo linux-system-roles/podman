@@ -25,6 +25,11 @@
   vars:
     __service_error: Could not find the requested service
 
+- name: Check if kube file exists
+  stat:
+    path: "{{ __podman_kube_file }}"
+  register: __podman_kube_file_stat
+
 - name: Remove pod/containers
   containers.podman.podman_play: "{{ __podman_kube_spec |
     combine({'kube_file': __podman_kube_file}) }}"
@@ -33,7 +38,9 @@
   become: "{{ __podman_rootless | ternary(true, omit) }}"
   become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
   register: __podman_removed
-  when: not __podman_rootless or __podman_xdg_stat.stat.exists
+  when:
+    - not __podman_rootless or __podman_xdg_stat.stat.exists
+    - __podman_kube_file_stat.stat.exists
 
 - name: Remove kubernetes yaml file
   file:
