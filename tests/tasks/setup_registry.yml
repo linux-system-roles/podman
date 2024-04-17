@@ -12,7 +12,8 @@
 - name: Set authdir
   set_fact:
     __podman_registry_authdir: "{{ __podman_registry_tempfile.path ~ '/auth' }}"
-    __podman_test_authfile: "{{ __podman_registry_tempfile.path ~ '/auth/auth.json' }}"
+    __podman_test_authfile: "{{
+      __podman_registry_tempfile.path ~ '/auth/auth.json' }}"
 
 - name: Create authdir
   file:
@@ -43,17 +44,12 @@
     dest: "{{ __podman_registry_authdir ~ '/registry_key.pem' }}"
     mode: "0600"
 
-- name: Create cert dir for registry
-  file:
-    path: /etc/containers/certs.d/localhost:5000
-    state: directory
-    mode: "0755"
-
 - name: Write CA cert for registry
   copy:
-    content: "{{ certificate_test_certs['podman_registry']['ca_content'] }}"
-    dest: /etc/containers/certs.d/localhost:5000/ca.crt
-    mode: "0644"
+    content: "{{
+      certificate_test_certs['podman_registry']['ca_content'] }}"
+    dest: "{{ __podman_registry_authdir ~ '/ca.crt' }}"
+    mode: "0600"
 
 - name: Ensure test packages
   package:
@@ -88,7 +84,6 @@
 - name: Set paths for cleanup
   set_fact:
     __podman_cleanup_paths:
-      - /etc/containers/certs.d/localhost:5000
       - "{{ __podman_registry_tempfile.path }}"
 
 # # In case $PODMAN_TEST_KEEP_LOGIN_REGISTRY is set, for testing later
@@ -124,6 +119,7 @@
   shell: >-
     podman pull {{ item.key }};
     podman push --authfile="{{ __podman_test_authfile }}"
+    --cert-dir="{{ __podman_registry_authdir }}"
     {{ item.key }} docker://{{ item.value }}
   loop: "{{
     dict(__podman_test_images | zip(podman_local_test_images)) |
@@ -133,6 +129,7 @@
 - name: Verify test images in local registry
   command: >-
     skopeo inspect --authfile="{{ __podman_test_authfile }}"
+    --cert-dir="{{ __podman_registry_authdir }}"
     docker://{{ item }}
   changed_when: false
   loop: "{{ podman_local_test_images }}"

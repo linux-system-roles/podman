@@ -458,6 +458,77 @@ owner will be `my_user` and the mode will be `"0600"`. The directories
 `/home/my_user/.config` and `/home/my_user/.config/containers` will be created
 if they do not exist.
 
+### podman_registry_certificates
+
+This variable is a `list` of `dict` elements that allows you to manage TLS
+certificates and keys used to connect to registries.  The directories, formats,
+and files are as described in `man containers-certs.d`. The names of the keys
+used for TLS certificates and keys follow the
+[system roles TLS naming conventions](https://linux-system-roles.github.io/documentation/tls_crypto_parameter_and_key_names.html).  NOTE: the `client_` prefix has been dropped
+here for `cert` and `private_key` because there are only clients in this context.
+
+NOTE: You are strongly encouraged to use Ansible Vault to encrypt private keys and
+any other sensitive values.
+
+The keys of each `dict` are as follows:
+
+* `state` - default is `present`.  Use `absent` to remove files.
+* `run_as_user` - This is the user that will be the owner of the files, and is
+  used to find the `$HOME` directory for the files.  If you do not specify this,
+  then the global default `podman_run_as_user` value will be used. Otherwise,
+  `root` will be used.
+* `run_as_group` - This is the group that will be the owner of the files.  If
+  you do not specify this, then the global default `podman_run_as_group` value
+  will be used. Otherwise, `root` will be used.
+* `registry_host` - Required - the hostname or `hostname:port` of the registry.
+  This will be used as the name of the directory under
+  `$HOME/.config/containers/certs.d` (for rootless containers) or
+  `/etc/containers/certs.d` (for system containers) which will hold the
+  certificates and keys.  If using `state: absent` and all of the files are
+  removed, the directory will be removed.
+* `cert` - name of the file in the `certs.d` directory holding the TLS client
+  certificate.  If not specified, use the basename of `cert_src`.  If that isn't
+  specified, use `client.cert`.
+* `private_key` - name of the file in the `certs.d` directory holding the TLS
+  client private key.  If not specified, use the basename of `private_key_src`.
+  If that isn't specified, use `client.key`
+* `ca_cert` - name of the file in the `certs.d` directory holding the TLS CA
+  certificate.  If not specified, use the basename of `ca_cert_src`.  If that
+  isn't specified, use `ca.crt`
+* `cert_src` - name of the file on the control node to be copied to `cert`.
+* `private_key_src` - name of the file on the control node to be copied to
+  `private_key`.
+* `ca_cert_src` - name of the file on the control node to be copied to
+  `ca_cert`.
+* `cert_content` - contents of the certificate to be copied to `cert`.
+* `private_key_content` - contents of the private key to be copied to
+  `private_key`.
+
+```yaml
+podman_run_as_user: root
+podman_registry_certificates:
+  - registry_host: quay.io:5000
+    cert_src: client.cert
+    private_key_content: !vault |
+      $ANSIBLE_VAULT.....
+    ca_cert_src: ca.crt
+```
+
+This will create the directory `/etc/containers/certs.d/quay.io:5000/`, will copy
+the local file `client.cert` looked up from the usual Ansible file lookup path
+to `/etc/containers/certs.d/quay.io:5000/client.cert`, will copy the contents of
+the Ansible Vault encrypted `private_key_content` to
+`/etc/containers/certs.d/quay.io:5000/client.key`, and will copy the local file
+`ca.crt` looked up from the usual Ansible file lookup path to
+`/etc/containers/certs.d/quay.io:5000/ca.crt`.
+
+### podman_validate_certs
+
+Boolean - default is null - use this to control if pulling images from
+registries will validate TLS certs or not.  The default `null` means to use
+whatever is the default used by the `containers.podman.podman_image` module. You
+can override this on a per-spec basis using `validate_certs`.
+
 ## Variables Exported by the Role
 
 ### podman_version

@@ -124,3 +124,14 @@ podman_registry_password: "{{ container_image_password | d('') }}"
 # For more information, see "man containers-auth.json" and
 # "man containers-registries.conf"
 podman_credential_files: []
+
+# This variable is a `list` of `dict` elements that allows you to manage TLS
+# certificates and keys used to connect to registries
+podman_registry_certificates: []
+
+# Can set to true or false to control if pulling images from
+# registries will validate the TLS certs.
+# The default null means to use whatever is the default used
+# by the containers.podman.podman_image module
+# You can override this on a per-spec basis using validate_certs
+podman_validate_certs: null

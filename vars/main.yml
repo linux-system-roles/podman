@@ -76,3 +76,9 @@ __podman_system_quadlet_path: "/etc/containers/systemd"
 
 # location for user quadlet files
 __podman_user_quadlet_path: "/.config/containers/systemd"
+
+# location for user certs_d
+__podman_user_certs_d_path: "/.config/containers/certs.d"
+
+# location for system certs_d
+__podman_system_certs_d_path: "/etc/containers/certs.d"

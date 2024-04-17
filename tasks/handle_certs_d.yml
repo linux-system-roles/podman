@@ -1,0 +1,115 @@
+# SPDX-License-Identifier: MIT
+---
+- name: Check given registry_host
+  fail:
+    msg: >-
+      The given registry host {{ __podman_cert_spec_item['registry_host'] }}
+      is invalid - cannot be used as the directory name
+  when: __podman_cert_spec_item["registry_host"] is search("/")
+
+- name: Set per-cert spec variables part 0
+  set_fact:
+    __podman_user: "{{ __podman_cert_spec_item['run_as_user'] |
+      d(podman_run_as_user) }}"
+
+- name: Set per-cert spec variables part 1
+  set_fact:
+    __podman_rootless: "{{ __podman_user != 'root' }}"
+
+- name: Check user and group information
+  include_tasks: handle_user_group.yml
+  vars:
+    __podman_spec_item: "{{ __podman_cert_spec_item }}"
+
+- name: Set per-cert spec variables part 2
+  set_fact:
+    __podman_user_home_dir: "{{
+      ansible_facts['getent_passwd'][__podman_user][4] }}"
+
+- name: Set per-cert spec variables part 3
+  set_fact:
+    __podman_certs_d_path: "{{ (__podman_user_home_dir ~
+      __podman_user_certs_d_path
+      if __podman_rootless else __podman_system_certs_d_path) ~
+      '/' ~ __podman_cert_spec_item['registry_host'] }}"
+
+- name: Set per-cert spec variables part 4
+  set_fact:
+    __podman_cert_file_list:
+      - dest: "{{ __podman_certs_d_path ~ '/' ~
+          (__podman_cert_spec_item['cert'] | basename
+           if 'cert' in __podman_cert_spec_item
+           else __podman_cert_spec_item['cert_src'] | basename
+           if 'cert_src' in __podman_cert_spec_item
+           else 'client.cert') }}"
+        content: "{{ __podman_cert_spec_item['cert_content'] | d('') }}"
+        src: "{{ __podman_cert_spec_item['cert_src'] | d('') }}"
+      - dest: "{{ __podman_certs_d_path ~ '/' ~
+          (__podman_cert_spec_item['key'] | basename
+           if 'key' in __podman_cert_spec_item
+           else __podman_cert_spec_item['key_src'] | basename
+           if 'key_src' in __podman_cert_spec_item
+           else 'client.key') }}"
+        content: "{{ __podman_cert_spec_item['key_content'] | d('') }}"
+        src: "{{ __podman_cert_spec_item['key_src'] | d('') }}"
+      - dest: "{{ __podman_certs_d_path ~ '/' ~
+          (__podman_cert_spec_item['ca_cert'] | basename
+           if 'ca_cert' in __podman_cert_spec_item
+           else __podman_cert_spec_item['ca_cert_src'] | basename
+           if 'ca_cert_src' in __podman_cert_spec_item
+           else 'ca.crt') }}"
+        content: "{{ __podman_cert_spec_item['ca_cert_content'] | d('') }}"
+        src: "{{ __podman_cert_spec_item['ca_cert_src'] | d('') }}"
+  no_log: true
+
+- name: Create TLS files
+  when:
+    - __podman_cert_spec_item["state"] | d("present") == "present"
+    - __podman_handle_state == "present"
+  block:
+    - name: Ensure certs.d directory
+      file:
+        path: "{{ __podman_certs_d_path }}"
+        state: directory
+        owner: "{{ __podman_user }}"
+        group: "{{ __podman_group }}"
+        mode: "0700"
+
+    - name: Ensure certs.d files
+      copy:
+        content: "{{ item.content if item.content | length > 0 else omit }}"
+        src: "{{ item.src if item.src | length > 0 else omit }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ __podman_user }}"
+        group: "{{ __podman_group }}"
+        mode: "0600"
+      when: (item.content | length > 0) or (item.src | length > 0)
+      loop: "{{ __podman_cert_file_list }}"
+      no_log: true
+
+- name: Remove TLS files
+  when:
+    - __podman_cert_spec_item["state"] | d("present") == "absent"
+    - __podman_handle_state == "absent"
+  block:
+    - name: Remove certs.d files
+      file:
+        path: "{{ item.dest }}"
+        state: absent
+      loop: "{{ __podman_cert_file_list }}"
+      no_log: true
+
+    - name: Find files in certs.d directory
+      find:
+        path: "{{ __podman_certs_d_path }}"
+        file_type: any
+        hidden: true
+      register: __certs_d_dir_files
+      no_log: true
+
+    - name: Ensure the certs.d directory is absent if empty
+      file:
+        path: "{{ __podman_certs_d_path }}"
+        state: absent
+      when: __certs_d_dir_files.matched == 0
+      no_log: true
