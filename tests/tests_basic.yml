@@ -8,14 +8,14 @@
     podman_host_directories:
       "{{ __test_tmpdir.path ~ '/httpd1-create' }}":
         mode: "0777"
-        owner: "{{ 1001 +
+        owner: "{{ 3001 +
           podman_subuid_info[__podman_test_username]['start'] - 1 }}"
-        group: "{{ 1001 +
+        group: "{{ 3001 +
           podman_subgid_info[__podman_test_username]['start'] - 1 }}"
     podman_run_as_user: root
     __podman_test_username: podman_basic_user
     test_names_users:
-      - [httpd1, "{{ __podman_test_username }}", 1001]
+      - [httpd1, "{{ __podman_test_username }}", 3001]
       - [httpd2, root, 0]
       - [httpd3, root, 0]
     podman_create_host_directories: true
@@ -172,7 +172,7 @@
         - name: Create user
           user:
             name: "{{ __podman_test_username }}"
-            uid: 1001
+            uid: 3001
 
         - name: Create tempfile for kube_src
           tempfile:
