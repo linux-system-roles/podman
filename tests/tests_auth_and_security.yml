@@ -200,40 +200,74 @@
           failed_when: true
 
       always:
-        # in case the test errored before this happened
-        - name: Remove all container resources - root
-          include_role:
-            name: linux-system-roles.podman
-          vars:
-            podman_kube_specs:
-              - "{{ podman_kube_spec_base | combine({'state': 'absent'}) }}"
-            podman_quadlet_specs:
-              - "{{ podman_quadlet_spec_base | combine({'state': 'absent'}) }}"
-            podman_credential_files:
-              - state: absent
-            podman_registry_certificates:
-              - registry_host: localhost:5000
+        - name: Cleanup root resources
+          block:
+            # in case the test errored before this happened
+            - name: Remove all container resources - root
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_kube_specs:
+                  - "{{ podman_kube_spec_base | combine({'state': 'absent'}) }}"
+                podman_quadlet_specs:
+                  - "{{ podman_quadlet_spec_base |
+                        combine({'state': 'absent'}) }}"
+                podman_credential_files:
+                  - state: absent
+                podman_registry_certificates:
+                  - registry_host: localhost:5000
+                    state: absent
+          rescue:
+            - name: Check journal for root cleanup errors
+              command: journalctl -ex
+              changed_when: false
+
+        - name: Cleanup rootless resources
+          block:
+            - name: Remove all container resources - rootless
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_run_as_user: auth_test_user1
+                podman_kube_specs:
+                  - "{{ podman_kube_spec_base | combine({'state': 'absent'}) }}"
+                podman_quadlet_specs:
+                  - "{{ podman_quadlet_spec_base |
+                        combine({'state': 'absent'}) }}"
+                podman_credential_files:
+                  - state: absent
+                podman_registry_certificates:
+                  - registry_host: localhost:5000
+                    state: absent
+          rescue:
+            - name: Check journal for rootless cleanup errors
+              command: journalctl -ex
+              changed_when: false
+
+        - name: Remove test user resources
+          block:
+            - name: Remove user
+              user:
+                name: auth_test_user1
                 state: absent
 
-        - name: Remove all container resources - rootless
-          include_role:
-            name: linux-system-roles.podman
-          vars:
-            podman_run_as_user: auth_test_user1
-            podman_kube_specs:
-              - "{{ podman_kube_spec_base | combine({'state': 'absent'}) }}"
-            podman_quadlet_specs:
-              - "{{ podman_quadlet_spec_base | combine({'state': 'absent'}) }}"
-            podman_credential_files:
-              - state: absent
-            podman_registry_certificates:
-              - registry_host: localhost:5000
+            - name: Remove homedir
+              file:
+                path: /home/auth_test_user1
                 state: absent
+          rescue:
+            # this usually fails when the user is still running some process
+            - name: See if any process is held by the user
+              shell: |
+                set -euxo pipefail
+                exec 1>&2
+                ps -ef | grep auth_test_user1 || :
+                ps -ef | grep 2001 || :
+              changed_when: false
 
-        - name: Remove user
-          user:
-            name: auth_test_user1
-            state: absent
+            - name: Check journal for user removal errors
+              command: journalctl -ex
+              changed_when: false
 
         - name: Remove local tmpdir
           file:
@@ -241,5 +275,12 @@
             state: absent
           delegate_to: localhost
 
-        - name: Clean up registry
-          include_tasks: tasks/cleanup_registry.yml
+        - name: Clean up registry and other test resources
+          block:
+            - name: Clean up registry
+              include_tasks: tasks/cleanup_registry.yml
+          rescue:
+            - name: Check journal for registry cleanup errors
+              command: journalctl -ex
+              changed_when: false
+              failed_when: true
