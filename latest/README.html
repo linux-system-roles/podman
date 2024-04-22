@@ -185,6 +185,10 @@ id="toc-podman_use_copr-experimental">podman_use_copr
 <li><a href="#podman_fail_if_too_old-experimental"
 id="toc-podman_fail_if_too_old-experimental">podman_fail_if_too_old
 (EXPERIMENTAL)</a></li>
+<li><a href="#podman_registry_username"
+id="toc-podman_registry_username">podman_registry_username</a></li>
+<li><a href="#podman_registry_password"
+id="toc-podman_registry_password">podman_registry_password</a></li>
 </ul></li>
 <li><a href="#variables-exported-by-the-role"
 id="toc-variables-exported-by-the-role">Variables Exported by the
@@ -580,6 +584,19 @@ feature only supported by a newer version. For example, if you attempt
 to manage quadlet or secrets with podman 4.3 or earlier, the role will
 fail with an error. If you want the role to be skipped instead, use
 <code>podman_fail_if_too_old: false</code>.</p>
+<h2 id="podman_registry_username">podman_registry_username</h2>
+<p>String - default is unset - username to use to authenticate to the
+registry. You must also set <code>podman_registry_password</code>. You
+can override this on a per-spec basis with
+<code>registry_username</code>. The use of
+<code>container_image_user</code> was unsupported and is deprecated.</p>
+<h2 id="podman_registry_password">podman_registry_password</h2>
+<p>String - default is unset - password to use to authenticate to the
+registry. You must also set <code>podman_registry_username</code>. You
+can override this on a per-spec basis with
+<code>registry_password</code>. The use of
+<code>container_image_password</code> was unsupported and is
+deprecated.</p>
 <h1 id="variables-exported-by-the-role">Variables Exported by the
 Role</h1>
 <h2 id="podman_version">podman_version</h2>
