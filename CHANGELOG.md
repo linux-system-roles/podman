@@ -1,6 +1,27 @@
 Changelog
 =========
 
+[1.5.0] - 2024-04-22
+--------------------
+
+### New Features
+
+- feat: support registry_username and registry_password (#141)
+- feat: support podman_credential_files (#142)
+- feat: manage TLS cert/key files for registry connections and validate certs (#146)
+
+### Bug Fixes
+
+- fix: use correct user for cancel linger file name (#138)
+- fix: do not use become for changing hostdir ownership, and expose subuid/subgid info (#139)
+- fix: make kube cleanup idempotent (#144)
+
+### Other Changes
+
+- test: do not check for root linger (#140)
+- chore: change no_log false to true; fix comment (#143)
+- chore: use none in jinja code, not null (#145)
+
 [1.4.9] - 2024-04-04
 --------------------
 
