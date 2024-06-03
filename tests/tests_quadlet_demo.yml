@@ -98,7 +98,7 @@
           get_url:
             url: https://localhost:8000
             dest: /run/out
-            mode: 0600
+            mode: "0600"
             validate_certs: false
           register: __web_status
           until: __web_status is success
