@@ -23,3 +23,5 @@ exclude_paths:
   - tests/files/
 mock_roles:
   - linux-system-roles.podman
+supported_ansible_also:
+  - "2.14.0"
