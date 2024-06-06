@@ -30,6 +30,43 @@
   vars:
     __service_error: Could not find the requested service
 
+- name: See if quadlet file exists
+  stat:
+    path: "{{ __podman_quadlet_file }}"
+  register: __podman_network_stat
+  when: __podman_quadlet_type == "network"
+
+- name: Get network quadlet network name
+  when:
+    - __podman_quadlet_type == "network"
+    - __podman_network_stat.stat.exists
+  block:
+    - name: Create tempdir
+      tempfile:
+        prefix: podman_
+        suffix: _lsr.ini
+        state: directory
+      register: __podman_network_tmpdir
+      delegate_to: localhost
+
+    - name: Fetch the network quadlet
+      fetch:
+        dest: "{{ __podman_network_tmpdir.path }}/network.ini"
+        src: "{{ __podman_quadlet_file }}"
+        flat: true
+
+    - name: Get the network name
+      set_fact:
+        __podman_network_name: "{{
+          lookup('ini', 'NetworkName section=Network file=' ~
+                 __podman_network_tmpdir.path ~ '/network.ini') }}"
+  always:
+    - name: Remove tempdir
+      file:
+        path: "{{ __podman_network_tmpdir.path }}"
+        state: absent
+      delegate_to: localhost
+
 - name: Remove quadlet file
   file:
     path: "{{ __podman_quadlet_file }}"
@@ -62,10 +99,14 @@
       changed_when: true
 
     - name: Remove network
-      command: podman network rm systemd-{{ __podman_quadlet_name }}
+      command: podman network rm {{ __name | quote }}
       changed_when: true
       when: __podman_quadlet_type == "network"
       environment:
         XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
       become: "{{ __podman_rootless | ternary(true, omit) }}"
       become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+      vars:
+        __name: "{{ __podman_network_name if
+          __podman_network_name | d('') | length > 0
+          else 'systemd-' ~ __podman_quadlet_name }}"

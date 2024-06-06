@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT
+---
+# shadow-utils-subid for getsubids
+__podman_packages:
+  - iptables-nft
+  - podman
+  - shadow-utils-subid

@@ -11,7 +11,7 @@
     podman_use_copr: false  # disable copr for CI testing
     podman_fail_if_too_old: false
     podman_create_host_directories: true
-    podman_quadlet_specs:
+    __podman_quadlet_specs:
       - file_src: quadlet-demo.network
       - file_src: quadlet-demo-mysql.volume
       - template_src: quadlet-demo-mysql.container.j2
@@ -45,6 +45,7 @@
           include_role:
             name: linux-system-roles.podman
           vars:
+            podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
             podman_pull_retry: true
             podman_secrets:
               - name: mysql-root-password-container
@@ -149,19 +150,9 @@
               include_role:
                 name: linux-system-roles.podman
               vars:
-                podman_quadlet_specs:
-                  - template_src: quadlet-demo-mysql.container.j2
-                    state: absent
-                  - file_src: quadlet-demo-mysql.volume
-                    state: absent
-                  - file_src: envoy-proxy-configmap.yml
-                    state: absent
-                  - file_src: quadlet-demo.kube
-                    state: absent
-                  - template_src: quadlet-demo.yml.j2
-                    state: absent
-                  - file_src: quadlet-demo.network
-                    state: absent
+                __absent: {"state":"absent"}
+                podman_quadlet_specs: "{{ __podman_quadlet_specs |
+                  reverse | map('combine', __absent) | list }}"
                 podman_secrets:
                   - name: mysql-root-password-container
                     state: absent
