@@ -19,12 +19,8 @@
         state: present
         data: "{{ __json_secret_data | string }}"
     __podman_quadlet_specs:
-      - name: quadlet-basic
-        type: network
-        Network:
-          Subnet: 192.168.29.0/24
-          Gateway: 192.168.29.1
-          Label: app=wordpress
+      - file_src: files/quadlet-basic.network
+        state: started
       - name: quadlet-basic-mysql
         type: volume
         Volume: {}
@@ -197,7 +193,8 @@
           failed_when: not __stat.stat.exists
 
         # must clean up networks last - cannot remove a network
-        # in use by a container
+        # in use by a container - using reverse assumes the network
+        # is defined first in the list
         - name: Cleanup user
           include_role:
             name: linux-system-roles.podman
@@ -206,10 +203,7 @@
             __absent: {"state":"absent"}
             podman_secrets: "{{ __podman_secrets | map('combine', __absent) |
               list }}"
-            podman_quadlet_specs: "{{ ((__podman_quadlet_specs |
-              rejectattr('type', 'match', '^network$') | list) +
-              (__podman_quadlet_specs |
-               selectattr('type', 'match', '^network$') | list)) |
+            podman_quadlet_specs: "{{ __podman_quadlet_specs | reverse |
               map('combine', __absent) | list }}"
 
         - name: Ensure no linger
@@ -242,6 +236,11 @@
           changed_when: false
 
       rescue:
+        - name: Check AVCs
+          command: grep type=AVC /var/log/audit/audit.log
+          changed_when: false
+          failed_when: false
+
         - name: Dump journal
           command: journalctl -ex
           changed_when: false
@@ -258,10 +257,7 @@
                 __absent: {"state":"absent"}
                 podman_secrets: "{{ __podman_secrets |
                   map('combine', __absent) | list }}"
-                podman_quadlet_specs: "{{ ((__podman_quadlet_specs |
-                  rejectattr('type', 'match', '^network$') | list) +
-                  (__podman_quadlet_specs |
-                  selectattr('type', 'match', '^network$') | list)) |
+                podman_quadlet_specs: "{{ __podman_quadlet_specs | reverse |
                   map('combine', __absent) | list }}"
 
             - name: Remove test user
@@ -277,10 +273,7 @@
                 __absent: {"state":"absent"}
                 podman_secrets: "{{ __podman_secrets |
                   map('combine', __absent) | list }}"
-                podman_quadlet_specs: "{{ ((__podman_quadlet_specs |
-                  rejectattr('type', 'match', '^network$') | list) +
-                  (__podman_quadlet_specs |
-                  selectattr('type', 'match', '^network$') | list)) |
+                podman_quadlet_specs: "{{ __podman_quadlet_specs | reverse |
                   map('combine', __absent) | list }}"
 
           rescue:
