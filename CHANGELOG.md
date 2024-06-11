@@ -1,6 +1,19 @@
 Changelog
 =========
 
+[1.5.1] - 2024-06-11
+--------------------
+
+### Bug Fixes
+
+- fix: grab name of network to remove from quadlet file (#155)
+
+### Other Changes
+
+- ci: use tox-lsr 3.3.0 which uses ansible-test 2.17 (#151)
+- ci: tox-lsr 3.4.0 - fix py27 tests; move other checks to py310 (#153)
+- ci: Add supported_ansible_also to .ansible-lint (#154)
+
 [1.5.0] - 2024-04-22
 --------------------
 
