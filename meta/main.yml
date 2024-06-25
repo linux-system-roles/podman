@@ -14,7 +14,11 @@ galaxy_info:
       versions:
         - "8"
         - "9"
-
-  galaxy_tags: [podman, containers]
-
+  galaxy_tags:
+    - containers
+    - el8
+    - el9
+    - el10
+    - fedora
+    - podman
 dependencies: []
