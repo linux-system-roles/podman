@@ -49,7 +49,7 @@
   when: __podman_xdg_stat.stat.exists
 
 - name: Cancel linger if no more resources are in use
-  command: loginctl disable-linger {{ __podman_linger_user }}
+  command: loginctl disable-linger {{ __podman_linger_user | quote }}
   when:
     - __podman_xdg_stat.stat.exists
     - __podman_container_info.containers | length == 0

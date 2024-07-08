@@ -9,7 +9,7 @@ Volume=/tmp/quadlet_demo:/var/lib/quadlet_demo:Z
 Network=quadlet-demo.network
 {% if podman_version is version("4.5", ">=") %}
 Secret=mysql-root-password-container,type=env,target=MYSQL_ROOT_PASSWORD
-HealthCmd=/usr/bin/true
+HealthCmd=/bin/true
 HealthOnFailure=kill
 {% else %}
 PodmanArgs=--secret=mysql-root-password-container,type=env,target=MYSQL_ROOT_PASSWORD

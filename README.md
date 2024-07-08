@@ -529,6 +529,12 @@ registries will validate TLS certs or not.  The default `null` means to use
 whatever is the default used by the `containers.podman.podman_image` module. You
 can override this on a per-spec basis using `validate_certs`.
 
+### podman_prune_images
+
+Boolean - default is `false` - by default, the role will not prune unused images
+when removing quadlets and other resources.  Set this to `true` to tell the role
+to remove unused images when cleaning up.
+
 ## Variables Exported by the Role
 
 ### podman_version
