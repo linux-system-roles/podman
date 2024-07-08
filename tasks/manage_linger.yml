@@ -10,7 +10,7 @@
     - __podman_item_state | d('present') != 'absent'
   block:
     - name: Enable linger if needed
-      command: loginctl enable-linger {{ __podman_user }}
+      command: loginctl enable-linger {{ __podman_user | quote }}
       when: __podman_rootless | bool
       args:
         creates: /var/lib/systemd/linger/{{ __podman_user }}

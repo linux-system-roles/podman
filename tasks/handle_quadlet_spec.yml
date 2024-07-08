@@ -129,6 +129,8 @@
       if __podman_quadlet_type in ['container', 'kube']
       else __podman_quadlet_name ~ '-volume.service'
       if __podman_quadlet_type in ['volume']
+      else __podman_quadlet_name ~ '-network.service'
+      if __podman_quadlet_type in ['network']
       else none }}"
 
 - name: Set per-container variables part 4

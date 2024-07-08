@@ -84,6 +84,11 @@
           changed_when: false
           failed_when: false
 
+        - name: Check volumes
+          command: podman volume ls
+          changed_when: false
+          failed_when: false
+
         - name: Check pods
           command: podman pod ps --ctr-ids --ctr-names --ctr-status
           changed_when: false
@@ -150,6 +155,8 @@
               include_role:
                 name: linux-system-roles.podman
               vars:
+                podman_prune_images: true
+                __podman_test_debug: true
                 __absent: {"state":"absent"}
                 podman_quadlet_specs: "{{ __podman_quadlet_specs |
                   reverse | map('combine', __absent) | list }}"
@@ -161,7 +168,33 @@
                   - name: envoy-certificates
                     state: absent
 
+            - name: Ensure no resources
+              assert:
+                that:
+                  - __podman_test_debug_images.stdout == ""
+                  - __podman_test_debug_networks.stdout_lines |
+                    reject("match", "^podman$") |
+                    reject("match", "^podman-default-kube-network$") |
+                    list | length == 0
+                  - __podman_test_debug_volumes.stdout == ""
+                  - __podman_test_debug_containers.stdout == ""
+                  - __podman_test_debug_secrets.stdout == ""
+                  - ansible_facts["services"] | dict2items |
+                    rejectattr("value.status", "match", "not-found") |
+                    selectattr("key", "match", "quadlet-demo") |
+                    list | length == 0
+
           rescue:
+            - name: Debug
+              shell: |
+                exec 1>&2
+                set -x
+                set -o pipefail
+                systemctl list-units --plain -l --all | grep quadlet || :
+                systemctl list-unit-files --all | grep quadlet || :
+                systemctl list-units --plain --failed -l --all | grep quadlet || :
+              changed_when: false
+
             - name: Get journald
               command: journalctl -ex
               changed_when: false

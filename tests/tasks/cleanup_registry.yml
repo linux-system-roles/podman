@@ -1,7 +1,19 @@
 # SPDX-License-Identifier: MIT
 ---
+- name: Get volume for cleanup
+  command: >-
+    podman inspect podman_registry --format
+    '{% raw %}{{range .}}{{range .Mounts}}{{if eq .Type
+    "volume"}}{{.Name}}{{end}}{{end}}{{end}}{% endraw %}'
+  changed_when: false
+  register: __registry_volume
+
 - name: Destroy registry container
   command: podman rm -f podman_registry
+  changed_when: true
+
+- name: Destroy volume
+  command: podman volume rm {{ __registry_volume.stdout | quote }}
   changed_when: true
 
 - name: Cleanup paths
