@@ -1,6 +1,18 @@
 Changelog
 =========
 
+[1.5.2] - 2024-07-23
+--------------------
+
+### Bug Fixes
+
+- fix: add support for EL10 (#159)
+- fix: proper cleanup for networks; ensure cleanup of resources (#160)
+
+### Other Changes
+
+- ci: ansible-lint action now requires absolute directory (#157)
+
 [1.5.1] - 2024-06-11
 --------------------
 

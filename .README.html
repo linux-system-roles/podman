@@ -59,7 +59,7 @@ SOFTWARE.
   <style type="text/css">code{white-space: pre;}</style>
   <style type="text/css">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -70,7 +70,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -195,6 +195,8 @@ id="toc-podman_credential_files">podman_credential_files</a></li>
 id="toc-podman_registry_certificates">podman_registry_certificates</a></li>
 <li><a href="#podman_validate_certs"
 id="toc-podman_validate_certs">podman_validate_certs</a></li>
+<li><a href="#podman_prune_images"
+id="toc-podman_prune_images">podman_prune_images</a></li>
 </ul></li>
 <li><a href="#variables-exported-by-the-role"
 id="toc-variables-exported-by-the-role">Variables Exported by the
@@ -752,6 +754,11 @@ from registries will validate TLS certs or not. The default
 <code>null</code> means to use whatever is the default used by the
 <code>containers.podman.podman_image</code> module. You can override
 this on a per-spec basis using <code>validate_certs</code>.</p>
+<h2 id="podman_prune_images">podman_prune_images</h2>
+<p>Boolean - default is <code>false</code> - by default, the role will
+not prune unused images when removing quadlets and other resources. Set
+this to <code>true</code> to tell the role to remove unused images when
+cleaning up.</p>
 <h1 id="variables-exported-by-the-role">Variables Exported by the
 Role</h1>
 <h2 id="podman_version">podman_version</h2>
