@@ -58,5 +58,42 @@
       list | length == 0
     - __podman_linger_secrets.stdout == ""
   changed_when: true
+  register: __cancel_linger
   args:
     removes: /var/lib/systemd/linger/{{ __podman_linger_user }}
+
+- name: Wait for user session to exit closing state  # noqa no-handler
+  command: loginctl show-user -P State {{ __podman_linger_user | quote }}
+  register: __user_state
+  changed_when: false
+  until: __user_state.stdout != "closing"
+  when: __cancel_linger is changed
+  ignore_errors: true
+
+# see https://github.com/systemd/systemd/issues/26744#issuecomment-2261509208
+- name: Handle user stuck in closing state
+  when:
+    - __cancel_linger is changed
+    - __user_state is failed
+  block:
+    - name: Stop logind
+      service:
+        name: systemd-logind
+        state: stopped
+
+    - name: Wait for user session to exit closing state
+      command: loginctl show-user -P State {{ __podman_linger_user | quote }}
+      changed_when: false
+      register: __user_state
+      until: __user_state.stderr is match(__pat) or
+        __user_state.stdout != "closing"
+      failed_when:
+        - not __user_state.stderr is match(__pat)
+        - __user_state.stdout == "closing"
+      vars:
+        __pat: "Failed to get user: User ID .* is not logged in or lingering"
+
+    - name: Restart logind
+      service:
+        name: systemd-logind
+        state: started
