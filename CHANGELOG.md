@@ -1,6 +1,19 @@
 Changelog
 =========
 
+[1.5.3] - 2024-08-01
+--------------------
+
+### Bug Fixes
+
+- fix: Ensure user linger is closed on EL10 (#165)
+
+### Other Changes
+
+- ci: Add tft plan and workflow (#162)
+- ci: Update fmf plan to add a separate job to prepare managed nodes (#164)
+- ci: bump sclorg/testing-farm-as-github-action from 2 to 3 (#166)
+
 [1.5.2] - 2024-07-23
 --------------------
 
