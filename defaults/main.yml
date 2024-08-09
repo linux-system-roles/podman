@@ -139,3 +139,6 @@ podman_validate_certs: null
 # Prune images when removing quadlets/kube specs -
 # this will remove all unused/unreferenced images
 podman_prune_images: false
+
+# var to manage reboots for transactional update systems
+podman_transactional_update_reboot_ok: null
