@@ -19,6 +19,30 @@
              ternary('ansible.posix.rhel_rpm_ostree', omit) }}"
   become: true
   when: (__podman_packages | difference(ansible_facts.packages))
+  register: podman_package_result
+
+- name: Handle reboot for transactional update systems
+  when:
+    - __podman_is_transactional | d(false)
+    - podman_package_result is changed
+  block:
+    - name: Notify user that reboot is needed to apply changes
+      debug:
+        msg: >
+          Reboot required to apply changes due to transactional updates.
+
+    - name: Reboot transactional update systems
+      reboot:
+        msg: Rebooting the system to apply transactional update changes.
+      when: podman_transactional_update_reboot_ok | bool
+
+    - name: Fail if reboot is needed and not set
+      fail:
+        msg: >
+          Reboot is required but not allowed. Please set
+          'podman_transactional_update_reboot_ok' to proceed.
+      when:
+        - podman_transactional_update_reboot_ok is none
 
 - name: Get podman version
   check_mode: false

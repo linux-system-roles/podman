@@ -18,6 +18,18 @@
       set_fact:
         __podman_is_ostree: "{{ __ostree_booted_stat.stat.exists }}"
 
+- name: Determine if system is transactional update and set flag
+  when: not __podman_is_transactional is defined
+  block:
+    - name: Check if transactional-update exists in /sbin
+      stat:
+        path: /sbin/transactional-update
+      register: __transactional_update_stat
+
+    - name: Set flag if transactional-update exists
+      set_fact:
+        __podman_is_transactional: "{{ __transactional_update_stat.stat.exists }}"
+
 - name: Set platform/version specific variables
   include_vars: "{{ __vars_file }}"
   loop:
