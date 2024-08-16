@@ -1,6 +1,18 @@
 Changelog
 =========
 
+[1.6.0] - 2024-08-16
+--------------------
+
+### New Features
+
+- feat: Handle reboot for transactional update systems (#170)
+
+### Other Changes
+
+- ci: Add workflow for ci_test bad, use remote fmf plan (#168)
+- ci: Fix missing slash in ARTIFACTS_URL (#169)
+
 [1.5.3] - 2024-08-01
 --------------------
 

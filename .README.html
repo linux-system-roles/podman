@@ -197,6 +197,8 @@ id="toc-podman_registry_certificates">podman_registry_certificates</a></li>
 id="toc-podman_validate_certs">podman_validate_certs</a></li>
 <li><a href="#podman_prune_images"
 id="toc-podman_prune_images">podman_prune_images</a></li>
+<li><a href="#podman_transactional_update_reboot_ok"
+id="toc-podman_transactional_update_reboot_ok">podman_transactional_update_reboot_ok</a></li>
 </ul></li>
 <li><a href="#variables-exported-by-the-role"
 id="toc-variables-exported-by-the-role">Variables Exported by the
@@ -759,6 +761,16 @@ this on a per-spec basis using <code>validate_certs</code>.</p>
 not prune unused images when removing quadlets and other resources. Set
 this to <code>true</code> to tell the role to remove unused images when
 cleaning up.</p>
+<h2
+id="podman_transactional_update_reboot_ok">podman_transactional_update_reboot_ok</h2>
+<p>This variable is applicable only for transactional update systems. If
+a transactional update requires a reboot, the role will proceed with the
+reboot if <code>podman_transactional_update_reboot_ok</code> is set to
+<code>true</code>. If set to <code>false</code>, the role will notify
+the user that a reboot is required, allowing for custom handling of the
+reboot requirement. If this variable is not set, the role will fail to
+ensure the reboot requirement is not overlooked. For non-transactional
+update systems, this variable is ignored.</p>
 <h1 id="variables-exported-by-the-role">Variables Exported by the
 Role</h1>
 <h2 id="podman_version">podman_version</h2>
