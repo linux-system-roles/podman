@@ -67,7 +67,7 @@
       selectattr('image', 'defined') | map(attribute='image') | list
       if 'initContainers' in __podman_kube['spec']
       else [] }}"
-  no_log: true
+  no_log: false
 
 - name: Check the kubernetes yaml file
   stat:
