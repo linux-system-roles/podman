@@ -2,6 +2,7 @@
 ---
 - name: Deploy the quadlet demo app
   hosts: all
+  gather_facts: true
   vars_files:
     - vars/test_vars.yml
   vars:
@@ -28,6 +29,17 @@
       "/tmp/quadlet_demo":
         mode: "0777"
   tasks:
+    - name: Test is only supported on x86_64
+      debug:
+        msg: >
+          This test is only supported on x86_64 because the test images used are only
+          available on that platform.
+      when: ansible_facts["architecture"] != "x86_64"
+
+    - name: End test
+      meta: end_play
+      when: ansible_facts["architecture"] != "x86_64"
+
     - name: Run tests
       block:
         - name: Generate certificates

@@ -48,6 +48,17 @@
             - FOO=/bin/busybox-extras
             - BAZ=test
   tasks:
+    - name: Test is only supported on x86_64
+      debug:
+        msg: >
+          This test is only supported on x86_64 because the test images used are only
+          available on that platform.
+      when: ansible_facts["architecture"] != "x86_64"
+
+    - name: End test
+      meta: end_play
+      when: ansible_facts["architecture"] != "x86_64"
+
     - name: Run test
       block:
         - name: See if not pulling images fails
