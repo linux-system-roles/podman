@@ -51,10 +51,24 @@
     dest: "{{ __podman_registry_authdir ~ '/ca.crt' }}"
     mode: "0600"
 
+- name: Determine if system is ostree and set flag
+  when: not __podman_is_ostree is defined
+  block:
+    - name: Check if system is ostree
+      stat:
+        path: /run/ostree-booted
+      register: __ostree_booted_stat
+
+    - name: Set flag to indicate system is ostree
+      set_fact:
+        __podman_is_ostree: "{{ __ostree_booted_stat.stat.exists }}"
+
 - name: Ensure test packages
   package:
     name: [httpd-tools, skopeo]
     state: present
+    use: "{{ (__podman_is_ostree | d(false)) |
+             ternary('ansible.posix.rhel_rpm_ostree', omit) }}"
 
 - name: Write user and password
   shell: >-
