@@ -26,19 +26,6 @@
       {{ ansible_facts["getent_passwd"][__podman_user][2] }}
       {%- endif -%}
 
-- name: Get group information
-  getent:
-    database: group
-    key: "{{ __podman_group }}"
-    fail_key: false
-  when: "'getent_group' not in ansible_facts or
-    __podman_group not in ansible_facts['getent_group']"
-
-- name: Set group name
-  set_fact:
-    __podman_group_name: "{{ ansible_facts['getent_group'].keys() |
-      list | first }}"
-
 - name: See if getsubids exists
   stat:
     path: /usr/bin/getsubids
@@ -50,13 +37,13 @@
     - __podman_user not in ["root", "0"]
     - __podman_stat_getsubids.stat.exists
   block:
-    - name: Check user with getsubids
+    - name: Check with getsubids for user subuids
       command: getsubids {{ __podman_user | quote }}
       changed_when: false
       register: __podman_register_subuids
 
-    - name: Check group with getsubids
-      command: getsubids -g {{ __podman_group_name | quote }}
+    - name: Check with getsubids for user subgids
+      command: getsubids -g {{ __podman_user | quote }}
       changed_when: false
       register: __podman_register_subgids
 
@@ -67,7 +54,7 @@
             {'start': __subuid_data[2] | int, 'range': __subuid_data[3] | int}})
           if __subuid_data | length > 0 else podman_subuid_info | d({}) }}"
         podman_subgid_info: "{{ podman_subgid_info | d({}) |
-          combine({__podman_group_name:
+          combine({__podman_user:
             {'start': __subgid_data[2] | int, 'range': __subgid_data[3] | int}})
           if __subgid_data | length > 0 else podman_subgid_info | d({}) }}"
       vars:
@@ -78,7 +65,6 @@
   when:
     - not __podman_stat_getsubids.stat.exists
     - __podman_user not in ["root", "0"]
-    - __podman_group not in ["root", "0"]
   block:
     - name: Get subuid file
       slurp:
@@ -97,7 +83,7 @@
             {'start': __subuid_data[1] | int, 'range': __subuid_data[2] | int}})
           if __subuid_data else podman_subuid_info | d({}) }}"
         podman_subgid_info: "{{ podman_subgid_info | d({}) |
-          combine({__podman_group_name:
+          combine({__podman_user:
             {'start': __subgid_data[1] | int, 'range': __subgid_data[2] | int}})
           if __subgid_data else podman_subgid_info | d({}) }}"
       vars:
@@ -108,7 +94,7 @@
           if __subuid_match_line else none }}"
         __subgid_match_line: "{{
           (__podman_register_subgids.content | b64decode).split('\n') | list |
-          select('match', '^' ~ __podman_group_name ~ ':') | list }}"
+          select('match', '^' ~ __podman_user ~ ':') | list }}"
         __subgid_data: "{{ __subgid_match_line[0].split(':') | list
           if __subgid_match_line else none }}"
 
@@ -119,9 +105,9 @@
           /etc/subuid file - cannot continue
       when: not __podman_user in podman_subuid_info
 
-    - name: Fail if group not in subgid file
+    - name: Fail if user not in subgid file
       fail:
         msg: >
-          The given podman group [{{ __podman_group_name }}] is not in the
+          The given podman user [{{ __podman_user }}] is not in the
           /etc/subgid file - cannot continue
-      when: not __podman_group_name in podman_subuid_info
+      when: not __podman_user in podman_subgid_info
