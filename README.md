@@ -35,12 +35,11 @@ restrictions:
 * They must be already present on the system - the role will not create the
   users or groups - the role will exit with an error if a non-existent user or
   group is specified
-* They must already exist in `/etc/subuid` and `/etc/subgid`, or are otherwise
-  provided by your identity management system - the role will exit with an error
-  if a specified user is not present in `/etc/subuid`, or if a specified group
-  is not in `/etc/subgid`.  The role uses `getsubids` to check the user and
-  group if available, or checks the files directly if `getsubids` is not
-  available.
+* The user must already exist in `/etc/subuid` and `/etc/subgid`, or otherwise
+  be provided by your identity management system - the role will exit with an
+  error if a specified user is not present in `/etc/subuid` and `/etc/subgid`.
+  The role uses `getsubids` to check the user and group if available, or checks
+  the files directly if `getsubids` is not available.
 
 ## Role Variables
 
@@ -56,14 +55,15 @@ except for the following:
   * `started` - Create the pods and systemd services, and start them running
   * `created` - Create the pods and systemd services, but do not start them
   * `absent` - Remove the pods and systemd services
-* `run_as_user` - Use this to specify a per-pod user.  If you do not
-  specify this, then the global default `podman_run_as_user` value will be used.
+* `run_as_user` - Use this to specify a per-pod user.  If you do not specify
+  this, then the global default `podman_run_as_user` value will be used.
   Otherwise, `root` will be used.  NOTE: The user must already exist - the role
-  will not create one.  The user must be present in `/etc/subuid`.
-* `run_as_group` - Use this to specify a per-pod group.  If you do not
-  specify this, then the global default `podman_run_as_group` value will be
-  used.  Otherwise, `root` will be used.  NOTE: The group must already exist -
-  the role will not create one.  The group must be present in `/etc/subgid`.
+  will not create one.  The user must be present in `/etc/subuid` and
+  `/etc/subgid`.
+* `run_as_group` - Use this to specify a per-pod group.  If you do not specify
+  this, then the global default `podman_run_as_group` value will be used.
+  Otherwise, `root` will be used.  NOTE: The group must already exist - the role
+  will not create one.
 * `systemd_unit_scope` - The scope to use for the systemd unit.  If you do not
   specify this, then the global default `podman_systemd_unit_scope` will be
   used.  Otherwise, the scope will be `system` for root containers, and `user`
@@ -278,14 +278,13 @@ podman_selinux_ports:
 This is the name of the user to use for all rootless containers.  You can also
 specify per-container username with `run_as_user` in `podman_kube_specs`.  NOTE:
 The user must already exist - the role will not create one.  The user must be
-present in `/etc/subuid`.
+present in `/etc/subuid` and `/etc/subgid`.
 
 ### podman_run_as_group
 
 This is the name of the group to use for all rootless containers.  You can also
 specify per-container group name with `run_as_group` in `podman_kube_specs`.
-NOTE: The group must already exist - the role will not create one.  The group must
-be present in `/etc/subgid`.
+NOTE: The group must already exist - the role will not create one.
 
 ### podman_systemd_unit_scope
 
@@ -433,14 +432,15 @@ The keys of each `dict` are as follows:
 * `run_as_user` - Use this to specify a per-credential file owner.  If you do
   not specify this, then the global default `podman_run_as_user` value will be
   used. Otherwise, `root` will be used.  NOTE: The user must already exist - the
-  role will not create one.  The user must be present in `/etc/subuid`. NOTE:
-  This is used as the user for the `$HOME` directory if `file` is not specified,
-  and as the owner of the file.  If you want the owner of the file to be
-  different than the user used for `$HOME`, specify `file` as an absolute path.
+  role will not create one.  The user must be present in `/etc/subuid` and
+  `/etc/subgid`. NOTE: This is used as the user for the `$HOME` directory if
+  `file` is not specified, and as the owner of the file.  If you want the owner
+  of the file to be different than the user used for `$HOME`, specify `file` as
+  an absolute path.
 * `run_as_group` - Use this to specify a per-credential file group.  If you do
   not specify this, then the global default `podman_run_as_group` value will be
   used. Otherwise, `root` will be used.  NOTE: The group must already exist -
-  the role will not create one.  The group must be present in `/etc/subgid`.
+  the role will not create one.
 * `mode` - The mode of the file - default is `"0600"`.
 
 For example, if you have
@@ -577,24 +577,24 @@ PodmanArgs=--secret=my-app-pwd,type=env,target=MYAPP_PASSWORD
 
 ### podman_subuid_info, podman_subgid_info
 
-The role needs to ensure any users and groups are present in the subuid and
+The role needs to ensure any users are present in the subuid and
 subgid information.  Once it extracts this data, it will be available in
 `podman_subuid_info` and `podman_subgid_info`. These are dicts.  The key is the
-user or group name, and the value is a `dict` with two fields:
+user name, and the value is a `dict` with two fields:
 
-* `start` - the start of the id range for that user or group, as an `int`
-* `range` - the id range for that user or group, as an `int`
+* `start` - the start of the id range for that user, as an `int`
+* `range` - the id range for that user, as an `int`
 
 ```yaml
 podman_host_directories:
   "/var/lib/db":
     mode: "0777"
     owner: "{{ 1001 + podman_subuid_info['dbuser']['start'] - 1 }}"
-    group: "{{ 1001 + podman_subgid_info['dbgroup']['start'] - 1 }}"
+    group: "{{ 2001 + podman_subgid_info['dbuser']['start'] - 1 }}"
 ```
 
-Where `1001` is the uid for user `dbuser`, and `1001` is the gid for group
-`dbgroup`.
+Where `1001` is the uid for user `dbuser`, and `2001` is the gid for the
+group you want to use.
 
 **NOTE**: depending on the namespace used by your containers, you might not be
 able to use the subuid and subgid information, which comes from `getsubids` if
