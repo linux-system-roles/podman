@@ -1,6 +1,17 @@
 Changelog
 =========
 
+[1.6.3] - 2024-09-03
+--------------------
+
+### Bug Fixes
+
+- fix: subgid maps user to gids, not group to gids (#178)
+
+### Other Changes
+
+- ci: Add tags to TF workflow, allow more [citest bad] formats (#177)
+
 [1.6.2] - 2024-08-21
 --------------------
 
