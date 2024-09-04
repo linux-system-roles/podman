@@ -243,13 +243,13 @@ following restrictions:</p>
 <li>They must be already present on the system - the role will not
 create the users or groups - the role will exit with an error if a
 non-existent user or group is specified</li>
-<li>They must already exist in <code>/etc/subuid</code> and
-<code>/etc/subgid</code>, or are otherwise provided by your identity
+<li>The user must already exist in <code>/etc/subuid</code> and
+<code>/etc/subgid</code>, or otherwise be provided by your identity
 management system - the role will exit with an error if a specified user
-is not present in <code>/etc/subuid</code>, or if a specified group is
-not in <code>/etc/subgid</code>. The role uses <code>getsubids</code> to
-check the user and group if available, or checks the files directly if
-<code>getsubids</code> is not available.</li>
+is not present in <code>/etc/subuid</code> and <code>/etc/subgid</code>.
+The role uses <code>getsubids</code> to check the user and group if
+available, or checks the files directly if <code>getsubids</code> is not
+available.</li>
 </ul>
 <h1 id="role-variables">Role Variables</h1>
 <h2 id="podman_kube_specs">podman_kube_specs</h2>
@@ -273,13 +273,12 @@ you do not specify this, then the global default
 <code>podman_run_as_user</code> value will be used. Otherwise,
 <code>root</code> will be used. NOTE: The user must already exist - the
 role will not create one. The user must be present in
-<code>/etc/subuid</code>.</li>
+<code>/etc/subuid</code> and <code>/etc/subgid</code>.</li>
 <li><code>run_as_group</code> - Use this to specify a per-pod group. If
 you do not specify this, then the global default
 <code>podman_run_as_group</code> value will be used. Otherwise,
 <code>root</code> will be used. NOTE: The group must already exist - the
-role will not create one. The group must be present in
-<code>/etc/subgid</code>.</li>
+role will not create one.</li>
 <li><code>systemd_unit_scope</code> - The scope to use for the systemd
 unit. If you do not specify this, then the global default
 <code>podman_systemd_unit_scope</code> will be used. Otherwise, the
@@ -498,13 +497,12 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="
 can also specify per-container username with <code>run_as_user</code> in
 <code>podman_kube_specs</code>. NOTE: The user must already exist - the
 role will not create one. The user must be present in
-<code>/etc/subuid</code>.</p>
+<code>/etc/subuid</code> and <code>/etc/subgid</code>.</p>
 <h2 id="podman_run_as_group">podman_run_as_group</h2>
 <p>This is the name of the group to use for all rootless containers. You
 can also specify per-container group name with <code>run_as_group</code>
 in <code>podman_kube_specs</code>. NOTE: The group must already exist -
-the role will not create one. The group must be present in
-<code>/etc/subgid</code>.</p>
+the role will not create one.</p>
 <h2 id="podman_systemd_unit_scope">podman_systemd_unit_scope</h2>
 <p>This is systemd scope to use by default for all systemd units. You
 can also specify per-container scope with
@@ -650,17 +648,16 @@ owner. If you do not specify this, then the global default
 <code>podman_run_as_user</code> value will be used. Otherwise,
 <code>root</code> will be used. NOTE: The user must already exist - the
 role will not create one. The user must be present in
-<code>/etc/subuid</code>. NOTE: This is used as the user for the
-<code>$HOME</code> directory if <code>file</code> is not specified, and
-as the owner of the file. If you want the owner of the file to be
-different than the user used for <code>$HOME</code>, specify
-<code>file</code> as an absolute path.</li>
+<code>/etc/subuid</code> and <code>/etc/subgid</code>. NOTE: This is
+used as the user for the <code>$HOME</code> directory if
+<code>file</code> is not specified, and as the owner of the file. If you
+want the owner of the file to be different than the user used for
+<code>$HOME</code>, specify <code>file</code> as an absolute path.</li>
 <li><code>run_as_group</code> - Use this to specify a per-credential
 file group. If you do not specify this, then the global default
 <code>podman_run_as_group</code> value will be used. Otherwise,
 <code>root</code> will be used. NOTE: The group must already exist - the
-role will not create one. The group must be present in
-<code>/etc/subgid</code>.</li>
+role will not create one.</li>
 <li><code>mode</code> - The mode of the file - default is
 <code>"0600"</code>.</li>
 </ul>
@@ -796,15 +793,15 @@ class="sourceCode ini"><code class="sourceCode ini"><span id="cb16-1"><a href="#
 <span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="dt">{% endif %}</span></span></code></pre></div>
 <h2 id="podman_subuid_info-podman_subgid_info">podman_subuid_info,
 podman_subgid_info</h2>
-<p>The role needs to ensure any users and groups are present in the
-subuid and subgid information. Once it extracts this data, it will be
-available in <code>podman_subuid_info</code> and
-<code>podman_subgid_info</code>. These are dicts. The key is the user or
-group name, and the value is a <code>dict</code> with two fields:</p>
+<p>The role needs to ensure any users are present in the subuid and
+subgid information. Once it extracts this data, it will be available in
+<code>podman_subuid_info</code> and <code>podman_subgid_info</code>.
+These are dicts. The key is the user name, and the value is a
+<code>dict</code> with two fields:</p>
 <ul>
-<li><code>start</code> - the start of the id range for that user or
-group, as an <code>int</code></li>
-<li><code>range</code> - the id range for that user or group, as an
+<li><code>start</code> - the start of the id range for that user, as an
+<code>int</code></li>
+<li><code>range</code> - the id range for that user, as an
 <code>int</code></li>
 </ul>
 <div class="sourceCode" id="cb17"><pre
@@ -812,9 +809,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href=
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">&quot;/var/lib/db&quot;</span><span class="kw">:</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0777&quot;</span></span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;{{ 1001 + podman_subuid_info[&#39;dbuser&#39;][&#39;start&#39;] - 1 }}&quot;</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;{{ 1001 + podman_subgid_info[&#39;dbgroup&#39;][&#39;start&#39;] - 1 }}&quot;</span></span></code></pre></div>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;{{ 2001 + podman_subgid_info[&#39;dbuser&#39;][&#39;start&#39;] - 1 }}&quot;</span></span></code></pre></div>
 <p>Where <code>1001</code> is the uid for user <code>dbuser</code>, and
-<code>1001</code> is the gid for group <code>dbgroup</code>.</p>
+<code>2001</code> is the gid for the group you want to use.</p>
 <p><strong>NOTE</strong>: depending on the namespace used by your
 containers, you might not be able to use the subuid and subgid
 information, which comes from <code>getsubids</code> if available, or
