@@ -45,7 +45,7 @@
 - name: Parse quadlet yaml file
   set_fact:
     __podman_quadlet_parsed: "{{ __podman_quadlet_raw.content | b64decode |
-      from_yaml_all }}"
+      from_yaml_all | list }}"
   when:
     - __podman_service_name | length == 0
     - __podman_quadlet_file.endswith(".yml") or
