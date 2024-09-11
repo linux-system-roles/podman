@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[1.6.4] - 2024-09-11
+--------------------
+
+### Bug Fixes
+
+- fix: Cannot remove volumes from kube yaml - need to convert yaml to list (#180)
+
 [1.6.3] - 2024-09-03
 --------------------
 
