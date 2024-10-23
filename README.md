@@ -12,6 +12,8 @@ The role requires podman version 4.4 or later for quadlet support and secret
 support.
 The role requires podman version 4.5 or later for support for using healthchecks
 (only supported when using quadlet Container types).
+The role requires podman version 5.0 or later for support for using
+[Pod quadlet types](https://github.com/containers/podman/releases/tag/v5.0.0).
 
 ### Collection requirements
 
@@ -195,6 +197,13 @@ quadlet container unit spec on the managed node.
 
 *NOTE*: When removing quadlets, you must remove networks *last*.  You cannot
 remove a network that is in use by a container.
+
+*NOTE*: When specifying a `Pod` for a `Container` to use, you must add a `.pod`
+to the podname e.g. `Pod=my-name.pod`.  The pod must already exist and be
+running, so specify any pods first in `podman_quadlet_specs` before the
+containers that use them.
+See [podman quadlet doc](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#pod)
+for more information.
 
 ### podman_secrets
 

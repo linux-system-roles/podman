@@ -1,0 +1,207 @@
+# SPDX-License-Identifier: MIT
+---
+- name: Ensure that the role can manage quadlet pods
+  hosts: all
+  gather_facts: true  # for machine_id
+  vars_files:
+    - vars/test_vars.yml
+  vars:
+    podman_use_copr: false  # disable copr for CI testing
+    podman_fail_if_too_old: false
+    __podman_quadlet_specs:
+      - name: quadlet-pod-pod
+        type: pod
+        Pod:
+          PodName: quadlet-pod
+      - name: quadlet-pod-container
+        type: container
+        Install:
+          WantedBy: default.target
+        Container:
+          Image: "{{ test_image }}"
+          ContainerName: quadlet-pod-container
+          Pod: quadlet-pod-pod.pod
+          Exec: /bin/busybox-extras httpd -f -p 80
+  tasks:
+    - name: Run test
+      block:
+        - name: Run the role - root
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
+
+        - name: Check files
+          command: cat {{ __dir }}/{{ item }}
+          changed_when: false
+          vars:
+            __dir: /etc/containers/systemd
+          loop:
+            - quadlet-pod-container.container
+            - quadlet-pod-pod.pod
+
+        - name: Check pod
+          command: podman pod inspect quadlet-pod --format {{ __fmt | quote }}
+          register: __check_pod
+          changed_when: false
+          failed_when: not "quadlet-pod-container" in __check_pod.stdout_lines
+          vars:
+            __fmt: "{% raw %}{{range .Containers}}{{.Name}}\n{{end}}{% endraw %}"
+
+        - name: Create user for testing
+          user:
+            name: user_quadlet_pod
+            uid: 2223
+
+        - name: Run the role - user
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_run_as_user: user_quadlet_pod
+            podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
+            podman_pull_retry: true
+
+        - name: Check files
+          command: cat {{ __dir }}/{{ item }}
+          changed_when: false
+          vars:
+            __dir: /home/user_quadlet_pod/.config/containers/systemd
+          loop:
+            - quadlet-pod-container.container
+            - quadlet-pod-pod.pod
+
+        - name: Check pod
+          command: podman pod inspect quadlet-pod --format {{ __fmt | quote }}
+          register: __check_pod
+          changed_when: false
+          failed_when: not "quadlet-pod-container" in __check_pod.stdout_lines
+          vars:
+            __fmt: "{% raw %}{{range .Containers}}{{.Name}}\n{{end}}{% endraw %}"
+          become: true
+          become_user: user_quadlet_pod
+          environment:
+            XDG_RUNTIME_DIR: /run/user/2223
+
+        - name: Ensure linger
+          stat:
+            path: /var/lib/systemd/linger/user_quadlet_pod
+          register: __stat
+          failed_when: not __stat.stat.exists
+
+        # must clean up in the reverse order of creating - and
+        # ensure networks are removed last
+        - name: Cleanup user
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_prune_images: true
+            __podman_test_debug: true
+            podman_run_as_user: user_quadlet_pod
+            __absent: {"state":"absent"}
+            podman_quadlet_specs: "{{ __podman_quadlet_specs | reverse |
+              map('combine', __absent) | list }}"
+
+        - name: Ensure no resources
+          assert:
+            that:
+              - __podman_test_debug_images.stdout == ""
+              - __podman_test_debug_networks.stdout_lines |
+                reject("match", "^podman$") |
+                reject("match", "^podman-default-kube-network$") |
+                list | length == 0
+              - __podman_test_debug_volumes.stdout == ""
+              - __podman_test_debug_containers.stdout == ""
+              - __podman_test_debug_secrets.stdout == ""
+              - __podman_test_debug_pods.stdout == ""
+              - ansible_facts["services"] | dict2items |
+                rejectattr("value.status", "match", "not-found") |
+                selectattr("key", "match", "quadlet-demo") |
+                list | length == 0
+
+        - name: Ensure no linger
+          stat:
+            path: /var/lib/systemd/linger/user_quadlet_pod
+          register: __stat
+          failed_when: __stat.stat.exists
+
+      rescue:
+        - name: Debug3
+          shell: |
+            set -x
+            set -o pipefail
+            exec 1>&2
+            #podman volume rm --all
+            #podman network prune -f
+            podman volume ls
+            podman network ls
+            podman secret ls
+            podman container ls
+            podman pod ls
+            podman images
+            systemctl list-units | grep quadlet
+            systemctl list-unit-files | grep quadlet
+            ls -alrtF /etc/containers/systemd
+            /usr/libexec/podman/quadlet -dryrun -v -no-kmsg-log
+          changed_when: false
+
+        - name: Check AVCs
+          command: grep type=AVC /var/log/audit/audit.log
+          changed_when: false
+          failed_when: false
+
+        - name: Dump journal
+          command: journalctl -ex
+          changed_when: false
+          failed_when: true
+
+      always:
+        - name: Cleanup
+          when: false
+          block:
+            - name: Cleanup user
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_prune_images: true
+                podman_run_as_user: user_quadlet_pod
+                __absent: {"state":"absent"}
+                podman_quadlet_specs: "{{ __podman_quadlet_specs | reverse |
+                  map('combine', __absent) | list }}"
+
+            - name: Remove test user
+              user:
+                name: user_quadlet_pod
+                state: absent
+
+            - name: Cleanup system - root
+              include_role:
+                name: linux-system-roles.podman
+              vars:
+                podman_prune_images: true
+                __podman_test_debug: true
+                __absent: {"state":"absent"}
+                podman_quadlet_specs: "{{ __podman_quadlet_specs | reverse |
+                  map('combine', __absent) | list }}"
+
+            - name: Ensure no resources
+              assert:
+                that:
+                  - __podman_test_debug_images.stdout == ""
+                  - __podman_test_debug_networks.stdout_lines |
+                    reject("match", "^podman$") |
+                    reject("match", "^podman-default-kube-network$") |
+                    list | length == 0
+                  - __podman_test_debug_volumes.stdout == ""
+                  - __podman_test_debug_containers.stdout == ""
+                  - __podman_test_debug_secrets.stdout == ""
+                  - __podman_test_debug_pods.stdout == ""
+                  - ansible_facts["services"] | dict2items |
+                    rejectattr("value.status", "match", "not-found") |
+                    selectattr("key", "match", "quadlet-demo") |
+                    list | length == 0
+
+          rescue:
+            - name: Dump journal
+              command: journalctl -ex
+              changed_when: false
+              failed_when: true

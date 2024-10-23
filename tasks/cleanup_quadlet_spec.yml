@@ -59,7 +59,8 @@
   command: >-
     podman {{ 'rm' if __podman_quadlet_type == 'container'
       else 'network rm' if __podman_quadlet_type == 'network'
-      else 'volume rm' if __podman_quadlet_type == 'volume' }}
+      else 'volume rm' if __podman_quadlet_type == 'volume'
+      else 'pod rm' if __podman_quadlet_type == 'pod' }}
     {{ __podman_quadlet_resource_name | quote }}
   register: __podman_rm
   failed_when:
@@ -82,6 +83,9 @@
       volume:
         section: Volume
         name: VolumeName
+      pod:
+        section: Pod
+        name: PodName
     __section: "{{ __type_to_name[__podman_quadlet_type]['section'] }}"
     __name: "{{ __type_to_name[__podman_quadlet_type]['name'] }}"
     __podman_quadlet_resource_name: "{{
@@ -187,6 +191,16 @@
     - name: For testing and debugging - secrets
       command: podman secret ls -n -q
       register: __podman_test_debug_secrets
+      changed_when: false
+      no_log: true
+      become: "{{ __podman_rootless | ternary(true, omit) }}"
+      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+      environment:
+        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+
+    - name: For testing and debugging - pods
+      command: podman pod ls -n -q
+      register: __podman_test_debug_pods
       changed_when: false
       no_log: true
       become: "{{ __podman_rootless | ternary(true, omit) }}"

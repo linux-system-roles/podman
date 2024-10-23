@@ -131,6 +131,8 @@
       if __podman_quadlet_type in ['volume']
       else __podman_quadlet_name ~ '-network.service'
       if __podman_quadlet_type in ['network']
+      else __podman_quadlet_name ~ '-pod.service'
+      if __podman_quadlet_type in ['pod']
       else none }}"
 
 - name: Set per-container variables part 4
@@ -164,6 +166,14 @@
       __volumes_from_kube_spec
       if podman_create_host_directories else [] }}"
   vars:
+    __volumes_from_container: "{{
+      __podman_quadlet_spec.get('Container', {}).get('Volume', []) |
+        map('regex_search', '^([^:]+):.+$') | reject('search', '[.]volume$') |
+        select | list }}"
+    __volumes_from_pod: "{{
+      __podman_quadlet_spec.get('Pod', {}).get('Volume', []) |
+        map('regex_search', '^([^:]+):.+$') | reject('search', '[.]volume$') |
+        select | list }}"
     __file: "{{ __podman_quadlet_spec_item['file']
       if 'file' in __podman_quadlet_spec_item
       else none }}"
@@ -184,11 +194,9 @@
       regex_findall('(?m)^Volume=\"?([^:]+):.+$') |
       reject('search', '[.]volume$') | list
       if __podman_quadlet_str
-      and __podman_quadlet_type == 'container'
+      and __podman_quadlet_type in ['container', 'pod']
       and podman_create_host_directories
-      else __podman_quadlet_spec.get('Container', {}).get('Volume', []) |
-        map('regex_search', '^([^:]+):.+$') | reject('search', '[.]volume$') |
-        select | list
+      else __volumes_from_container + __volumes_from_pod
       if podman_create_host_directories else [] }}"
     __host_paths: "{{ __podman_kube | selectattr('spec', 'defined') |
       map(attribute='spec') | selectattr('volumes', 'defined') |

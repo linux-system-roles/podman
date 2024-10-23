@@ -22,4 +22,6 @@
 {%   for key, value in data.items() %}
 {{ render_option(key, value) -}}
 {%   endfor %}
+{% else %}
+[{{ __podman_quadlet_type | capitalize }}]
 {% endfor %}
