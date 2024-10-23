@@ -78,6 +78,47 @@
     - podman_version is version("4.4", "<")
     - not podman_fail_if_too_old | d(true)
 
+- name: Podman package version must be 5.0 or later for Pod quadlets
+  fail:
+    msg: >
+      podman package version {{ podman_version }} is too old -
+      must be 5.0 or later to use Pod quadlets
+  when:
+    - __has_type_pod or __has_pod_file_ext or __has_pod_file_src_ext or
+      __has_pod_template_src_ext or __has_pod_template_src_ext_j2
+    - podman_version is version("5.0", "<")
+    - podman_fail_if_too_old | d(true)
+  vars:
+    __has_type_pod: "{{ podman_quadlet_specs | selectattr('type', 'defined') |
+      selectattr('type', 'match', '^pod$') | list | length > 0 }}"
+    __has_pod_file_ext: "{{ podman_quadlet_specs | selectattr('file', 'defined') |
+      selectattr('file', 'search', '.pod$') | list | length > 0 }}"
+    __has_pod_file_src_ext: "{{ podman_quadlet_specs | selectattr('file_src', 'defined') |
+      selectattr('file_src', 'search', '.pod$') | list | length > 0 }}"
+    __has_pod_template_src_ext: "{{ podman_quadlet_specs | selectattr('template_src', 'defined') |
+      selectattr('template_src', 'search', '.pod$') | list | length > 0 }}"
+    __has_pod_template_src_ext_j2: "{{ podman_quadlet_specs | selectattr('template_src', 'defined') |
+      selectattr('template_src', 'search', '.pod.j2$') | list | length > 0 }}"
+
+- name: Podman package version must be 5.0 or later for Pod quadlets
+  meta: end_host
+  when:
+    - __has_type_pod or __has_pod_file_ext or __has_pod_file_src_ext or
+      __has_pod_template_src_ext or __has_pod_template_src_ext_j2
+    - podman_version is version("5.0", "<")
+    - not podman_fail_if_too_old | d(true)
+  vars:
+    __has_type_pod: "{{ podman_quadlet_specs | selectattr('type', 'defined') |
+      selectattr('type', 'match', '^pod$') | list | length > 0 }}"
+    __has_pod_file_ext: "{{ podman_quadlet_specs | selectattr('file', 'defined') |
+      selectattr('file', 'search', '.pod$') | list | length > 0 }}"
+    __has_pod_file_src_ext: "{{ podman_quadlet_specs | selectattr('file_src', 'defined') |
+      selectattr('file_src', 'search', '.pod$') | list | length > 0 }}"
+    __has_pod_template_src_ext: "{{ podman_quadlet_specs | selectattr('template_src', 'defined') |
+      selectattr('template_src', 'search', '.pod$') | list | length > 0 }}"
+    __has_pod_template_src_ext_j2: "{{ podman_quadlet_specs | selectattr('template_src', 'defined') |
+      selectattr('template_src', 'search', '.pod.j2$') | list | length > 0 }}"
+
 - name: Check user and group information
   include_tasks: handle_user_group.yml
   vars:
