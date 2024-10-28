@@ -2,4 +2,6 @@
 Subnet=192.168.29.0/24
 Gateway=192.168.29.1
 Label=app=wordpress
+{% if podman_version is version("4.7.0", ">=") %}
 NetworkName=quadlet-basic-name
+{% endif %}
