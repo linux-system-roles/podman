@@ -63,7 +63,7 @@
     removes: /var/lib/systemd/linger/{{ __podman_linger_user }}
 
 - name: Wait for user session to exit closing state  # noqa no-handler
-  command: loginctl show-user -P State {{ __podman_linger_user | quote }}
+  command: loginctl show-user --value -p State {{ __podman_linger_user | quote }}
   register: __user_state
   changed_when: false
   until: __user_state.stdout != "closing"
@@ -82,7 +82,7 @@
         state: stopped
 
     - name: Wait for user session to exit closing state
-      command: loginctl show-user -P State {{ __podman_linger_user | quote }}
+      command: loginctl show-user --value -p State {{ __podman_linger_user | quote }}
       changed_when: false
       register: __user_state
       until: __user_state.stderr is match(__pat) or

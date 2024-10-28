@@ -19,15 +19,15 @@
         state: present
         data: "{{ __json_secret_data | string }}"
     __podman_quadlet_specs:
-      - file_src: files/quadlet-basic.network
+      - template_src: templates/quadlet-basic.network.j2
         state: started
       - name: quadlet-basic-unused-network
         type: network
         Network: {}
       - name: quadlet-basic-mysql
         type: volume
-        Volume:
-          VolumeName: quadlet-basic-mysql-name
+        Volume: "{{ {} if podman_version is version('4.7.0', '<')
+          else {'VolumeName': 'quadlet-basic-mysql-name'} }}"
       - name: quadlet-basic-unused-volume
         type: volume
         Volume: {}
