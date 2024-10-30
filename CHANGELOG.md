@@ -1,6 +1,21 @@
 Changelog
 =========
 
+[1.6.5] - 2024-10-30
+--------------------
+
+### Bug Fixes
+
+- fix: ignore pod not found errors when removing kube specs (#186)
+- fix: make role work on el 8.8 and el 9.2 and podman version less than 4.7.0 (#188)
+
+### Other Changes
+
+- ci: ansible-test action now requires ansible-core version (#182)
+- ci: add YAML header to github action workflow files (#183)
+- refactor: Use vars/RedHat_N.yml symlink for CentOS, Rocky, Alma wherever possible (#185)
+- test: need grubby for el8 testing for ostree (#187)
+
 [1.6.4] - 2024-09-11
 --------------------
 
