@@ -93,6 +93,10 @@
       vars:
         __pat: "Failed to get user: User ID .* is not logged in or lingering"
 
+    - name: Debug
+      command: loginctl show-user {{ __podman_linger_user | quote }}
+      changed_when: false
+
     - name: Restart logind
       service:
         name: systemd-logind
