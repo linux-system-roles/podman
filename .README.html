@@ -224,7 +224,10 @@ systemd services which run <code>podman</code> containers.</p>
 <p>The role requires podman version 4.2 or later. The role requires
 podman version 4.4 or later for quadlet support and secret support. The
 role requires podman version 4.5 or later for support for using
-healthchecks (only supported when using quadlet Container types).</p>
+healthchecks (only supported when using quadlet Container types). The
+role requires podman version 5.0 or later for support for using <a
+href="https://github.com/containers/podman/releases/tag/v5.0.0">Pod
+quadlet types</a>.</p>
 <h2 id="collection-requirements">Collection requirements</h2>
 <p>The role requires the following collections:</p>
 <ul>
@@ -423,6 +426,14 @@ container unit spec on the managed node.</p>
 <p><em>NOTE</em>: When removing quadlets, you must remove networks
 <em>last</em>. You cannot remove a network that is in use by a
 container.</p>
+<p><em>NOTE</em>: When specifying a <code>Pod</code> for a
+<code>Container</code> to use, you must add a <code>.pod</code> to the
+podname e.g. <code>Pod=my-name.pod</code>. The pod must already exist
+and be running, so specify any pods first in
+<code>podman_quadlet_specs</code> before the containers that use them.
+See <a
+href="https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#pod">podman
+quadlet doc</a> for more information.</p>
 <h2 id="podman_secrets">podman_secrets</h2>
 <p>This is a list of secret specs in almost the same format as used by
 <a
