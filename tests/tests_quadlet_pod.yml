@@ -156,7 +156,6 @@
 
       always:
         - name: Cleanup
-          when: false
           block:
             - name: Cleanup user
               include_role:
@@ -205,3 +204,8 @@
               command: journalctl -ex
               changed_when: false
               failed_when: true
+
+            - name: Check AVCs
+              command: grep type=AVC /var/log/audit/audit.log
+              changed_when: false
+              failed_when: false
