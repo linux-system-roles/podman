@@ -1,6 +1,15 @@
 Changelog
 =========
 
+[1.7.1] - 2024-12-04
+--------------------
+
+### Other Changes
+
+- ci: Use Fedora 41, drop Fedora 39 (#193)
+- ci: Use Fedora 41, drop Fedora 39 - part two (#194)
+- test: enable pod test cleanup (#195)
+
 [1.7.0] - 2024-11-12
 --------------------
 
