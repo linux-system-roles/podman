@@ -189,10 +189,13 @@
           include_role:
             name: linux-system-roles.podman
           vars:
-            podman_run_as_user: user_quadlet_basic
-            podman_secrets: "{{ __podman_secrets }}"
-            podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
+            podman_quadlet_specs: "{{ __podman_quadlet_specs |
+              map('combine', __run_as_user) | list }}"
             podman_pull_retry: true
+            podman_secrets: "{{ __podman_secrets |
+              map('combine', __run_as_user) | list }}"
+            __run_as_user:
+              run_as_user: user_quadlet_basic
 
         - name: Check files
           command: cat {{ __dir }}/{{ item }}
