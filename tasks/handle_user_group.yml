@@ -14,10 +14,6 @@
       cannot continue
   when: not ansible_facts["getent_passwd"][__podman_user]
 
-- name: Debug
-  debug:
-    msg: item {{ __podman_spec_item | to_nice_json }}
-
 - name: Set group for podman user
   set_fact:
     __podman_group: |-
