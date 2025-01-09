@@ -1,6 +1,17 @@
 Changelog
 =========
 
+[1.7.2] - 2025-01-09
+--------------------
+
+### Bug Fixes
+
+- fix: get user information for secrets (#198)
+
+### Other Changes
+
+- chore: remove debug code (#199)
+
 [1.7.1] - 2024-12-04
 --------------------
 
