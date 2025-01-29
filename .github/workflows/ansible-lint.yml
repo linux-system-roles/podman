@@ -47,3 +47,4 @@ jobs:
         uses: ansible/ansible-lint@v25
         with:
           working_directory: ${{ github.workspace }}/.tox/ansible_collections/${{ env.LSR_ROLE2COLL_NAMESPACE }}/${{ env.LSR_ROLE2COLL_NAME }}
+          requirements_file: ${{ github.workspace }}/meta/collection-requirements.yml
