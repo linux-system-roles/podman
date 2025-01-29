@@ -35,6 +35,7 @@ jobs:
           pip3 install "git+https://github.com/linux-system-roles/tox-lsr@3.4.0"
 
       - name: Convert role to collection format
+        id: collection
         run: |
           set -euxo pipefail
           TOXENV=collection lsr_ci_runtox
@@ -42,9 +43,10 @@ jobs:
           # ansible-lint action requires a .git directory???
           # https://github.com/ansible/ansible-lint/blob/main/action.yml#L45
           mkdir -p "$coll_dir/.git"
+          echo "coll_req_file=" >> $GITHUB_OUTPUT
 
       - name: Run ansible-lint
         uses: ansible/ansible-lint@v25
         with:
           working_directory: ${{ github.workspace }}/.tox/ansible_collections/${{ env.LSR_ROLE2COLL_NAMESPACE }}/${{ env.LSR_ROLE2COLL_NAME }}
-          requirements_file: ${{ github.workspace }}/meta/collection-requirements.yml
+          requirements_file: ${{ steps.collection.outputs.coll_req_file }}
