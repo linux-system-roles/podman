@@ -60,7 +60,7 @@ jobs:
           else
             coll_req_file=""
           fi
-          echo "coll_req_file=" >> $GITHUB_OUTPUT
+          echo "coll_req_file=$coll_req_file" >> $GITHUB_OUTPUT
 
       - name: Run ansible-lint
         uses: ansible/ansible-lint@v25
