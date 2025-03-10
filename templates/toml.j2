@@ -3,6 +3,8 @@
 {% macro render_option(key, value) %}
 {%   if (value is iterable and ((value is not string) and (value is not mapping))) %}
 {{ key }}={{ value }}
+{%   elif (value is boolean and ((value is not string) and (value is not mapping)))  %}
+{{ key }}={{ value | lower }}
 {%   elif value is mapping and value is not string %}
 {{ key }} = [{%- for k in value %} "{{k}}={{value[k]}}", {%- endfor %}]
 {%   elif value is not string %}
