@@ -251,10 +251,6 @@
                 name: auth_test_user1
                 state: absent
 
-            - name: Remove homedir
-              file:
-                path: /home/auth_test_user1
-                state: absent
           rescue:
             # this usually fails when the user is still running some process
             - name: See if any process is held by the user

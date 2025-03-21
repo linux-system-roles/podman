@@ -1,4 +1,10 @@
 ---
+# on some systems, using getent can fail if the system is in a strange
+# state temporarily, so add a pause to allow the system to recover
+- name: Pause to let system recover before getent
+  pause:
+    seconds: 2
+
 - name: Get user information
   getent:
     database: passwd
@@ -45,10 +51,22 @@
           changed_when: false
           register: __podman_register_subuids
 
+        # on some systems, using getsubids can leave the system in a strange
+        # state temporarily, so add a pause to allow the system to recover
+        - name: Pause to let system recover from getsubids uids
+          pause:
+            seconds: 2
+
         - name: Check with getsubids for user subgids
           command: getsubids -g {{ __podman_user | quote }}
           changed_when: false
           register: __podman_register_subgids
+
+        # on some systems, using getsubids can leave the system in a strange
+        # state temporarily, so add a pause to allow the system to recover
+        - name: Pause to let system recover from getsubids gids
+          pause:
+            seconds: 2
 
         - name: Set user subuid and subgid info
           set_fact:
