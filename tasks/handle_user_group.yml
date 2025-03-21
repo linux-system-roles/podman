@@ -1,4 +1,10 @@
 ---
+# on some systems, using getent can fail if the system is in a strange
+# state temporarily, so add a pause to allow the system to recover
+- name: Pause to let system recover before getent
+  pause:
+    seconds: 2
+
 - name: Get user information
   getent:
     database: passwd
