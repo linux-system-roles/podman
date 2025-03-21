@@ -64,6 +64,12 @@
             __subuid_data: "{{ __podman_register_subuids.stdout.split() | list }}"
             __subgid_data: "{{ __podman_register_subgids.stdout.split() | list }}"
 
+        # on some systems, using getsubids can leave the system in a strange
+        # state temporarily, so add a pause to allow the system to recover
+        - name: Pause to let system recover from getsubids
+          pause:
+            seconds: 5
+
     - name: Check subuid, subgid files if no getsubids
       when:
         - not __podman_stat_getsubids.stat.exists
