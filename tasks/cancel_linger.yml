@@ -66,9 +66,16 @@
   command: loginctl show-user --value -p State {{ __podman_linger_user | quote }}
   register: __user_state
   changed_when: false
-  until: __user_state.stdout != "closing"
+  until: __user_state.stderr is match(__pat) or
+    __user_state.stdout != "closing"
+  retries: 10
+  delay: 2
   when: __cancel_linger is changed
-  ignore_errors: true
+  failed_when:
+    - not __user_state.stderr is match(__pat)
+    - __user_state.stdout == "closing"
+  vars:
+    __pat: "Failed to get user: User ID .* is not logged in or lingering"
 
 # see https://github.com/systemd/systemd/issues/26744#issuecomment-2261509208
 - name: Handle user stuck in closing state
