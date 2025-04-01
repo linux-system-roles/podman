@@ -19,6 +19,7 @@
           - /home/user1/{{ __podman_policy_json_user }}
         podman_containers_conf:
           containers:
+            container_name_as_hostname: true
             annotations:
               environment: production
               status: tier2
@@ -81,6 +82,10 @@
           failed_when: not __stat.stat.exists or
             __stat.stat.size == 0
           loop: "{{ __user_files }}"
+
+        - name: Check that boolean values are rendered correctly
+          command: grep container_name_as_hostname=true {{ __user_files[0] }}
+          changed_when: false
 
         - name: Run the role again with user config
           include_role:
