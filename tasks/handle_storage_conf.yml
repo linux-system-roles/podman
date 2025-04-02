@@ -1,15 +1,21 @@
 ---
 - name: Manage storage.conf
   when: podman_storage_conf | length > 0
+  vars:
+    __storage_parent_path: "{{ __podman_storage_conf_file | dirname }}"
   block:
     - name: Ensure storage.conf parent dir exists
       file:
-        path: "{{ __podman_storage_conf_file | dirname }}"
+        path: "{{ __storage_parent_path }}"
         state: directory
         owner: "{{ podman_run_as_user }}"
         group: "{{ podman_run_as_group if
           podman_run_as_group is not none else omit }}"
-        mode: "0755"
+        mode: "{{ __podman_parent_mode
+          if __storage_parent_path == __podman_parent_path
+          else __podman_etc_containers_mode
+          if podman_run_as_user == 'root'
+          else __podman_user_containers_mode }}"
 
     - name: Update storage config file
       template:
