@@ -2,15 +2,21 @@
 ---
 - name: Manage policy.json
   when: podman_policy_json | length > 0
+  vars:
+    __policy_parent_path: "{{ __podman_policy_json_file | dirname }}"
   block:
     - name: Ensure policy.json parent dir exists
       file:
-        path: "{{ __podman_policy_json_file | dirname }}"
+        path: "{{ __policy_parent_path }}"
         state: directory
         owner: "{{ podman_run_as_user }}"
         group: "{{ podman_run_as_group if
           podman_run_as_group is not none else omit }}"
-        mode: "0755"
+        mode: "{{ __podman_parent_mode
+          if __policy_parent_path == __podman_parent_path
+          else __podman_etc_containers_mode
+          if podman_run_as_user == 'root'
+          else __podman_user_containers_mode }}"
 
     - name: Stat the policy.json file
       stat:

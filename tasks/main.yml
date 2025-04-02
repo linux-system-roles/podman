@@ -139,6 +139,12 @@
     __podman_policy_json_file: "{{ __podman_policy_json_system
       if podman_run_as_user == 'root' else
       __podman_user_home_dir ~ '/' ~ __podman_policy_json_user }}"
+    __podman_parent_path: "{{ __podman_etc_containers_path
+      if podman_run_as_user == 'root' else
+      __podman_user_home_dir ~ '/' ~ __podman_user_containers_path }}"
+    __podman_parent_mode: "{{ __podman_etc_containers_mode
+      if podman_run_as_user == 'root' else
+      __podman_user_containers_mode }}"
   vars:
     __podman_user_home_dir: "{{
       ansible_facts['getent_passwd'][podman_run_as_user][4] }}"
