@@ -37,51 +37,64 @@ __podman_required_facts:
 __podman_required_facts_subsets: "{{ ['!all', '!min'] +
   __podman_required_facts }}"
 
+# location for system containers directory
+__podman_etc_containers_path: "/etc/containers"
+
+# location for user containers directory
+# relative to $HOME
+__podman_user_containers_path: ".config/containers"
+
+# mode for __podman_etc_containers_path
+__podman_etc_containers_mode: "0755"
+
+# mode for user __podman_user_containers_path
+__podman_user_containers_mode: "0700"
+
 __podman_containers_conf_file_name: 50-systemroles.conf
 __podman_containers_conf_system: >-
-  /etc/containers/containers.conf.d/{{ __podman_containers_conf_file_name }}
+  {{ __podman_etc_containers_path }}/containers.conf.d/{{ __podman_containers_conf_file_name }}
 # relative to $HOME
 __podman_containers_conf_user: >-
-  .config/containers/containers.conf.d/{{ __podman_containers_conf_file_name }}
+  {{ __podman_user_containers_path }}/containers.conf.d/{{ __podman_containers_conf_file_name }}
 
 __podman_registries_conf_file_name: 50-systemroles.conf
 __podman_registries_conf_system: >-
-  /etc/containers/registries.conf.d/{{ __podman_registries_conf_file_name }}
+  {{ __podman_etc_containers_path }}/registries.conf.d/{{ __podman_registries_conf_file_name }}
 # relative to $HOME
 __podman_registries_conf_user: >-
-  .config/containers/registries.conf.d/{{ __podman_registries_conf_file_name }}
+  {{ __podman_user_containers_path }}/registries.conf.d/{{ __podman_registries_conf_file_name }}
 
 __podman_storage_conf_file_name: storage.conf
 __podman_storage_conf_system: >-
-  /etc/containers/{{ __podman_storage_conf_file_name }}
+  {{ __podman_etc_containers_path }}/{{ __podman_storage_conf_file_name }}
 # relative to $HOME
 __podman_storage_conf_user: >-
-  .config/containers/{{ __podman_storage_conf_file_name }}
+  {{ __podman_user_containers_path }}/{{ __podman_storage_conf_file_name }}
 
 __podman_policy_json_file_name: policy.json
 __podman_policy_json_system: >-
   /etc/containers/{{ __podman_policy_json_file_name }}
 # relative to $HOME
 __podman_policy_json_user: >-
-  .config/containers/{{ __podman_policy_json_file_name }}
+  {{ __podman_user_containers_path }}/{{ __podman_policy_json_file_name }}
 
 # location for system kubernetes yaml files
-__podman_system_kube_path: "/etc/containers/ansible-kubernetes.d"
+__podman_system_kube_path: "{{ __podman_etc_containers_path }}/ansible-kubernetes.d"
 
 # location for user kubernetes yaml files
-__podman_user_kube_path: "/.config/containers/ansible-kubernetes.d"
+__podman_user_kube_path: "/{{ __podman_user_containers_path }}/ansible-kubernetes.d"
 
 # location for system quadlet files
-__podman_system_quadlet_path: "/etc/containers/systemd"
+__podman_system_quadlet_path: "{{ __podman_etc_containers_path }}/systemd"
 
 # location for user quadlet files
-__podman_user_quadlet_path: "/.config/containers/systemd"
+__podman_user_quadlet_path: "/{{ __podman_user_containers_path }}/systemd"
 
 # location for user certs_d
-__podman_user_certs_d_path: "/.config/containers/certs.d"
+__podman_user_certs_d_path: "/{{ __podman_user_containers_path }}/certs.d"
 
 # location for system certs_d
-__podman_system_certs_d_path: "/etc/containers/certs.d"
+__podman_system_certs_d_path: "{{ __podman_etc_containers_path }}/certs.d"
 
 # BEGIN - DO NOT EDIT THIS BLOCK - rh distros variables
 # Ansible distribution identifiers that the role treats like RHEL
