@@ -1,0 +1,27 @@
+DOCUMENTATION:
+  name: podman_to_toml
+  author: system roles team
+  version_added: 'historical'
+  short_description: Convert given object to TOML string representation
+  description:
+    - Convert given object to TOML string representation
+    - use_new_formatter will convert sub-dict to TOML tables
+  positional: _input
+  options:
+    _input:
+      description: A python/Ansible object like a dict or list
+      type: dict
+      required: true
+    use_new_formatter:
+      description: convert sub-dict to TOML tables
+      type: bool
+      required: true
+
+EXAMPLES: |
+  # convert object to TOML string
+  toml_string: "{{ some_dict | podman_to_toml(podman_use_new_toml_formatter) }}"
+
+RETURN:
+  _value:
+    description: The TOML string value
+    type: string

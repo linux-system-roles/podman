@@ -23,6 +23,14 @@
             annotations:
               environment: production
               status: tier2
+          engine:
+            service_destinations:
+              test:
+                uri: unix:///run/podman/podman.sock
+                identity: /root/.ssh/id_rsa
+              test2:
+                uri: unix:///run/podman/podman.sock
+                identity: /root/.ssh/id_rsa
         podman_registries_conf:
           aliases:
             myregistry: registry.example.com
@@ -32,6 +40,21 @@
           credential-helpers:
             - cred-helper-1
             - cred-helper-2
+          registry:
+            - prefix: example.com/foo
+              insecure: true
+              mirror:
+                - location: example-mirror-0.com
+                  insecure: false
+                - location: example-mirror-1.com
+                  insecure: true
+            - prefix: example.com/bar
+              insecure: false
+              mirror:
+                - location: example-mirror-2.com
+                  insecure: false
+                - location: example-mirror-3.com
+                  insecure: true
         podman_storage_conf:
           storage:
             runroot: /tmp
@@ -88,7 +111,7 @@
           loop: "{{ __user_files }}"
 
         - name: Check that boolean values are rendered correctly
-          command: grep container_name_as_hostname=true {{ __user_files[0] }}
+          command: grep 'container_name_as_hostname[ ]*=[ ]*true' {{ __user_files[0] }}
           changed_when: false
 
         - name: Run the role again with user config
@@ -107,6 +130,13 @@
           failed_when: not __stat.stat.exists or
             __stat.stat.size == 0
           loop: "{{ __user_files }}"
+
+        - name: Check that nothing changed
+          assert:
+            that:
+              - not __podman_container_config_register is changed
+              - not __podman_registries_config_register is changed
+              - not __podman_storage_config_register is changed
 
         - name: Run the role with root config
           include_role:
@@ -140,6 +170,13 @@
             __stat.stat.size == 0
           loop: "{{ __system_files }}"
 
+        - name: Check that nothing changed
+          assert:
+            that:
+              - not __podman_container_config_register is changed
+              - not __podman_registries_config_register is changed
+              - not __podman_storage_config_register is changed
+
         - name: Check for ansible_managed, fingerprint in generated files
           include_tasks: tasks/check_header.yml
           loop:
@@ -153,6 +190,32 @@
             loop_var: __file
           vars:
             __fingerprint: "system_role:podman"
+
+        - name: Try formatting sub-dict as TOML table with new formatter
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_use_new_toml_formatter: true
+
+        - name: Get config file
+          slurp:
+            path: "{{ __system_files[0] }}"
+          register: __conf_file
+
+        - name: Check config file
+          assert:
+            that:
+              - item in __conf
+          loop: "{{ __strings }}"
+          vars:
+            __conf: "{{ __conf_file.content | b64decode }}"
+            __strings:
+              - '[engine.service_destinations.test]'
+              - 'uri = "unix:///run/podman/podman.sock"'
+              - 'identity = "/root/.ssh/id_rsa"'
+              - '[engine.service_destinations.test2]'
+              - 'uri = "unix:///run/podman/podman.sock"'
+              - 'identity = "/root/.ssh/id_rsa"'
 
       rescue:
         - name: Dump journal
