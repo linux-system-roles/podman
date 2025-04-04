@@ -12,15 +12,15 @@
         mode: "0755"
 
     - name: Update registries config file
-      template:
-        src: toml.j2
+      copy:
+        content: "{{ header + toml }}"
         dest: "{{ __podman_registries_conf_file }}"
         owner: "{{ podman_run_as_user }}"
         group: "{{ podman_run_as_group if
           podman_run_as_group is not none else omit }}"
         mode: "0644"
       vars:
-        __conf: "{{ podman_registries_conf }}"
-        __globals:
-          - unqualified-search-registries
-          - credential-helpers
+        header: "{{ lookup('template', 'get_ansible_managed.j2') }}"
+        toml: "{{ podman_registries_conf |
+          podman_to_toml(podman_use_new_toml_formatter) }}"
+      register: __podman_registries_config_register
