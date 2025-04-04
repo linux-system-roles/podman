@@ -11,13 +11,19 @@
           podman_run_as_group is not none else omit }}"
         mode: "0755"
 
+    - name: Convert storage config to TOML
+      podman_to_toml:
+        data: "{{ podman_storage_conf }}"
+      register: __podman_to_toml
+
     - name: Update storage config file
-      template:
-        src: toml.j2
+      copy:
+        content: "{{ header + __podman_to_toml.toml }}"
         dest: "{{ __podman_storage_conf_file }}"
         owner: "{{ podman_run_as_user }}"
         group: "{{ podman_run_as_group if
           podman_run_as_group is not none else omit }}"
         mode: "0644"
       vars:
-        __conf: "{{ podman_storage_conf }}"
+        header: "{{ lookup('template', 'get_ansible_managed.j2') }}"
+      register: __podman_storage_config_register

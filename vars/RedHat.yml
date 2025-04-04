@@ -3,4 +3,5 @@
 # shadow-utils-subid for getsubids
 __podman_packages:
   - podman
+  - python3-toml
   - shadow-utils-subid

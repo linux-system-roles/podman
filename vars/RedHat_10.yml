@@ -4,4 +4,5 @@
 __podman_packages:
   - iptables-nft
   - podman
+  - python3-toml
   - shadow-utils-subid

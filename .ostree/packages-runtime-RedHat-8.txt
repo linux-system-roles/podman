@@ -1,2 +1,3 @@
 crun
 podman-plugins
+python3-pytoml

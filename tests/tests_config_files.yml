@@ -32,6 +32,21 @@
           credential-helpers:
             - cred-helper-1
             - cred-helper-2
+          registry:
+            - prefix: example.com/foo
+              insecure: true
+              mirror:
+                - location: example-mirror-0.com
+                  insecure: false
+                - location: example-mirror-1.com
+                  insecure: true
+            - prefix: example.com/bar
+              insecure: false
+              mirror:
+                - location: example-mirror-2.com
+                  insecure: false
+                - location: example-mirror-3.com
+                  insecure: true
         podman_storage_conf:
           storage:
             runroot: /tmp
@@ -84,7 +99,7 @@
           loop: "{{ __user_files }}"
 
         - name: Check that boolean values are rendered correctly
-          command: grep container_name_as_hostname=true {{ __user_files[0] }}
+          command: grep 'container_name_as_hostname[ ]*=[ ]*true' {{ __user_files[0] }}
           changed_when: false
 
         - name: Run the role again with user config
@@ -101,6 +116,13 @@
           failed_when: not __stat.stat.exists or
             __stat.stat.size == 0
           loop: "{{ __user_files }}"
+
+        - name: Check that nothing changed
+          assert:
+            that:
+              - not __podman_container_config_register is changed
+              - not __podman_registries_config_register is changed
+              - not __podman_storage_config_register is changed
 
         - name: Run the role with root config
           include_role:
@@ -131,6 +153,13 @@
           failed_when: not __stat.stat.exists or
             __stat.stat.size == 0
           loop: "{{ __system_files }}"
+
+        - name: Check that nothing changed
+          assert:
+            that:
+              - not __podman_container_config_register is changed
+              - not __podman_registries_config_register is changed
+              - not __podman_storage_config_register is changed
 
         - name: Check for ansible_managed, fingerprint in generated files
           include_tasks: tasks/check_header.yml

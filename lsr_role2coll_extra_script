@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+if [ -n "${LSR_DEBUG:-}" ]; then
+  set -x
+fi
+
+# if it's already fqcn, don't replace it
+fqcn="$LSR_NAMESPACE.$LSR_COLLECTION.podman_toml"
+find tasks templates -type f \
+  -exec sed -i "s/\([ 	]\)podman_toml\>/\1$fqcn/g" \
+  {} \;
