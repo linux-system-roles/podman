@@ -23,6 +23,14 @@
             annotations:
               environment: production
               status: tier2
+          engine:
+            service_destinations:
+              test:
+                uri: unix:///run/podman/podman.sock
+                identity: /root/.ssh/id_rsa
+              test2:
+                uri: unix:///run/podman/podman.sock
+                identity: /root/.ssh/id_rsa
         podman_registries_conf:
           aliases:
             myregistry: registry.example.com
@@ -174,6 +182,32 @@
             loop_var: __file
           vars:
             __fingerprint: "system_role:podman"
+
+        - name: Try formatting sub-dict as TOML table with new formatter
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_use_new_toml_formatter: true
+
+        - name: Get config file
+          slurp:
+            path: "{{ __system_files[0] }}"
+          register: __conf_file
+
+        - name: Check config file
+          assert:
+            that:
+              - item in __conf
+          loop: "{{ __strings }}"
+          vars:
+            __conf: "{{ __conf_file.content | b64decode }}"
+            __strings:
+              - '[engine.service_destinations.test]'
+              - 'uri = "unix:///run/podman/podman.sock"'
+              - 'identity = "/root/.ssh/id_rsa"'
+              - '[engine.service_destinations.test2]'
+              - 'uri = "unix:///run/podman/podman.sock"'
+              - 'identity = "/root/.ssh/id_rsa"'
 
       rescue:
         - name: Dump journal

@@ -33,6 +33,10 @@ options:
         description: Python/Ansible object to convert to TOML
         required: true
         type: dict
+    use_new_formatter:
+        description: Use new way to format sub-dict or not
+        default: false
+        type: bool
 
 author:
     - Rich Megginson (@richm)
@@ -42,6 +46,7 @@ EXAMPLES = """
 - name: Convert to TOML
   podman_to_toml:
     data: "{{ podman_registries_conf }}"
+    use_new_formatter: true
   register: __podman_to_toml
 
 - name: Write TOML file
@@ -81,17 +86,26 @@ def run_module():
 
     module_args = dict(
         data=dict(type="dict", required=True),
+        use_new_formatter=dict(type="bool", default=False),
     )
 
     result = dict(changed=False)
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
+    data = module.params["data"]
+    if not module.params["use_new_formatter"]:
+        for section in list(data):
+            if isinstance(data[section], dict):
+                for key, value in list(data[section].items()):
+                    if isinstance(value, dict):
+                        data[section][key] = ["{}={}".format(kk, vv) for kk, vv in value.items()]
+
     fp = io.StringIO()
     if HAS_PYTOML:
-        pytoml.dump(module.params["data"], fp)
+        pytoml.dump(data, fp)
     elif HAS_TOML:
-        toml.dump(module.params["data"], fp, toml.TomlEncoder)
+        toml.dump(data, fp, toml.TomlEncoder)
     else:
         module.fail_json(msg="No toml python library found")
     result["toml"] = fp.getvalue()

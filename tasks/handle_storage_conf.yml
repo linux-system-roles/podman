@@ -14,6 +14,7 @@
     - name: Convert storage config to TOML
       podman_to_toml:
         data: "{{ podman_storage_conf }}"
+        use_new_formatter: "{{ podman_use_new_toml_formatter }}"
       register: __podman_to_toml
 
     - name: Update storage config file

@@ -612,6 +612,48 @@ host.  See
 [podman user namespace modes](https://www.redhat.com/sysadmin/rootless-podman-user-namespace-modes)
 for more information.
 
+### podman_use_new_toml_formatter
+
+The old TOML formatter had a peculiar quirk.  If you had a sub-dict defined like
+this:
+
+```yaml
+podman_containers_conf:
+  containers:
+    annotations:
+      environment: production
+      status: tier2
+```
+
+Then the old TOML formatter would render this as
+
+```toml
+[containers]
+annotations = [ "environment=production", "status=tier2",]
+```
+
+This is not good if you also want to format a sub-dict in TOML as a table:
+
+```toml
+[containers.annotations]
+environment = "production"
+status = "tier2"
+```
+
+The option `podman_use_new_toml_formatter` is a boolean used to control this
+behavior.  By default, this is `false`, you get the old behavior.  If you use
+`podman_use_new_toml_formatter: true` you get the new behavior.  If you have something
+like the example and you want to use the new TOML formatter, rewrite this as
+
+```yaml
+podman_use_new_toml_formatter: true
+podman_containers_conf:
+  containers:
+    annotations:
+      - environment=production
+      - status=tier2
+```
+
 ## Example Playbooks
 
 Create rootless container with volume mount:

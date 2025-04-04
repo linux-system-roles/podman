@@ -142,3 +142,6 @@ podman_prune_images: false
 
 # var to manage reboots for transactional update systems
 podman_transactional_update_reboot_ok: null
+
+# var to set to use new TOML formatter
+podman_use_new_toml_formatter: false
