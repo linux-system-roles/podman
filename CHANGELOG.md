@@ -1,6 +1,32 @@
 Changelog
 =========
 
+[1.8.0] - 2025-04-23
+--------------------
+
+### New Features
+
+- feat: support TOML tables by using a real TOML formatter (#218)
+
+### Bug Fixes
+
+- fix: render boolean option values correctly in toml files (#209)
+- fix: Do not restart logind unless absolutely necessary (#213)
+- fix: Do not change the directory mode for the container parent path (#216)
+
+### Other Changes
+
+- ci: ansible-plugin-scan is disabled for now (#201)
+- ci: bump ansible-lint to v25; provide collection requirements for ansible-lint (#204)
+- ci: Check spelling with codespell (#205)
+- ci: Add test plan that runs CI tests and customize it for each role (#206)
+- ci: In test plans, prefix all relate variables with SR_ (#211)
+- ci: Fix bug with ARTIFACTS_URL after prefixing with SR_ (#212)
+- test: check that boolean values are rendered correctly in TOML (#214)
+- ci: several changes related to new qemu test, ansible-lint, python versions, ubuntu versions (#219)
+- ci: use tox-lsr 3.6.0; improve qemu test logging (#220)
+- ci: skip storage scsi, nvme tests in github qemu ci (#221)
+
 [1.7.2] - 2025-01-09
 --------------------
 
