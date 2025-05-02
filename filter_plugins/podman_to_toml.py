@@ -3,7 +3,7 @@
 # Copyright: (c) 2025, Red Hat, Inc.
 #
 """Convert given python object to TOML string representation."""
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -132,7 +132,7 @@ def dump(obj, fout, sort_keys=False):
             elif v is None:
                 # based on mojombo's comment: https://github.com/toml-lang/toml/issues/146#issuecomment-25019344
                 fout.write(
-                    '#{} = null  # To use: uncomment and replace null with value\n'.format(_escape_id(k)))
+                    '#{0} = null  # To use: uncomment and replace null with value\n'.format(_escape_id(k)))
                 has_kv = True
             else:
                 fout.write('{0} = {1}\n'.format(_escape_id(k), _format_value(v)))
@@ -157,6 +157,6 @@ class FilterModule(object):
                 if isinstance(data[section], dict):
                     for key, value in list(data[section].items()):
                         if isinstance(value, dict):
-                            data[section][key] = ["{}={}".format(kk, vv) for kk, vv in value.items()]
+                            data[section][key] = ["{0}={1}".format(kk, vv) for kk, vv in value.items()]
 
         return dumps(data)
