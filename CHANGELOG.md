@@ -1,6 +1,14 @@
 Changelog
 =========
 
+[1.8.1] - 2025-05-05
+--------------------
+
+### Other Changes
+
+- ci: bump sclorg/testing-farm-as-github-action from 3 to 4 (#223)
+- refactor: fix ansible-test issues - unicode_literals, format string (#224)
+
 [1.8.0] - 2025-04-23
 --------------------
 
