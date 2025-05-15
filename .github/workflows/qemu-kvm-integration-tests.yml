@@ -182,7 +182,7 @@ jobs:
         run: |
           set -euo pipefail
           # grab check_logs.py script
-          curl -s -L -o check_logs.py https://raw.githubusercontent.com/linux-system-roles/auto-maintenance/refs/heads/main/check_logs.py
+          curl -s -L -o check_logs.py https://raw.githubusercontent.com/linux-system-roles/auto-maintenance/396eff73cd5dc73e6195fd466ec2da421e70cf02/check_logs.py
           chmod +x check_logs.py
           declare -a cmdline=(./check_logs.py --github-action-format)
           for log in tests/*-FAIL.log; do
