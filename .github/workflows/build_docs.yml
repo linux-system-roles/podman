@@ -90,6 +90,18 @@ jobs:
         if: env.RELEASE_VERSION == 'latest'
         run: cp ${{ env.RELEASE_VERSION }}/README.html docs/index.html
 
+      - name: Upload README.html as an artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ env.RELEASE_VERSION }}/README.html
+          path: README.html
+
+      - name: Upload index.html as an artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: docs/index.html
+          path: index.html
+
       - name: Commit changes
         run: |
           git config --global user.name "${{ github.actor }}"
