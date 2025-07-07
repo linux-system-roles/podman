@@ -11,35 +11,10 @@
 
 - name: Parse quadlet file
   set_fact:
-    __podman_quadlet_parsed: |-
-      {% set rv = {} %}
-      {% set section = ["DEFAULT"] %}
-      {% for line in __val %}
-      {%   if line.startswith("[") %}
-      {%     set val = line.replace("[", "").replace("]", "") %}
-      {%     set _ = section.__setitem__(0, val) %}
-      {%   else %}
-      {%     set ary = line.split("=", 1) %}
-      {%     set key = ary[0] %}
-      {%     set val = ary[1] %}
-      {%     if key in rv.get(section[0], {}) %}
-      {%       set curval = rv[section[0]][key] %}
-      {%       if curval is string %}
-      {%         set newary = [curval, val] %}
-      {%         set _ = rv[section[0]].__setitem__(key, newary) %}
-      {%       else %}
-      {%         set _ = rv[section[0]][key].append(val) %}
-      {%       endif %}
-      {%     else %}
-      {%       set _ = rv.setdefault(section[0], {}).__setitem__(key, val) %}
-      {%     endif %}
-      {%   endif %}
-      {% endfor %}
-      {{ rv }}
-  vars:
-    __val: "{{ (__podman_quadlet_raw.content | b64decode).split('\n') |
-      select | reject('match', '#') | list }}"
-  when: __podman_service_name | length > 0
+    __podman_quadlet_parsed: "{{ __podman_quadlet_raw.content | b64decode | podman_from_ini }}"
+  when:
+    - __podman_service_name is not none
+    - __podman_service_name | length > 0
   no_log: true
 
 - name: Parse quadlet yaml file
@@ -47,7 +22,7 @@
     __podman_quadlet_parsed: "{{ __podman_quadlet_raw.content | b64decode |
       from_yaml_all | list }}"
   when:
-    - __podman_service_name | length == 0
+    - __podman_service_name is none or __podman_service_name | length == 0
     - __podman_quadlet_file.endswith(".yml") or
       __podman_quadlet_file.endswith(".yaml")
   no_log: true

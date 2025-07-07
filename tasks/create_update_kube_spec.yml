@@ -74,7 +74,7 @@
     path: "{{ __podman_kube_file }}"
   register: __podman_kube_stat
   failed_when:
-    - not __podman_kube
+    - __podman_kube is none or __podman_kube | length == 0
     - not __podman_kube_stat.stat.exists
 
 - name: Ensure the kubernetes directory is present
@@ -84,7 +84,9 @@
     owner: "{{ __podman_user }}"
     group: "{{ __podman_group }}"
     mode: "0755"
-  when: __podman_kube | length > 0
+  when:
+    - __podman_kube is not none
+    - __podman_kube | length > 0
 
 - name: Ensure kubernetes yaml files are present
   copy:
@@ -94,7 +96,9 @@
     group: "{{ __podman_group }}"
     mode: "0644"
   register: __podman_copy
-  when: __podman_kube | length > 0
+  when:
+    - __podman_kube is not none
+    - __podman_kube | length > 0
 
 - name: Update containers/pods
   containers.podman.podman_play: "{{ __podman_kube_spec |

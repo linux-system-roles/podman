@@ -148,6 +148,7 @@
   register: __podman_kube_content
   when:
     - __podman_state != "absent"
+    - __podman_kube_yamls_raw is not none
     - __podman_kube_yamls_raw | length > 0
   vars:
     __kube_yaml: "{{ __podman_kube_yamls_raw[0] }}"
