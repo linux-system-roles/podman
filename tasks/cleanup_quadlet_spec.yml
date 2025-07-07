@@ -22,6 +22,7 @@
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   register: __podman_service_status
   when:
+    - __podman_service_name is not none
     - __podman_service_name | length > 0
     - not __podman_rootless or __podman_xdg_stat.stat.exists
   failed_when:
@@ -66,6 +67,7 @@
   failed_when:
     - __podman_rm is failed
     - not __podman_rm.stderr is search(__str)
+    - not __podman_rm.stderr is search(__str2)
   changed_when: __podman_rm.rc == 0
   become: "{{ __podman_rootless | ternary(true, omit) }}"
   become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
@@ -73,6 +75,9 @@
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   vars:
     __str: " found: no such "
+    __str2: >-
+      unable to find {{ __podman_quadlet_type }} with name or ID {{ __podman_quadlet_resource_name }}:
+      {{ __podman_quadlet_type }} not found
     __type_to_name:  # map quadlet type to quadlet property name
       container:
         section: Container
@@ -97,6 +102,7 @@
     - __podman_file_removed is changed  # noqa no-handler
     - __podman_quadlet_type in __type_to_name
     - not __podman_rootless or __podman_xdg_stat.stat.exists
+    - __podman_service_name is not none
     - __podman_service_name | length > 0
   no_log: true
 
@@ -106,7 +112,7 @@
   when:
     - __podman_file_removed is changed  # noqa no-handler
     - not __podman_rootless or __podman_xdg_stat.stat.exists
-    - __podman_service_name | length == 0
+    - __podman_service_name is none or __podman_service_name | length == 0
     - __podman_quadlet_file.endswith(".yml") or
       __podman_quadlet_file.endswith(".yaml")
   changed_when: true

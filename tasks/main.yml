@@ -18,7 +18,7 @@
     use: "{{ (__podman_is_ostree | d(false)) |
              ternary('ansible.posix.rhel_rpm_ostree', omit) }}"
   become: true
-  when: (__podman_packages | difference(ansible_facts.packages))
+  when: (__podman_packages | difference(ansible_facts.packages)) | list | length > 0
   register: podman_package_result
 
 - name: Handle reboot for transactional update systems

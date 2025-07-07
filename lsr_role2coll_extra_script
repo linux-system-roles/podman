@@ -10,3 +10,8 @@ fqcn="$LSR_NAMESPACE.$LSR_COLLECTION.podman_to_toml"
 find tasks -type f \
   -exec sed -i "s/\([ 	]\)podman_to_toml\>/\1$fqcn/g" \
   {} \;
+
+fqcn="$LSR_NAMESPACE.$LSR_COLLECTION.podman_from_ini"
+find tasks -type f \
+  -exec sed -i "s/\([ 	]\)podman_from_ini\>/\1$fqcn/g" \
+  {} \;

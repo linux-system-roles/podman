@@ -51,7 +51,9 @@
     owner: "{{ __podman_user }}"
     group: "{{ __podman_group }}"
     mode: "0755"
-  when: __podman_quadlet_file | length > 0
+  when:
+    - __podman_quadlet_file is not none
+    - __podman_quadlet_file | length > 0
 
 - name: Ensure quadlet file is copied
   copy:
@@ -61,7 +63,9 @@
     group: "{{ __podman_group }}"
     mode: "0644"
   register: __podman_copy_file
-  when: __podman_quadlet_file_src | length > 0
+  when:
+    - __podman_quadlet_file_src is not none
+    - __podman_quadlet_file_src | length > 0
 
 - name: Ensure quadlet file content is present
   copy:
@@ -72,6 +76,7 @@
     mode: "0644"
   register: __podman_copy_content
   when:
+    - __podman_quadlet_str is not none
     - __podman_quadlet_str | length > 0
     - not __podman_quadlet_file_src
 
@@ -129,6 +134,7 @@
   when:
     - __podman_copy_content is changed or __podman_copy_file is changed
       or __podman_template_file is changed
+    - __podman_service_name is not none
     - __podman_service_name | length > 0
     - __podman_activate_systemd_unit | bool
 
@@ -145,5 +151,6 @@
     - not __podman_service_started is changed
     - __podman_copy_content is changed or __podman_copy_file is changed
       or __podman_template_file is changed
+    - __podman_service_name is not none
     - __podman_service_name | length > 0
     - __podman_activate_systemd_unit | bool
