@@ -1,6 +1,17 @@
 Changelog
 =========
 
+[1.8.2] - 2025-07-09
+--------------------
+
+### Other Changes
+
+- ci: bump tox-lsr to 3.8.0; rename qemu/kvm tests (#226)
+- ci: Add Fedora 42; use tox-lsr 3.9.0; use lsr-report-errors for qemu tests (#228)
+- ci: Add support for bootc end-to-end validation tests (#229)
+- ci: Use ansible 2.19 for fedora 42 testing; support python 3.13 (#230)
+- refactor: support Ansible 2.19 (#231)
+
 [1.8.1] - 2025-05-05
 --------------------
 
