@@ -66,6 +66,7 @@
 - name: Check user and group information
   include_tasks: handle_user_group.yml
   vars:
+    __podman_handle_user: "{{ __podman_user }}"
     __podman_spec_item: "{{ __podman_kube_spec_item }}"
 
 - name: Fail if no kube spec is given
@@ -81,8 +82,6 @@
   set_fact:
     __podman_xdg_runtime_dir: >-
       /run/user/{{ ansible_facts["getent_passwd"][__podman_user][1] }}
-    __podman_user_home_dir: "{{
-      ansible_facts['getent_passwd'][__podman_user][4] }}"
     __podman_systemd_scope: "{{ __podman_systemd_unit_scope
       if __podman_systemd_unit_scope
       and __podman_systemd_unit_scope | length > 0
@@ -96,6 +95,9 @@
     __podman_kube_path: "{{ __podman_user_home_dir ~
       __podman_user_kube_path
       if __podman_rootless else __podman_system_kube_path }}"
+  vars:
+    __podman_user_home_dir: "{{
+      ansible_facts['getent_passwd'][__podman_user][4] }}"
 
 - name: Set per-container variables part 5
   set_fact:
