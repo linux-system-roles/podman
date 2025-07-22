@@ -122,7 +122,7 @@
 - name: Check user and group information
   include_tasks: handle_user_group.yml
   vars:
-    __podman_user: "{{ podman_run_as_user }}"
+    __podman_handle_user: "{{ podman_run_as_user }}"
     __podman_spec_item: {}
 
 - name: Set config file paths
