@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: MIT
+---
+- name: Test that role handles multiple users
+  hosts: all
+  vars:
+    __test_users:
+      - lsr_multiple_user1
+      - lsr_multiple_user2
+    podman_fail_if_too_old: false
+  tasks:
+    - name: Run test
+      block:
+        - name: Create users
+          user:
+            name: "{{ item }}"
+          loop: "{{ __test_users }}"
+
+        - name: Configure podman for users
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_run_as_user: "{{ item }}"
+            podman_run_as_group: "{{ item }}"
+            podman_storage_conf:
+              storage:
+                driver: overlay
+                graphroot: /data/{{ item }}/storage
+                runroot: /run/user/$UID/run
+            podman_quadlet_specs:
+              - name: quadlet-pod-{{ item }}
+                type: pod
+                Pod:
+                  PodName: quadlet-{{ item }}
+                activate_systemd_unit: false
+          loop: "{{ __test_users }}"
+
+        - name: Check
+          command: grep /data/{{ item }}/storage /home/{{ item }}/.config/containers/storage.conf
+          changed_when: false
+          loop: "{{ __test_users }}"
+
+      always:
+        - name: Cleanup storage config
+          file:
+            path: /home/{{ item }}/.config/containers/storage.conf
+            state: absent
+          loop: "{{ __test_users }}"
+
+        - name: Cleanup pods
+          include_role:
+            name: linux-system-roles.podman
+          vars:
+            podman_run_as_user: "{{ item }}"
+            podman_run_as_group: "{{ item }}"
+            podman_quadlet_specs:
+              - name: quadlet-pod-{{ item }}
+                type: pod
+                state: absent
+                Pod:
+                  PodName: quadlet-{{ item }}
+                activate_systemd_unit: false
+          loop: "{{ __test_users }}"
+
+        - name: Remove users
+          user:
+            name: "{{ item }}"
+            state: absent
+            remove: true
+          loop: "{{ __test_users }}"
