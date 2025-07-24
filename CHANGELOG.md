@@ -1,6 +1,17 @@
 Changelog
 =========
 
+[1.8.3] - 2025-07-24
+--------------------
+
+### Bug Fixes
+
+- fix: do not mix facts with vars (#236)
+
+### Other Changes
+
+- test: add a test for multiple users (#237)
+
 [1.8.2] - 2025-07-09
 --------------------
 
