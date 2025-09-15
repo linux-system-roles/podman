@@ -62,6 +62,16 @@
     __podman_rootless: "{{ __podman_user != 'root' }}"
     __podman_kube_name: "{{ __podman_kube['metadata']['name']
       if __podman_kube else none }}"
+    __podman_images: "{{ (__images + __init_images) | unique | list }}"
+  vars:
+    __images: "{{ __podman_kube['spec']['containers'] |
+      selectattr('image', 'defined') | map(attribute='image') | list
+      if 'containers' in __podman_kube['spec']
+      else [] }}"
+    __init_images: "{{ __podman_kube['spec']['initContainers'] |
+      selectattr('image', 'defined') | map(attribute='image') | list
+      if 'initContainers' in __podman_kube['spec']
+      else [] }}"
 
 - name: Check user and group information
   include_tasks: handle_user_group.yml

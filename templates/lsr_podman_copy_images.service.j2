@@ -1,0 +1,12 @@
+{{ ansible_managed | comment }}
+{{ "system_role:podman" | comment(prefix="", postfix="") }}
+[Unit]
+Description=Copy images to container storage
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/lsr_podman_copy_images.sh {{ __podman_image_cache_dir }}
+
+[Install]
+WantedBy=multi-user.target

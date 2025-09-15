@@ -1,0 +1,40 @@
+---
+- name: Ensure container images are present
+  containers.podman.podman_image:
+    name: "{{ item }}"
+    force: true
+    username: "{{ __podman_registry_username
+      if __podman_registry_username | length > 0 else omit }}"
+    password: "{{ __podman_registry_password
+      if __podman_registry_password | length > 0 else omit }}"
+    validate_certs: "{{ (__podman_validate_certs in ['', none]) |
+      ternary(omit, __podman_validate_certs) }}"
+  register: __podman_image_updated
+  when:
+    - __podman_is_booted | bool
+    - __podman_pull_image | bool
+  until: __podman_image_updated is success
+  retries: "{{ podman_pull_retry | ternary(3, 0) }}"
+  failed_when:
+    - __podman_image_updated is failed
+    - not __podman_continue_if_pull_fails
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  loop: "{{ __podman_images | unique | list }}"
+  no_log: true
+
+- name: Handle images when not booted
+  include_tasks: handle_image_cache.yml
+  when:
+    - not __podman_is_booted
+    - __podman_pull_image | bool
+    - __podman_images | d([]) | length > 0
+  vars:
+    __podman_user_home_dir: "{{
+      ansible_facts['getent_passwd'][__podman_user][4] }}"
+    __podman_image_cache_dir: "{{ __podman_user_home_dir ~ '/' ~ __podman_user_containers_path ~ '/' ~ 'image-cache'
+      if __podman_rootless else '/var/lib/lsr_podman_image_cache' }}"
+    __podman_systemd_dir: "{{ __podman_user_home_dir ~ __podman_systemd_non_root_path
+      if __podman_rootless else __podman_systemd_root_path }}"

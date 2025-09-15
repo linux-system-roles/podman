@@ -18,7 +18,9 @@
   environment:
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   register: __podman_service_status
-  when: not __podman_rootless or __podman_xdg_stat.stat.exists
+  when:
+    - __podman_is_booted
+    - not __podman_rootless or __podman_xdg_stat.stat.exists
   failed_when:
     - __podman_service_status is failed
     - not __podman_service_status.stdout is search(__service_error)
@@ -48,6 +50,7 @@
     - not __podman_removed.msg is search(__err_msg)
     - not __is_affected_platform
   when:
+    - __podman_is_booted
     - not __podman_rootless or __podman_xdg_stat.stat.exists
     - __podman_kube_file_stat.stat.exists
   vars:
@@ -66,7 +69,9 @@
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   become: "{{ __podman_rootless | ternary(true, omit) }}"
   become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-  when: __podman_removed is changed  # noqa no-handler
+  when:
+    - __podman_is_booted
+    - __podman_removed is changed  # noqa no-handler
   changed_when: true
 
 - name: Manage linger

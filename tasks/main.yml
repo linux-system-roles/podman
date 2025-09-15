@@ -226,6 +226,7 @@
   loop: "{{ __podman_cancel_user_linger }}"
   loop_control:
     loop_var: __podman_linger_user
+  when: __podman_is_booted | bool
 
 - name: Handle credential files - absent
   include_tasks: handle_credential_files.yml
