@@ -38,6 +38,8 @@
       combine(__test_creds) }}"
     podman_kube_spec_creds: "{{ podman_kube_spec_base |
       combine(__test_creds) }}"
+  tags:
+    - tests::booted  # tests that require a booted system
   tasks:
     - name: Run the role with no config to install podman
       include_role:

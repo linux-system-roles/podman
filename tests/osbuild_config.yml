@@ -1,0 +1,24 @@
+blueprint:
+  customizations:
+    user:
+      - name: quadlet_basic_user
+        password: quadlet_basic_user
+        uid: 1111
+      - name: auth_test_user1
+        password: auth_test_user1
+        uid: 2001
+      - name: podman_basic_user
+        password: podman_basic_user
+        uid: 3001
+      - name: podman_config_files_user
+        password: podman_config_files_user
+        uid: 4001
+      - name: lsr_multiple_user1
+        password: lsr_multiple_user1
+        uid: 5001
+      - name: lsr_multiple_user2
+        password: lsr_multiple_user2
+        uid: 6001
+      - name: user_quadlet_pod
+        password: user_quadlet_pod
+        uid: 2223
