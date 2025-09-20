@@ -293,46 +293,49 @@
               union([__podman_use_kube_file]) | list }}"
             podman_pull_retry: true
 
-        - name: Check if pods are running
-          command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
-          changed_when: false
-          register: __output
-          failed_when: __output.stdout != 'Running'
-          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
-          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
-          vars:
-            __fmt: "{{ '{' ~ '{.State}' ~ '}' }}"
-          loop: "{{ test_names_users }}"
+        - name: Runtime checks
+          when: __podman_is_booted | bool
+          block:
+            - name: Check if pods are running
+              command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
+              changed_when: false
+              register: __output
+              failed_when: __output.stdout != 'Running'
+              become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+              become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+              vars:
+                __fmt: "{{ '{' ~ '{.State}' ~ '}' }}"
+              loop: "{{ test_names_users }}"
 
-        - name: Check Services
-          shell: |
-            set -euo pipefail
-            systemctl --{{ __state }} list-units -a -l --plain | \
-              grep -E '{{ __regex }} '
-          changed_when: false
-          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
-          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
-          environment:
-            XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
-          loop: "{{ test_names_users }}"
-          vars:
-            __state: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
-            __regex: >-
-              ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
-              ]+active
+            - name: Check Services
+              shell: |
+                set -euo pipefail
+                systemctl --{{ __state }} list-units -a -l --plain | \
+                  grep -E '{{ __regex }} '
+              changed_when: false
+              become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+              become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+              environment:
+                XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
+              loop: "{{ test_names_users }}"
+              vars:
+                __state: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+                __regex: >-
+                  ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
+                  ]+active
 
-        - name: Check ports, data
-          uri:
-            url: http://localhost:{{ item }}/index.txt
-            return_content: true
-          register: __return
-          failed_when: __return.content != "123"
-          loop: [15001, 15002]
+            - name: Check ports, data
+              uri:
+                url: http://localhost:{{ item }}/index.txt
+                return_content: true
+              register: __return
+              failed_when: __return.content != "123"
+              loop: [15001, 15002]
 
-        - name: Check host directories
-          command: ls -alrtF {{ __test_tmpdir.path ~ '/' ~ item[0] }}-create
-          loop: "{{ test_names_users }}"
-          changed_when: false
+            - name: Check host directories
+              command: ls -alrtF {{ __test_tmpdir.path ~ '/' ~ item[0] }}-create
+              loop: "{{ test_names_users }}"
+              changed_when: false
 
         - name: Run role again to test for idempotency
           include_role:
@@ -340,46 +343,50 @@
           vars:
             podman_kube_specs: "{{ __podman_kube_specs |
               union([__podman_use_kube_file]) | list }}"
+          when: __podman_is_booted | bool
 
-        - name: Check if pods are running
-          command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
-          changed_when: false
-          register: __output
-          failed_when: __output.stdout != 'Running'
-          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
-          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
-          vars:
-            __fmt: "{{ '{' ~ '{.State}' ~ '}' }}"
-          loop: "{{ test_names_users }}"
+        - name: Runtime checks after idempotency
+          when: __podman_is_booted | bool
+          block:
+            - name: Check if pods are running
+              command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
+              changed_when: false
+              register: __output
+              failed_when: __output.stdout != 'Running'
+              become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+              become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+              vars:
+                __fmt: "{{ '{' ~ '{.State}' ~ '}' }}"
+              loop: "{{ test_names_users }}"
 
-        - name: Check Services
-          shell: |
-            set -euo pipefail
-            systemctl --{{ __state }} list-units -a -l --plain | \
-              grep -E '{{ __regex }} '
-          changed_when: false
-          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
-          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
-          environment:
-            XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
-          loop: "{{ test_names_users }}"
-          vars:
-            __state: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
-            __regex: >-
-              ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
-              ]+active
+            - name: Check Services
+              shell: |
+                set -euo pipefail
+                systemctl --{{ __state }} list-units -a -l --plain | \
+                  grep -E '{{ __regex }} '
+              changed_when: false
+              become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+              become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+              environment:
+                XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
+              loop: "{{ test_names_users }}"
+              vars:
+                __state: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+                __regex: >-
+                  ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
+                  ]+active
 
-        - name: Check ports, data
-          uri:
-            url: http://localhost:{{ item }}/index.txt
-            return_content: true
-          register: __return
-          failed_when: __return.content != "123"
-          loop: [15001, 15002, 15003]
+            - name: Check ports, data
+              uri:
+                url: http://localhost:{{ item }}/index.txt
+                return_content: true
+              register: __return
+              failed_when: __return.content != "123"
+              loop: [15001, 15002, 15003]
 
-        # - name: Check auto-update
-        #   command: podman auto-update --dry-run
-        #   changed_when: false
+            # - name: Check auto-update
+            #   command: podman auto-update --dry-run
+            #   changed_when: false
 
         - name: Remove pods and units
           include_role:
@@ -393,46 +400,49 @@
             podman_firewall: []
             podman_selinux_ports: []
 
-        - name: Check that pods are not running
-          command: podman pod exists {{ item[0] }}
-          changed_when: false
-          register: __output
-          failed_when:
-            - not __output is failed
-            - item[1] == "root" or
-              not __output.stderr is search(__err_pat)
-          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
-          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
-          vars:
-            __err_pat: "Error: creating events dirs"
-          loop: "{{ test_names_users }}"
+        - name: Runtime checks after removal
+          when: __podman_is_booted | bool
+          block:
+            - name: Check that pods are not running
+              command: podman pod exists {{ item[0] }}
+              changed_when: false
+              register: __output
+              failed_when:
+                - not __output is failed
+                - item[1] == "root" or
+                  not __output.stderr is search(__err_pat)
+              become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+              become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+              vars:
+                __err_pat: "Error: creating events dirs"
+              loop: "{{ test_names_users }}"
 
-        - name: Check Services should be absent
-          shell: |
-            set -euo pipefail
-            systemctl --{{ __state }} list-units -a -l --plain | \
-              grep -E '{{ __regex }} '
-          become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
-          become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
-          register: __output
-          failed_when: not __output is failed
-          changed_when: false
-          environment:
-            XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
-          loop: "{{ test_names_users }}"
-          vars:
-            __state: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
-            __regex: >-
-              ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
-              ]+active
+            - name: Check Services should be absent
+              shell: |
+                set -euo pipefail
+                systemctl --{{ __state }} list-units -a -l --plain | \
+                  grep -E '{{ __regex }} '
+              become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+              become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+              register: __output
+              failed_when: not __output is failed
+              changed_when: false
+              environment:
+                XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
+              loop: "{{ test_names_users }}"
+              vars:
+                __state: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+                __regex: >-
+                  ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
+                  ]+active
 
-        - name: Ensure no linger
-          stat:
-            path: /var/lib/systemd/linger/{{ item[1] }}
-          when: item[1] != "root"
-          loop: "{{ test_names_users }}"
-          register: __stat
-          failed_when: __stat.stat.exists
+            - name: Ensure no linger
+              stat:
+                path: /var/lib/systemd/linger/{{ item[1] }}
+              when: item[1] != "root"
+              loop: "{{ test_names_users }}"
+              register: __stat
+              failed_when: __stat.stat.exists
 
         - name: Remove pods and units again - test idempotence
           include_role:

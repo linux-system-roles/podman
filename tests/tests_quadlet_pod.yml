@@ -43,6 +43,7 @@
         - name: Check pod
           command: podman pod inspect quadlet-pod --format {{ __fmt | quote }}
           register: __check_pod
+          when: __podman_is_booted | bool
           changed_when: false
           failed_when: not "quadlet-pod-container" in __check_pod.stdout_lines
           vars:
@@ -73,6 +74,7 @@
         - name: Check pod
           command: podman pod inspect quadlet-pod --format {{ __fmt | quote }}
           register: __check_pod
+          when: __podman_is_booted | bool
           changed_when: false
           failed_when: not "quadlet-pod-container" in __check_pod.stdout_lines
           vars:
@@ -86,6 +88,7 @@
           stat:
             path: /var/lib/systemd/linger/user_quadlet_pod
           register: __stat
+          when: __podman_is_booted | bool
           failed_when: not __stat.stat.exists
 
         # must clean up in the reverse order of creating - and
@@ -102,6 +105,7 @@
               map('combine', __absent) | list }}"
 
         - name: Ensure no resources
+          when: __podman_is_booted | bool
           assert:
             that:
               - __podman_test_debug_images.stdout == ""
@@ -119,6 +123,7 @@
                 list | length == 0
 
         - name: Ensure no linger
+          when: __podman_is_booted | bool
           stat:
             path: /var/lib/systemd/linger/user_quadlet_pod
           register: __stat
@@ -171,6 +176,7 @@
               user:
                 name: user_quadlet_pod
                 state: absent
+              when: not __podman_is_ostree
 
             - name: Cleanup system - root
               include_role:
@@ -183,6 +189,7 @@
                   map('combine', __absent) | list }}"
 
             - name: Ensure no resources
+              when: __podman_is_booted | bool
               assert:
                 that:
                   - __podman_test_debug_images.stdout == ""

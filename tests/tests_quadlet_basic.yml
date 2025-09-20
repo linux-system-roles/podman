@@ -15,9 +15,13 @@
         state: present
         data: "{{ (__secret_password_env | length > 0) |
           ternary(__secret_password_env, mysql_container_root_password) }}"
+        force: false
+        skip_existing: false
       - name: json_secret
         state: present
         data: "{{ __json_secret_data | string }}"
+        force: false
+        skip_existing: false
     __podman_quadlet_specs:
       - template_src: templates/quadlet-basic.network.j2
         state: started
@@ -66,6 +70,7 @@
             - name: Run role - do not pull images
               include_role:
                 name: linux-system-roles.podman
+                public: true
               vars:
                 podman_quadlet_specs:
                   - name: nopull
@@ -122,6 +127,17 @@
           user:
             name: user_quadlet_basic
             uid: 1111
+          when: not __podman_is_ostree
+
+        - name: Handle linger for user for ostree
+          when: __podman_is_ostree
+          include_role:
+            name: linux-system-roles.podman
+            tasks_from: manage_linger.yml
+          vars:
+            __podman_item_state: present
+            __podman_user: user_quadlet_basic
+            __podman_rootless: true
 
         # try to workaround the rootless containers error
         # Error:
@@ -188,6 +204,7 @@
         - name: Run the role - user
           include_role:
             name: linux-system-roles.podman
+          when: not __bootc_validation | d(false)
           vars:
             podman_quadlet_specs: "{{ __podman_quadlet_specs |
               map('combine', __run_as_user) | list }}"
@@ -212,6 +229,42 @@
             path: /var/lib/systemd/linger/user_quadlet_basic
           register: __stat
           failed_when: not __stat.stat.exists
+          when: __podman_is_booted | bool
+
+        - name: Run the role - root
+          include_role:
+            name: linux-system-roles.podman
+          when: not __bootc_validation | d(false)
+          vars:
+            podman_secrets: "{{ __podman_secrets }}"
+            podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
+
+        - name: Check files
+          command: cat {{ __dir }}/{{ item }}
+          changed_when: false
+          vars:
+            __dir: /etc/containers/systemd
+          loop:
+            - quadlet-basic-mysql.container
+            - quadlet-basic.network
+            - quadlet-basic-mysql.volume
+
+        - name: Create QEMU deployment during bootc end-to-end test
+          delegate_to: localhost
+          command: "{{ lsr_scriptdir | quote }}/bootc-buildah-qcow.sh {{ ansible_host | quote }}"
+          changed_when: true
+          when: ansible_connection == "buildah"
+
+        - name: End test when not booted
+          meta: end_host
+          when: not __podman_is_booted | bool
+
+        - name: Check JSON
+          command: podman exec quadlet-basic-mysql-name cat /tmp/test.json
+          register: __result
+          failed_when: __result.stdout != __json_secret_data
+          changed_when: false
+          when: __podman_is_booted | bool
 
         # must clean up in the reverse order of creating - and
         # ensure networks are removed last
@@ -243,37 +296,20 @@
                 rejectattr("value.status", "match", "not-found") |
                 selectattr("key", "match", "quadlet-demo") |
                 list | length == 0
+          when: __podman_is_booted | bool
 
         - name: Ensure no linger
           stat:
             path: /var/lib/systemd/linger/user_quadlet_basic
           register: __stat
           failed_when: __stat.stat.exists
-
-        - name: Run the role - root
-          include_role:
-            name: linux-system-roles.podman
-          vars:
-            podman_secrets: "{{ __podman_secrets }}"
-            podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
-
-        - name: Check files
-          command: cat {{ __dir }}/{{ item }}
-          changed_when: false
-          vars:
-            __dir: /etc/containers/systemd
-          loop:
-            - quadlet-basic-mysql.container
-            - quadlet-basic.network
-            - quadlet-basic-mysql.volume
-
-        - name: Check JSON
-          command: podman exec quadlet-basic-mysql-name cat /tmp/test.json
-          register: __result
-          failed_when: __result.stdout != __json_secret_data
-          changed_when: false
+          when: __podman_is_booted | bool
 
       rescue:
+        - name: Show error
+          debug:
+            msg: "{{ ansible_failed_result | to_nice_json }}"
+
         - name: Debug3
           shell: |
             set -x
@@ -301,6 +337,10 @@
           failed_when: true
 
       always:
+        - name: End test when not booted
+          meta: end_host
+          when: not __podman_is_booted | bool
+
         - name: Cleanup
           block:
             - name: Cleanup user
@@ -334,6 +374,7 @@
                   map('combine', __absent) | list }}"
 
             - name: Ensure no resources
+              when: __podman_is_booted | bool
               assert:
                 that:
                   - __podman_test_debug_images.stdout == ""

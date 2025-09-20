@@ -22,6 +22,7 @@
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   register: __podman_service_status
   when:
+    - __podman_is_booted
     - __podman_service_name is not none
     - __podman_service_name | length > 0
     - not __podman_rootless or __podman_xdg_stat.stat.exists
@@ -46,177 +47,187 @@
     state: absent
   register: __podman_file_removed
 
-- name: Refresh systemd  # noqa no-handler
-  systemd:
-    daemon_reload: true
-    scope: "{{ __podman_systemd_scope }}"
-  become: "{{ __podman_rootless | ternary(true, omit) }}"
-  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-  when: __podman_file_removed is changed  # noqa no-handler
-
-- name: Remove managed resource
-  command: >-
-    podman {{ 'rm' if __podman_quadlet_type == 'container'
-      else 'network rm' if __podman_quadlet_type == 'network'
-      else 'volume rm' if __podman_quadlet_type == 'volume'
-      else 'pod rm' if __podman_quadlet_type == 'pod' }}
-    {{ __podman_quadlet_resource_name | quote }}
-  register: __podman_rm
-  failed_when:
-    - __podman_rm is failed
-    - not __podman_rm.stderr is search(__str)
-    - not __podman_rm.stderr is search(__str2)
-  changed_when: __podman_rm.rc == 0
-  become: "{{ __podman_rootless | ternary(true, omit) }}"
-  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-  vars:
-    __str: " found: no such "
-    __str2: >-
-      unable to find {{ __podman_quadlet_type }} with name or ID {{ __podman_quadlet_resource_name }}:
-      {{ __podman_quadlet_type }} not found
-    __type_to_name:  # map quadlet type to quadlet property name
-      container:
-        section: Container
-        name: ContainerName
-      network:
-        section: Network
-        name: NetworkName
-      volume:
-        section: Volume
-        name: VolumeName
-      pod:
-        section: Pod
-        name: PodName
-    __section: "{{ __type_to_name[__podman_quadlet_type]['section'] }}"
-    __name: "{{ __type_to_name[__podman_quadlet_type]['name'] }}"
-    __podman_quadlet_resource_name: "{{
-      __podman_quadlet_parsed[__section][__name]
-      if __section in __podman_quadlet_parsed
-      and __name in __podman_quadlet_parsed[__section]
-      else 'systemd-' ~ __podman_quadlet_name }}"
-  when:
-    - __podman_file_removed is changed  # noqa no-handler
-    - __podman_quadlet_type in __type_to_name
-    - not __podman_rootless or __podman_xdg_stat.stat.exists
-    - __podman_service_name is not none
-    - __podman_service_name | length > 0
-  no_log: true
-
-- name: Remove volumes
-  command: podman volume rm {{ item | quote }}
-  loop: "{{ __volume_names }}"
-  when:
-    - __podman_file_removed is changed  # noqa no-handler
-    - not __podman_rootless or __podman_xdg_stat.stat.exists
-    - __podman_service_name is none or __podman_service_name | length == 0
-    - __podman_quadlet_file.endswith(".yml") or
-      __podman_quadlet_file.endswith(".yaml")
-  changed_when: true
-  vars:
-    __volumes: "{{ __podman_quadlet_parsed |
-      selectattr('apiVersion', 'defined') | selectattr('spec', 'defined') |
-      map(attribute='spec') | selectattr('volumes', 'defined') |
-      map(attribute='volumes') | flatten }}"
-    __config_maps: "{{ __volumes | selectattr('configMap', 'defined') |
-      map(attribute='configMap') | selectattr('name', 'defined') |
-      map(attribute='name') | list }}"
-    __secrets: "{{ __volumes | selectattr('secret', 'defined') |
-      map(attribute='secret') | selectattr('secretName', 'defined') |
-      map(attribute='secretName') | list }}"
-    __pvcs: "{{ __volumes | selectattr('persistentVolumeClaim', 'defined') |
-      map(attribute='persistentVolumeClaim') | selectattr('claimName', 'defined') |
-      map(attribute='claimName') | list }}"
-    __volume_names: "{{ __config_maps + __secrets + __pvcs }}"
-  no_log: true
-
+# do this now if not booted
+# if booted, it will be done later, below
 - name: Clear parsed podman variable
   set_fact:
     __podman_quadlet_parsed: null
+  when: not __podman_is_booted
 
-- name: Prune images no longer in use
-  command: podman image prune --all -f
-  when:
-    - podman_prune_images | bool
-    - not __podman_rootless or __podman_xdg_stat.stat.exists
-  changed_when: true
-  become: "{{ __podman_rootless | ternary(true, omit) }}"
-  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-
-- name: Manage linger
-  include_tasks: manage_linger.yml
-  vars:
-    __podman_item_state: absent
-
-- name: Collect information for testing/debugging
-  when:
-    - __podman_test_debug | d(false)
-    - not __podman_rootless or __podman_xdg_stat.stat.exists
+- name: Perform resource cleanup at runtime
+  when: __podman_is_booted
   block:
-    - name: For testing and debugging - images
-      command: podman images -n
-      register: __podman_test_debug_images
-      changed_when: false
+    - name: Refresh systemd  # noqa no-handler
+      systemd:
+        daemon_reload: true
+        scope: "{{ __podman_systemd_scope }}"
       become: "{{ __podman_rootless | ternary(true, omit) }}"
       become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
       environment:
         XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+      when: __podman_file_removed is changed  # noqa no-handler
 
-    - name: For testing and debugging - volumes
-      command: podman volume ls -n
-      register: __podman_test_debug_volumes
-      changed_when: false
+    - name: Remove managed resource
+      command: >-
+        podman {{ 'rm' if __podman_quadlet_type == 'container'
+          else 'network rm' if __podman_quadlet_type == 'network'
+          else 'volume rm' if __podman_quadlet_type == 'volume'
+          else 'pod rm' if __podman_quadlet_type == 'pod' }}
+        {{ __podman_quadlet_resource_name | quote }}
+      register: __podman_rm
+      failed_when:
+        - __podman_rm is failed
+        - not __podman_rm.stderr is search(__str)
+        - not __podman_rm.stderr is search(__str2)
+      changed_when: __podman_rm.rc == 0
       become: "{{ __podman_rootless | ternary(true, omit) }}"
       become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
       environment:
         XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-
-    - name: For testing and debugging - containers
-      command: podman ps --noheading
-      register: __podman_test_debug_containers
-      changed_when: false
-      become: "{{ __podman_rootless | ternary(true, omit) }}"
-      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-      environment:
-        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-
-    - name: For testing and debugging - networks
-      command: podman network ls -n -q
-      register: __podman_test_debug_networks
-      changed_when: false
-      become: "{{ __podman_rootless | ternary(true, omit) }}"
-      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-      environment:
-        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-
-    - name: For testing and debugging - secrets
-      command: podman secret ls -n -q
-      register: __podman_test_debug_secrets
-      changed_when: false
+      vars:
+        __str: " found: no such "
+        __str2: >-
+          unable to find {{ __podman_quadlet_type }} with name or ID {{ __podman_quadlet_resource_name }}:
+          {{ __podman_quadlet_type }} not found
+        __type_to_name:  # map quadlet type to quadlet property name
+          container:
+            section: Container
+            name: ContainerName
+          network:
+            section: Network
+            name: NetworkName
+          volume:
+            section: Volume
+            name: VolumeName
+          pod:
+            section: Pod
+            name: PodName
+        __section: "{{ __type_to_name[__podman_quadlet_type]['section'] }}"
+        __name: "{{ __type_to_name[__podman_quadlet_type]['name'] }}"
+        __podman_quadlet_resource_name: "{{
+          __podman_quadlet_parsed[__section][__name]
+          if __section in __podman_quadlet_parsed
+          and __name in __podman_quadlet_parsed[__section]
+          else 'systemd-' ~ __podman_quadlet_name }}"
+      when:
+        - __podman_file_removed is changed  # noqa no-handler
+        - __podman_quadlet_type in __type_to_name
+        - not __podman_rootless or __podman_xdg_stat.stat.exists
+        - __podman_service_name is not none
+        - __podman_service_name | length > 0
       no_log: true
-      become: "{{ __podman_rootless | ternary(true, omit) }}"
-      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-      environment:
-        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
 
-    - name: For testing and debugging - pods
-      command: podman pod ls -n -q
-      register: __podman_test_debug_pods
-      changed_when: false
+    - name: Remove volumes
+      command: podman volume rm {{ item | quote }}
+      loop: "{{ __volume_names }}"
+      when:
+        - __podman_file_removed is changed  # noqa no-handler
+        - not __podman_rootless or __podman_xdg_stat.stat.exists
+        - __podman_service_name is none or __podman_service_name | length == 0
+        - __podman_quadlet_file.endswith(".yml") or
+          __podman_quadlet_file.endswith(".yaml")
+      changed_when: true
+      vars:
+        __volumes: "{{ __podman_quadlet_parsed |
+          selectattr('apiVersion', 'defined') | selectattr('spec', 'defined') |
+          map(attribute='spec') | selectattr('volumes', 'defined') |
+          map(attribute='volumes') | flatten }}"
+        __config_maps: "{{ __volumes | selectattr('configMap', 'defined') |
+          map(attribute='configMap') | selectattr('name', 'defined') |
+          map(attribute='name') | list }}"
+        __secrets: "{{ __volumes | selectattr('secret', 'defined') |
+          map(attribute='secret') | selectattr('secretName', 'defined') |
+          map(attribute='secretName') | list }}"
+        __pvcs: "{{ __volumes | selectattr('persistentVolumeClaim', 'defined') |
+          map(attribute='persistentVolumeClaim') | selectattr('claimName', 'defined') |
+          map(attribute='claimName') | list }}"
+        __volume_names: "{{ __config_maps + __secrets + __pvcs }}"
       no_log: true
+
+    - name: Clear parsed podman variable
+      set_fact:
+        __podman_quadlet_parsed: null
+
+    - name: Prune images no longer in use
+      command: podman image prune --all -f
+      when:
+        - podman_prune_images | bool
+        - not __podman_rootless or __podman_xdg_stat.stat.exists
+      changed_when: true
       become: "{{ __podman_rootless | ternary(true, omit) }}"
       become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
       environment:
         XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
 
-    - name: For testing and debugging - services
-      service_facts:
-      become: "{{ __podman_rootless | ternary(true, omit) }}"
-      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-      environment:
-        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+    - name: Manage linger
+      include_tasks: manage_linger.yml
+      vars:
+        __podman_item_state: absent
+
+    - name: Collect information for testing/debugging
+      when:
+        - __podman_test_debug | d(false)
+        - not __podman_rootless or __podman_xdg_stat.stat.exists
+      block:
+        - name: For testing and debugging - images
+          command: podman images -n
+          register: __podman_test_debug_images
+          changed_when: false
+          become: "{{ __podman_rootless | ternary(true, omit) }}"
+          become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+          environment:
+            XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+
+        - name: For testing and debugging - volumes
+          command: podman volume ls -n
+          register: __podman_test_debug_volumes
+          changed_when: false
+          become: "{{ __podman_rootless | ternary(true, omit) }}"
+          become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+          environment:
+            XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+
+        - name: For testing and debugging - containers
+          command: podman ps --noheading
+          register: __podman_test_debug_containers
+          changed_when: false
+          become: "{{ __podman_rootless | ternary(true, omit) }}"
+          become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+          environment:
+            XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+
+        - name: For testing and debugging - networks
+          command: podman network ls -n -q
+          register: __podman_test_debug_networks
+          changed_when: false
+          become: "{{ __podman_rootless | ternary(true, omit) }}"
+          become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+          environment:
+            XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+
+        - name: For testing and debugging - secrets
+          command: podman secret ls -n -q
+          register: __podman_test_debug_secrets
+          changed_when: false
+          no_log: true
+          become: "{{ __podman_rootless | ternary(true, omit) }}"
+          become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+          environment:
+            XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+
+        - name: For testing and debugging - pods
+          command: podman pod ls -n -q
+          register: __podman_test_debug_pods
+          changed_when: false
+          no_log: true
+          become: "{{ __podman_rootless | ternary(true, omit) }}"
+          become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+          environment:
+            XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+
+        - name: For testing and debugging - services
+          service_facts:
+          become: "{{ __podman_rootless | ternary(true, omit) }}"
+          become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+          environment:
+            XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"

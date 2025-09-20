@@ -12,11 +12,12 @@
           - "{{ __podman_registries_conf_system }}"
           - "{{ __podman_storage_conf_system }}"
           - "{{ __podman_policy_json_system }}"
+        __podman_test_username: podman_config_files_user
         __user_files:
-          - /home/user1/{{ __podman_containers_conf_user }}
-          - /home/user1/{{ __podman_registries_conf_user }}
-          - /home/user1/{{ __podman_storage_conf_user }}
-          - /home/user1/{{ __podman_policy_json_user }}
+          - /home/{{ __podman_test_username }}/{{ __podman_containers_conf_user }}
+          - /home/{{ __podman_test_username }}/{{ __podman_registries_conf_user }}
+          - /home/{{ __podman_test_username }}/{{ __podman_storage_conf_user }}
+          - /home/{{ __podman_test_username }}/{{ __podman_policy_json_user }}
         podman_containers_conf:
           containers:
             container_name_as_hostname: true
@@ -91,15 +92,16 @@
 
         - name: Create user
           user:
-            name: user1
+            name: "{{ __podman_test_username }}"
+            uid: 4001
 
         - name: Run the role with user config
           include_role:
             name: linux-system-roles.podman
             public: true
           vars:
-            podman_run_as_user: user1
-            podman_run_as_group: user1
+            podman_run_as_user: "{{ __podman_test_username }}"
+            podman_run_as_group: "{{ __podman_test_username }}"
             podman_credential_files: "{{ __credential_files }}"
 
         - name: Check that files exist and are non-null
@@ -119,8 +121,8 @@
             name: linux-system-roles.podman
             public: true
           vars:
-            podman_run_as_user: user1
-            podman_run_as_group: user1
+            podman_run_as_user: "{{ __podman_test_username }}"
+            podman_run_as_group: "{{ __podman_test_username }}"
             podman_credential_files: "{{ __credential_files }}"
 
         - name: Check that files still exist and are non-null
@@ -180,9 +182,9 @@
         - name: Check for ansible_managed, fingerprint in generated files
           include_tasks: tasks/check_header.yml
           loop:
-            - /home/user1/{{ __podman_containers_conf_user }}
-            - /home/user1/{{ __podman_registries_conf_user }}
-            - /home/user1/{{ __podman_storage_conf_user }}
+            - /home/{{ __podman_test_username }}/{{ __podman_containers_conf_user }}
+            - /home/{{ __podman_test_username }}/{{ __podman_registries_conf_user }}
+            - /home/{{ __podman_test_username }}/{{ __podman_storage_conf_user }}
             - "{{ __podman_containers_conf_system }}"
             - "{{ __podman_registries_conf_system }}"
             - "{{ __podman_storage_conf_system }}"
@@ -236,7 +238,7 @@
             path: "{{ item }}"
           loop:
             - /root/.config/containers/auth.json
-            - /home/user1/.config/containers/auth.json
+            - /home/{{ __podman_test_username }}/{{ __podman_containers_conf_user }}
 
         - name: Restore system config files
           # noqa command-instead-of-module

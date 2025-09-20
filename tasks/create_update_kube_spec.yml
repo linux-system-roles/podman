@@ -37,37 +37,7 @@
     - __podman_volumes | d([]) | length > 0
 
 - name: Ensure container images are present
-  containers.podman.podman_image:
-    name: "{{ item }}"
-    force: true
-    username: "{{ __podman_registry_username
-      if __podman_registry_username | length > 0 else omit }}"
-    password: "{{ __podman_registry_password
-      if __podman_registry_password | length > 0 else omit }}"
-    validate_certs: "{{ (__podman_validate_certs in ['', none]) |
-      ternary(omit, __podman_validate_certs) }}"
-  register: __podman_image_updated
-  when: __podman_pull_image | bool
-  until: __podman_image_updated is success
-  retries: "{{ podman_pull_retry | ternary(3, 0) }}"
-  failed_when:
-    - __podman_image_updated is failed
-    - not __podman_continue_if_pull_fails
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-  become: "{{ __podman_rootless | ternary(true, omit) }}"
-  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-  loop: "{{ (__images + __init_images) | unique | list }}"
-  vars:
-    __images: "{{ __podman_kube['spec']['containers'] |
-      selectattr('image', 'defined') | map(attribute='image') | list
-      if 'containers' in __podman_kube['spec']
-      else [] }}"
-    __init_images: "{{ __podman_kube['spec']['initContainers'] |
-      selectattr('image', 'defined') | map(attribute='image') | list
-      if 'initContainers' in __podman_kube['spec']
-      else [] }}"
-  no_log: true
+  include_tasks: handle_images.yml
 
 - name: Check the kubernetes yaml file
   stat:
@@ -107,6 +77,7 @@
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   become: "{{ __podman_rootless | ternary(true, omit) }}"
   become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  when: __podman_is_booted
   register: __podman_play_info
 
 - name: Reload systemctl  # noqa no-handler
@@ -118,6 +89,7 @@
   environment:
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   when:
+    - __podman_is_booted
     - __podman_play_info is changed or __podman_copy is changed
     - __podman_activate_systemd_unit | bool
 
@@ -145,6 +117,7 @@
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   register: __podman_service_started
   when:
+    - __podman_is_booted
     - __podman_play_info is changed or __podman_copy is changed
     - __podman_activate_systemd_unit | bool
 
@@ -158,6 +131,7 @@
   environment:
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   when:
+    - __podman_is_booted
     - not __podman_service_started is changed
     - __podman_play_info is changed or __podman_copy is changed
     - __podman_activate_systemd_unit | bool

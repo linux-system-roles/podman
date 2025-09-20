@@ -1,0 +1,22 @@
+#!/bin/bash
+{{ ansible_managed | comment }}
+{{ "system_role:podman" | comment(prefix="", postfix="") }}
+set -euxo pipefail
+
+cache_dir="$1"
+mapping_file="$cache_dir/mapping.txt"
+
+while IFS="," read -r image sha; do
+  if [[ "$image" =~ ^# ]]; then
+    continue
+  fi
+  skopeo copy --preserve-digests "dir:$cache_dir/$sha" "containers-storage:$image"
+  rm -rf "$cache_dir/$sha"
+done < "$mapping_file"
+rm -f "$mapping_file"
+if [ -z "$(ls -A "$cache_dir")" ]; then
+  rm -rf "$cache_dir"  # delete cache directory if it is empty
+fi
+if [ -n "${LSR_DEBUG:-}" ]; then
+  podman images --all --digests --no-trunc
+fi

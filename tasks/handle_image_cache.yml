@@ -1,0 +1,103 @@
+# SPDX-License-Identifier: MIT
+# Inputs:
+# __podman_image_cache_dir: Directory where images will be cached
+# __podman_images: List of container image names to cache
+# __podman_registry_username: Username for registry authentication
+# __podman_registry_password: Password for registry authentication
+# __podman_validate_certs: Whether to validate TLS certificates when pulling images
+# __podman_pull_image: Whether to pull images
+# __podman_cache_images: Whether to cache images
+# __podman_user: User to run the cache command as
+# __podman_group: Group to run the cache command as
+# __podman_systemd_dir: Directory where systemd units will be created
+# Outputs:
+# __podman_image_updated: Result of the manage_image_cache module
+---
+- name: Ensure image cache directory is present
+  file:
+    path: "{{ __podman_image_cache_dir }}"
+    state: directory
+    owner: "{{ __podman_user }}"
+    group: "{{ __podman_group }}"
+    mode: "0755"
+
+- name: Cache container images for bootc (physically bound images)
+  manage_image_cache:
+    images: "{{ __podman_images | unique | list }}"
+    username: "{{ __podman_registry_username
+      if __podman_registry_username | length > 0 else omit }}"
+    password: "{{ __podman_registry_password
+      if __podman_registry_password | length > 0 else omit }}"
+    validate_certs: "{{ (__podman_validate_certs in ['', none]) |
+      ternary(omit, __podman_validate_certs) }}"
+    cache_dir: "{{ __podman_image_cache_dir }}"
+  until: __podman_image_updated is success
+  retries: "{{ podman_pull_retry | ternary(3, 0) }}"
+  failed_when:
+    - __podman_image_updated is failed
+    - not __podman_continue_if_pull_fails
+  register: __podman_image_updated
+  no_log: true
+
+- name: Create script to update image cache
+  template:
+    src: lsr_podman_copy_images.sh.j2
+    dest: /usr/bin/lsr_podman_copy_images.sh
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - __podman_image_updated is success
+    - __podman_image_updated.results | d([]) | length > 0
+
+- name: Stat systemd directory
+  stat:
+    path: "{{ __podman_systemd_dir }}"
+  register: __podman_systemd_dir_stat
+
+- name: Ensure systemd directory is present
+  file:
+    path: "{{ __podman_systemd_dir }}"
+    state: directory
+    owner: "{{ __podman_user }}"
+    group: "{{ __podman_group }}"
+    mode: "{{ '0700' if __podman_rootless else '0755' }}"
+  when: not __podman_systemd_dir_stat.stat.exists
+
+# NOTE: This is the same target as the WantedBy in the service file
+- name: Stat systemd target wants directory
+  stat:
+    path: "{{ __podman_systemd_dir }}/multi-user.target.wants"
+  register: __podman_systemd_target_wants_dir_stat
+
+- name: Ensure systemd target wants directory is present
+  file:
+    path: "{{ __podman_systemd_dir }}/multi-user.target.wants"
+    state: directory
+    owner: "{{ __podman_user }}"
+    group: "{{ __podman_group }}"
+    mode: "{{ '0700' if __podman_rootless else '0755' }}"
+  when: not __podman_systemd_target_wants_dir_stat.stat.exists
+
+- name: Create systemd oneshot unit to update image cache
+  template:
+    src: lsr_podman_copy_images.service.j2
+    dest: "{{ __podman_systemd_dir }}/lsr_podman_copy_images.service"
+    owner: "{{ __podman_user }}"
+    group: "{{ __podman_group }}"
+    mode: "{{ '0600' if __podman_rootless else '0644' }}"
+  when:
+    - __podman_image_updated is success
+    - __podman_image_updated.results | d([]) | length > 0
+
+- name: Enable service  # noqa no-handler
+  file:
+    src: "{{ __podman_systemd_dir }}/lsr_podman_copy_images.service"
+    dest: "{{ __podman_systemd_dir }}/multi-user.target.wants/lsr_podman_copy_images.service"
+    state: link
+    owner: "{{ __podman_user }}"
+    group: "{{ __podman_group }}"
+    mode: "{{ '0700' if __podman_rootless else '0777' }}"
+  when:
+    - __podman_image_updated is success
+    - __podman_image_updated.results | d([]) | length > 0

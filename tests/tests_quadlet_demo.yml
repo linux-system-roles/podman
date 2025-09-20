@@ -3,6 +3,8 @@
 - name: Deploy the quadlet demo app
   hosts: all
   gather_facts: true
+  tags:
+    - tests::booted  # tests that require a booted system
   vars_files:
     - vars/test_vars.yml
   vars:
