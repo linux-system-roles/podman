@@ -1,6 +1,22 @@
 Changelog
 =========
 
+[1.9.0] - 2025-10-21
+--------------------
+
+### New Features
+
+- feat: Support this role in container builds (#245)
+
+### Other Changes
+
+- ci: rollout several recent changes to CI testing (#241)
+- ci: support openSUSE Leap in qemu/kvm test matrix (#242)
+- ci: use the new epel feature to enable EPEL for testing farm (#243)
+- ci: use tox-lsr 3.12.0 for osbuild_config.yml feature (#246)
+- ci: use JSON format for __bootc_validation (#247)
+- ci: bump actions/github-script from 7 to 8 (#248)
+
 [1.8.3] - 2025-07-24
 --------------------
 
