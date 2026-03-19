@@ -16,8 +16,7 @@
           loop: "{{ __test_users }}"
 
         - name: Configure podman for users
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_run_as_user: "{{ item }}"
             podman_run_as_group: "{{ item }}"
@@ -47,8 +46,7 @@
           loop: "{{ __test_users }}"
 
         - name: Cleanup pods
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_run_as_user: "{{ item }}"
             podman_run_as_group: "{{ item }}"

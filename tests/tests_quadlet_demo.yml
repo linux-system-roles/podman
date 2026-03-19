@@ -2,7 +2,6 @@
 ---
 - name: Deploy the quadlet demo app
   hosts: all
-  gather_facts: true
   tags:
     - tests::booted  # tests that require a booted system
   vars_files:
@@ -56,8 +55,7 @@
             certificate_test_remove_files: true
 
         - name: Run the role
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_quadlet_specs: "{{ __podman_quadlet_specs }}"
             podman_pull_retry: true
@@ -166,8 +164,7 @@
         - name: Cleanup
           block:
             - name: Cleanup
-              include_role:
-                name: linux-system-roles.podman
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
                 podman_prune_images: true
                 __podman_test_debug: true

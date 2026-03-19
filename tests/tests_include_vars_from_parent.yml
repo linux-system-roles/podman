@@ -1,7 +1,6 @@
 ---
 - name: Test role include variable override
   hosts: all
-  gather_facts: true
   tasks:
     - name: Run test
       block:

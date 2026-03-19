@@ -208,8 +208,7 @@
         - name: See if not pulling images fails
           block:
             - name: Run role - do not pull images
-              include_role:
-                name: linux-system-roles.podman
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
                 podman_kube_specs:
                   - state: created
@@ -233,8 +232,7 @@
                 that: __podman_image_updated.results[0] is skipped
 
             - name: Run role - verify continue if pull fails
-              include_role:
-                name: linux-system-roles.podman
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
                 podman_kube_specs:
                   - state: created
@@ -263,8 +261,7 @@
 
           always:
             - name: Cleanup
-              include_role:
-                name: linux-system-roles.podman
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
                 podman_kube_specs:
                   - state: absent
@@ -285,10 +282,9 @@
                 - bogus
 
         - name: Run role
-          include_role:
-            name: linux-system-roles.podman
-            public: true
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
+            __sr_public: true
             podman_kube_specs: "{{ __podman_kube_specs |
               union([__podman_use_kube_file]) | list }}"
             podman_pull_retry: true
@@ -338,8 +334,7 @@
               changed_when: false
 
         - name: Run role again to test for idempotency
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_kube_specs: "{{ __podman_kube_specs |
               union([__podman_use_kube_file]) | list }}"
@@ -389,8 +384,7 @@
             #   changed_when: false
 
         - name: Remove pods and units
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             # noqa jinja[spacing]
             podman_kube_specs: "{{ __podman_kube_specs |
@@ -445,8 +439,7 @@
               failed_when: __stat.stat.exists
 
         - name: Remove pods and units again - test idempotence
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             # noqa jinja[spacing]
             podman_kube_specs: "{{ __podman_kube_specs |
