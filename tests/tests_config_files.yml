@@ -67,10 +67,9 @@
           - file_content: this.is.a.credential
       block:
         - name: Run the role with no config to get private vars
-          include_role:
-            name: linux-system-roles.podman
-            public: true
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
+            __sr_public: true
             podman_run_as_user: root
             podman_containers_conf: {}
             podman_registries_conf: {}
@@ -96,10 +95,9 @@
             uid: 4001
 
         - name: Run the role with user config
-          include_role:
-            name: linux-system-roles.podman
-            public: true
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
+            __sr_public: true
             podman_run_as_user: "{{ __podman_test_username }}"
             podman_run_as_group: "{{ __podman_test_username }}"
             podman_credential_files: "{{ __credential_files }}"
@@ -117,10 +115,9 @@
           changed_when: false
 
         - name: Run the role again with user config
-          include_role:
-            name: linux-system-roles.podman
-            public: true
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
+            __sr_public: true
             podman_run_as_user: "{{ __podman_test_username }}"
             podman_run_as_group: "{{ __podman_test_username }}"
             podman_credential_files: "{{ __credential_files }}"
@@ -141,10 +138,9 @@
               - not __podman_storage_config_register is changed
 
         - name: Run the role with root config
-          include_role:
-            name: linux-system-roles.podman
-            public: true
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
+            __sr_public: true
             podman_run_as_user: root
             podman_credential_files: "{{ __credential_files }}"
 
@@ -157,10 +153,9 @@
           loop: "{{ __system_files }}"
 
         - name: Run the role again with root config
-          include_role:
-            name: linux-system-roles.podman
-            public: true
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
+            __sr_public: true
             podman_run_as_user: root
             podman_credential_files: "{{ __credential_files }}"
 
@@ -194,8 +189,7 @@
             __fingerprint: "system_role:podman"
 
         - name: Try formatting sub-dict as TOML table with new formatter
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_use_new_toml_formatter: true
 

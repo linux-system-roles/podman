@@ -2,7 +2,6 @@
 ---
 - name: Ensure that the role can manage quadlet specs
   hosts: all
-  gather_facts: true  # for machine_id
   vars_files:
     - vars/test_vars.yml
   vars:
@@ -68,10 +67,9 @@
         - name: See if not pulling images fails
           block:
             - name: Run role - do not pull images
-              include_role:
-                name: linux-system-roles.podman
-                public: true
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
+                __sr_public: true
                 podman_quadlet_specs:
                   - name: nopull
                     type: container
@@ -89,8 +87,7 @@
                 that: __podman_image_updated.results[0] is skipped
 
             - name: Run role - try to pull bogus image
-              include_role:
-                name: linux-system-roles.podman
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
                 podman_quadlet_specs:
                   - name: bogus
@@ -112,8 +109,7 @@
 
           always:
             - name: Cleanup
-              include_role:
-                name: linux-system-roles.podman
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
                 podman_quadlet_specs:
                   - state: absent
@@ -152,6 +148,10 @@
                 path: /etc/machine-id
               register: __local_mach_id_enc
               delegate_to: localhost
+
+            - name: Get ansible_facts machine_id
+              setup:
+                gather_subset: machine_id
 
             - name: Skip test if cannot reboot
               meta: end_host
@@ -202,8 +202,7 @@
               reboot:
 
         - name: Run the role - user
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           when: not __bootc_validation | d(false)
           vars:
             podman_quadlet_specs: "{{ __podman_quadlet_specs |
@@ -232,8 +231,7 @@
           when: __podman_is_booted | bool
 
         - name: Run the role - root
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           when: not __bootc_validation | d(false)
           vars:
             podman_secrets: "{{ __podman_secrets }}"
@@ -269,8 +267,7 @@
         # must clean up in the reverse order of creating - and
         # ensure networks are removed last
         - name: Cleanup user
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_prune_images: true
             __podman_test_debug: true
@@ -344,8 +341,7 @@
         - name: Cleanup
           block:
             - name: Cleanup user
-              include_role:
-                name: linux-system-roles.podman
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
                 podman_prune_images: true
                 podman_run_as_user: user_quadlet_basic
@@ -362,8 +358,7 @@
                 state: absent
 
             - name: Cleanup system - root
-              include_role:
-                name: linux-system-roles.podman
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
                 podman_prune_images: true
                 __podman_test_debug: true

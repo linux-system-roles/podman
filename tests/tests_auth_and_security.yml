@@ -42,8 +42,7 @@
     - tests::booted  # tests that require a booted system
   tasks:
     - name: Run the role with no config to install podman
-      include_role:
-        name: linux-system-roles.podman
+      include_tasks: tasks/run_role_with_clear_facts.yml
 
     - name: Setup registry
       include_tasks: tasks/setup_registry.yml
@@ -54,8 +53,7 @@
     - name: Run the role with no credentials and no cert checking
       block:
         - name: Run the role with no credentials and no cert checking
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_validate_certs: false
             podman_quadlet_specs:
@@ -80,8 +78,7 @@
     - name: Run the role with credentials and cert checking
       block:
         - name: Run the role with credentials and cert checking
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_validate_certs: true
             podman_quadlet_specs:
@@ -114,8 +111,7 @@
           delegate_to: localhost
 
         - name: Run the role with credentials in spec and CA cert
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_registry_username: bogus
             podman_registry_password: bogus
@@ -129,8 +125,7 @@
                   certificate_test_certs['podman_registry']['ca_content'] }}"
 
         - name: Run the role with credentials in global vars
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_registry_username: "{{ __podman_test_username }}"
             podman_registry_password: "{{ __podman_test_password }}"
@@ -146,8 +141,7 @@
             flat: true
 
         - name: Provide a credentials file - root
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_credential_files:
               - file_src: "{{ __local_tmpdir.path ~ '/auth.json' }}"
@@ -158,8 +152,7 @@
               - "{{ podman_kube_spec_base }}"
 
         - name: Remove all container resources - root
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_kube_specs:
               - "{{ podman_kube_spec_base | combine({'state': 'absent'}) }}"
@@ -177,8 +170,7 @@
             uid: 2001
 
         - name: Provide a credentials file - rootless
-          include_role:
-            name: linux-system-roles.podman
+          include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             podman_credential_files:
               - template_src: "{{ __local_tmpdir.path ~ '/auth.json' }}"
@@ -206,8 +198,7 @@
           block:
             # in case the test errored before this happened
             - name: Remove all container resources - root
-              include_role:
-                name: linux-system-roles.podman
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
                 podman_kube_specs:
                   - "{{ podman_kube_spec_base | combine({'state': 'absent'}) }}"
@@ -227,8 +218,7 @@
         - name: Cleanup rootless resources
           block:
             - name: Remove all container resources - rootless
-              include_role:
-                name: linux-system-roles.podman
+              include_tasks: tasks/run_role_with_clear_facts.yml
               vars:
                 podman_run_as_user: auth_test_user1
                 podman_kube_specs:
