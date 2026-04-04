@@ -41,13 +41,19 @@ _value:
 """
 
 from ansible.errors import AnsibleFilterError
-from ansible.module_utils.six import string_types
+
+# ansible six is deprecated, and it seems a lot to add a dependency on python-six
+# just for this
+try:
+    lsr_string_types = (basestring,)
+except NameError:
+    lsr_string_types = (str,)
 
 
 def from_ini(obj):
     """Read the given string as INI file and return a dict"""
 
-    if not isinstance(obj, string_types):
+    if not isinstance(obj, lsr_string_types):
         raise AnsibleFilterError("from_ini requires a str, got %s" % type(obj))
 
     rv = {}
