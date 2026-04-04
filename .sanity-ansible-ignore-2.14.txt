@@ -1,2 +1,6 @@
 plugins/modules/manage_image_cache.py validate-modules:missing-gplv3-license
+plugins/modules/manage_image_cache.py compile-2.7!skip
+plugins/modules/manage_image_cache.py compile-3.5!skip
+plugins/modules/manage_image_cache.py import-2.7!skip
+plugins/modules/manage_image_cache.py import-3.5!skip
 roles/podman/templates/lsr_podman_copy_images.sh.j2 shebang!skip
