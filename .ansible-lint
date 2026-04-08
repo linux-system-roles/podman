@@ -21,6 +21,7 @@ exclude_paths:
   - .github/
   - .markdownlint.yaml
   - examples/roles/
+  - .collection/
   - tests/files/
 mock_roles:
   - linux-system-roles.podman
