@@ -1,2 +1,3 @@
 plugins/modules/manage_image_cache.py validate-modules:missing-gplv3-license
+plugins/modules/sr_fingerprint.py validate-modules:missing-gplv3-license
 roles/podman/templates/lsr_podman_copy_images.sh.j2 shebang!skip

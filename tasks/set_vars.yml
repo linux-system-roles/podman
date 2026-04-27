@@ -6,6 +6,12 @@
   when: __podman_required_facts |
     difference(ansible_facts.keys() | list) | length > 0
 
+- name: Record role begin fingerprint
+  sr_fingerprint:
+    sr_message: >-
+      begin system_role:podman ansible_version={{ ansible_version.full }}
+      {{ ansible_facts['distribution'] }}-{{ ansible_facts['distribution_version'] }}
+
 - name: Determine if system is ostree and set flag
   when: not __podman_is_ostree is defined
   block:
