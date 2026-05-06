@@ -145,3 +145,7 @@ podman_transactional_update_reboot_ok: null
 
 # var to set to use new TOML formatter
 podman_use_new_toml_formatter: false
+
+# If true, suppress potentially sensitive output from tasks that
+# handle credentials, secrets, and other sensitive data.
+podman_secure_logging: true

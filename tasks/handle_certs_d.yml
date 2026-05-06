@@ -59,7 +59,7 @@
            else 'ca.crt') }}"
         content: "{{ __podman_cert_spec_item['ca_cert_content'] | d('') }}"
         src: "{{ __podman_cert_spec_item['ca_cert_src'] | d('') }}"
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Create TLS files
   when:
@@ -84,7 +84,7 @@
         mode: "0600"
       when: (item.content | length > 0) or (item.src | length > 0)
       loop: "{{ __podman_cert_file_list }}"
-      no_log: true
+      no_log: "{{ podman_secure_logging }}"
 
 - name: Remove TLS files
   when:
@@ -96,7 +96,7 @@
         path: "{{ item.dest }}"
         state: absent
       loop: "{{ __podman_cert_file_list }}"
-      no_log: true
+      no_log: "{{ podman_secure_logging }}"
 
     - name: Find files in certs.d directory
       find:
@@ -104,11 +104,11 @@
         file_type: any
         hidden: true
       register: __certs_d_dir_files
-      no_log: true
+      no_log: "{{ podman_secure_logging }}"
 
     - name: Ensure the certs.d directory is absent if empty
       file:
         path: "{{ __podman_certs_d_path }}"
         state: absent
       when: __certs_d_dir_files.matched == 0
-      no_log: true
+      no_log: "{{ podman_secure_logging }}"

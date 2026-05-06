@@ -115,7 +115,7 @@
         - not __podman_rootless or __podman_xdg_stat.stat.exists
         - __podman_service_name is not none
         - __podman_service_name | length > 0
-      no_log: true
+      no_log: "{{ podman_secure_logging }}"
 
     - name: Remove volumes
       command: podman volume rm {{ item | quote }}
@@ -142,7 +142,7 @@
           map(attribute='persistentVolumeClaim') | selectattr('claimName', 'defined') |
           map(attribute='claimName') | list }}"
         __volume_names: "{{ __config_maps + __secrets + __pvcs }}"
-      no_log: true
+      no_log: "{{ podman_secure_logging }}"
 
     - name: Clear parsed podman variable
       set_fact:
@@ -209,7 +209,7 @@
           command: podman secret ls -n -q
           register: __podman_test_debug_secrets
           changed_when: false
-          no_log: true
+          no_log: "{{ podman_secure_logging }}"
           become: "{{ __podman_rootless | ternary(true, omit) }}"
           become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
           environment:
@@ -219,7 +219,7 @@
           command: podman pod ls -n -q
           register: __podman_test_debug_pods
           changed_when: false
-          no_log: true
+          no_log: "{{ podman_secure_logging }}"
           become: "{{ __podman_rootless | ternary(true, omit) }}"
           become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
           environment:
@@ -227,6 +227,7 @@
 
         - name: For testing and debugging - services
           service_facts:
+          no_log: "{{ ansible_verbosity < 2 }}"
           become: "{{ __podman_rootless | ternary(true, omit) }}"
           become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
           environment:

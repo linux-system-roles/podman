@@ -23,7 +23,7 @@
   become: "{{ __podman_rootless | ternary(true, omit) }}"
   become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
   loop: "{{ __podman_images | unique | list }}"
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Handle images when not booted
   include_tasks: handle_image_cache.yml

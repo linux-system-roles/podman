@@ -130,7 +130,7 @@
     __podman_validate_certs: "{{ __podman_kube_spec_item['validate_certs']
       if 'validate_certs' in __podman_kube_spec_item
       else podman_validate_certs }}"
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Get service name using systemd-escape
   command: >-

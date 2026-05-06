@@ -37,7 +37,7 @@
     - __podman_image_updated is failed
     - not __podman_continue_if_pull_fails
   register: __podman_image_updated
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Create script to update image cache
   template:

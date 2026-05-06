@@ -554,6 +554,14 @@ for custom handling of the reboot requirement. If this variable is not set,
 the role will fail to ensure the reboot requirement is not overlooked.
 For non-transactional update systems, this variable is ignored.
 
+### podman_secure_logging
+
+Boolean - default is `true`. If `true`, the role suppresses sensitive output from tasks that handle credentials, secrets, and other sensitive data by setting `no_log: true` on those tasks.
+This prevents passwords, API tokens, registry credentials, and similar sensitive information from appearing in Ansible logs and console output.
+
+If you need to debug issues with credential handling or secret management, you can temporarily set `podman_secure_logging: false` to see the full output from these tasks.
+However, be aware that this may expose sensitive information in logs, so it should only be used in development or troubleshooting scenarios.
+
 ## Variables Exported by the Role
 
 ### podman_version

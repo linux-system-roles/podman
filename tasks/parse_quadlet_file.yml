@@ -7,7 +7,7 @@
   slurp:
     path: "{{ __podman_quadlet_file }}"
   register: __podman_quadlet_raw
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Parse quadlet file
   set_fact:
@@ -15,7 +15,7 @@
   when:
     - __podman_service_name is not none
     - __podman_service_name | length > 0
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Parse quadlet yaml file
   set_fact:
@@ -25,7 +25,7 @@
     - __podman_service_name is none or __podman_service_name | length == 0
     - __podman_quadlet_file.endswith(".yml") or
       __podman_quadlet_file.endswith(".yaml")
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Reset raw variable
   set_fact:

@@ -5,7 +5,7 @@
 
 - name: Gather the package facts
   package_facts:
-  no_log: true
+  no_log: "{{ ansible_verbosity < 2 }}"
 
 - name: Enable copr if requested
   include_tasks: enable_copr.yml
@@ -189,7 +189,7 @@
   loop: "{{ podman_registry_certificates }}"
   loop_control:
     loop_var: __podman_cert_spec_item
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Handle credential files - present
   include_tasks: handle_credential_files.yml
@@ -198,28 +198,28 @@
   loop: "{{ podman_credential_files }}"
   loop_control:
     loop_var: __podman_credential_item
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Handle secrets
   include_tasks: handle_secret.yml
   loop: "{{ podman_secrets }}"
   loop_control:
     loop_var: __podman_secret_item
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Handle Kubernetes specifications
   include_tasks: handle_kube_spec.yml
   loop: "{{ podman_kube_specs }}"
   loop_control:
     loop_var: __podman_kube_spec_item
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Handle Quadlet specifications
   include_tasks: handle_quadlet_spec.yml
   loop: "{{ podman_quadlet_specs }}"
   loop_control:
     loop_var: __podman_quadlet_spec_item
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Cancel linger
   include_tasks: cancel_linger.yml
@@ -235,7 +235,7 @@
   loop: "{{ podman_credential_files }}"
   loop_control:
     loop_var: __podman_credential_item
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Handle certs.d files - absent
   include_tasks: handle_certs_d.yml
@@ -244,7 +244,7 @@
   loop: "{{ podman_registry_certificates }}"
   loop_control:
     loop_var: __podman_cert_spec_item
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Record role success fingerprint
   sr_fingerprint:

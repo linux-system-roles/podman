@@ -228,7 +228,7 @@
     __podman_validate_certs: "{{ __podman_quadlet_spec_item['validate_certs']
       if 'validate_certs' in __podman_quadlet_spec_item
       else podman_validate_certs }}"
-  no_log: true
+  no_log: "{{ podman_secure_logging }}"
 
 - name: Cleanup quadlets
   include_tasks: cleanup_quadlet_spec.yml
