@@ -200,6 +200,8 @@ id="toc-podman_validate_certs">podman_validate_certs</a></li>
 id="toc-podman_prune_images">podman_prune_images</a></li>
 <li><a href="#podman_transactional_update_reboot_ok"
 id="toc-podman_transactional_update_reboot_ok">podman_transactional_update_reboot_ok</a></li>
+<li><a href="#podman_secure_logging"
+id="toc-podman_secure_logging">podman_secure_logging</a></li>
 </ul></li>
 <li><a href="#variables-exported-by-the-role"
 id="toc-variables-exported-by-the-role">Variables Exported by the
@@ -782,6 +784,19 @@ the user that a reboot is required, allowing for custom handling of the
 reboot requirement. If this variable is not set, the role will fail to
 ensure the reboot requirement is not overlooked. For non-transactional
 update systems, this variable is ignored.</p>
+<h2 id="podman_secure_logging">podman_secure_logging</h2>
+<p>Boolean - default is <code>true</code>. If <code>true</code>, the
+role suppresses sensitive output from tasks that handle credentials,
+secrets, and other sensitive data by setting <code>no_log: true</code>
+on those tasks. This prevents passwords, API tokens, registry
+credentials, and similar sensitive information from appearing in Ansible
+logs and console output.</p>
+<p>If you need to debug issues with credential handling or secret
+management, you can temporarily set
+<code>podman_secure_logging: false</code> to see the full output from
+these tasks. However, be aware that this may expose sensitive
+information in logs, so it should only be used in development or
+troubleshooting scenarios.</p>
 <h1 id="variables-exported-by-the-role">Variables Exported by the
 Role</h1>
 <h2 id="podman_version">podman_version</h2>

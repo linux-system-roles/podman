@@ -1,6 +1,17 @@
 Changelog
 =========
 
+[1.11.0] - 2026-05-07
+--------------------
+
+### New Features
+
+- feat: Parametrize no_log usage in podman role (#286)
+
+### Other Changes
+
+- ci: bump actions/github-script from 8 to 9 (#285)
+
 [1.10.0] - 2026-04-28
 --------------------
 
