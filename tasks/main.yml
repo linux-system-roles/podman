@@ -5,7 +5,7 @@
 
 - name: Gather the package facts
   package_facts:
-  no_log: "{{ ansible_verbosity < 2 }}"
+  no_log: "{{ ansible_verbosity < 3 }}"
 
 - name: Enable copr if requested
   include_tasks: enable_copr.yml

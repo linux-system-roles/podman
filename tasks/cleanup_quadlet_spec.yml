@@ -227,7 +227,7 @@
 
         - name: For testing and debugging - services
           service_facts:
-          no_log: "{{ ansible_verbosity < 2 }}"
+          no_log: "{{ ansible_verbosity < 3 }}"
           become: "{{ __podman_rootless | ternary(true, omit) }}"
           become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
           environment:
