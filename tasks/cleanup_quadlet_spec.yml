@@ -225,10 +225,34 @@
           environment:
             XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
 
-        - name: For testing and debugging - services
-          service_facts:
-          no_log: "{{ ansible_verbosity < 3 }}"
+        # NOTE: service_facts does not work for rootless - no way to specify user scope and user
+        # the usual tricks like using become/become_user and/or remote_user do not work for rootless
+        - name: For testing and debugging - get services
+          # noqa command-instead-of-module
+          command: >-
+            systemctl --{{ __podman_systemd_scope }} list-units -a -l --no-legend -q --plain --no-pager
+            {{ __podman_test_debug_service_pattern | d("") }}
           become: "{{ __podman_rootless | ternary(true, omit) }}"
           become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
           environment:
             XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+          register: __podman_test_service_output
+          changed_when: false
+
+        - name: For testing and debugging - clear
+          set_fact:
+            __podman_test_debug_services: {}
+
+        - name: For testing and debugging - create dict of quadlet services
+          set_fact:
+            __podman_test_debug_services: "{{ __podman_test_debug_services | combine({item.0: __item_dict}) }}"
+          loop: "{{ __service_list_lists }}"
+          vars:
+            __service_list_lists: "{{ __podman_test_service_output.stdout_lines |
+              reject('search', 'not-found') | reject('search', 'masked') | reject('search', 'failed') |
+              map('trim') | map('split') | list }}"
+            __item_dict:
+              name: "{{ item.0 }}"
+              loaded: "{{ item.1 }}"
+              active: "{{ item.2 }}"
+              status: "{{ item.3 }}"

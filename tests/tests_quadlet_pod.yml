@@ -95,6 +95,7 @@
           vars:
             podman_prune_images: true
             __podman_test_debug: true
+            __podman_test_debug_service_pattern: "*quadlet*"
             podman_run_as_user: user_quadlet_pod
             __absent: {"state":"absent"}
             podman_quadlet_specs: "{{ __podman_quadlet_specs | reverse |
@@ -113,9 +114,8 @@
               - __podman_test_debug_containers.stdout == ""
               - __podman_test_debug_secrets.stdout == ""
               - __podman_test_debug_pods.stdout == ""
-              - ansible_facts["services"] | dict2items |
-                rejectattr("value.status", "match", "not-found") |
-                selectattr("key", "match", "quadlet-demo") |
+              - __podman_test_debug_services | dict2items |
+                selectattr("key", "match", "quadlet-pod") |
                 list | length == 0
 
         - name: Ensure no linger
@@ -178,6 +178,7 @@
               vars:
                 podman_prune_images: true
                 __podman_test_debug: true
+                __podman_test_debug_service_pattern: "*quadlet*"
                 __absent: {"state":"absent"}
                 podman_quadlet_specs: "{{ __podman_quadlet_specs | reverse |
                   map('combine', __absent) | list }}"
@@ -195,9 +196,8 @@
                   - __podman_test_debug_containers.stdout == ""
                   - __podman_test_debug_secrets.stdout == ""
                   - __podman_test_debug_pods.stdout == ""
-                  - ansible_facts["services"] | dict2items |
-                    rejectattr("value.status", "match", "not-found") |
-                    selectattr("key", "match", "quadlet-demo") |
+                  - __podman_test_debug_services | dict2items |
+                    selectattr("key", "match", "quadlet-pod") |
                     list | length == 0
 
           rescue:

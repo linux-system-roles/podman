@@ -168,6 +168,7 @@
               vars:
                 podman_prune_images: true
                 __podman_test_debug: true
+                __podman_test_debug_service_pattern: "*quadlet*"
                 __absent: {"state":"absent"}
                 podman_quadlet_specs: "{{ __podman_quadlet_specs |
                   reverse | map('combine', __absent) | list }}"
@@ -190,8 +191,7 @@
                   - __podman_test_debug_volumes.stdout == ""
                   - __podman_test_debug_containers.stdout == ""
                   - __podman_test_debug_secrets.stdout == ""
-                  - ansible_facts["services"] | dict2items |
-                    rejectattr("value.status", "match", "not-found") |
+                  - __podman_test_debug_services | dict2items |
                     selectattr("key", "match", "quadlet-demo") |
                     list | length == 0
 
