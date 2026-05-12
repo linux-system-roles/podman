@@ -1,6 +1,17 @@
 Changelog
 =========
 
+[1.11.1] - 2026-05-12
+--------------------
+
+### Bug Fixes
+
+- fix: Use verbosity level 3 for no_log (#289)
+
+### Other Changes
+
+- test: use list-units instead of service_facts for user units and fix test checks (#290)
+
 [1.11.0] - 2026-05-07
 --------------------
 
