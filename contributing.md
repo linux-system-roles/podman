@@ -20,6 +20,12 @@ are likely to be suitable for new contributors!
 **Code** is managed on [Github](https://github.com/linux-system-roles/podman), using
 [Pull Requests](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests).
 
+## AI Coding Assistants
+
+The `.coderabbit.yaml` configuration file in the repository root contains coding
+standards and requirements that can be used by AI coding assistants to help
+generate code that follows project conventions.
+
 ## Running CI Tests Locally
 
 ### Use tox-lsr with qemu
