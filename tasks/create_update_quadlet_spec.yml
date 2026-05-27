@@ -71,68 +71,61 @@
     - __podman_copy_content is skipped
     - __podman_copy_file is skipped
 
-- name: Reload systemctl  # noqa no-handler
-  systemd:
-    daemon_reload: true
-    scope: "{{ __podman_systemd_scope }}"
-  become: "{{ __podman_rootless | ternary(true, omit) }}"
-  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-  when:
-    - __podman_is_booted
-    - __podman_copy_content is changed or __podman_copy_file is changed
-      or __podman_template_file is changed
-    - __podman_activate_systemd_unit | bool
+- name: Handle quadlet services changes
+  when: __podman_copy_content is changed or __podman_copy_file is changed
+    or __podman_template_file is changed
+  block:
+    - name: Reload systemctl  # noqa no-handler
+      systemd:
+        daemon_reload: true
+        scope: "{{ __podman_systemd_scope }}"
+      become: "{{ __podman_rootless | ternary(true, omit) }}"
+      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+      environment:
+        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+      when: __podman_is_booted
 
-# enablement is not supported for quadlets currently
-# - name: Enable service  # noqa no-handler
-#   systemd:
-#     name: "{{ __podman_service_name }}"
-#     scope: "{{ __podman_systemd_scope }}"
-#     enabled: true
-#   become: "{{ __podman_rootless | ternary(true, omit) }}"
-#   become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-#   environment:
-#     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-#   when:
-#     - __podman_copy_content is changed or __podman_copy_file is changed
-#       or __podman_template_file is changed
-#     - __podman_service_name | length > 0
-#     - __podman_activate_systemd_unit | bool
+    - name: Enable service  # noqa no-handler
+      systemd:
+        name: "{{ __podman_service_name }}"
+        scope: "{{ __podman_systemd_scope }}"
+        enabled: true
+      become: "{{ __podman_rootless | ternary(true, omit) }}"
+      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+      environment:
+        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+      when:
+        - __podman_service_name is not none
+        - __podman_service_name | length > 0
 
-- name: Start service  # noqa no-handler
-  systemd:
-    name: "{{ __podman_service_name }}"
-    scope: "{{ __podman_systemd_scope }}"
-    state: started
-  become: "{{ __podman_rootless | ternary(true, omit) }}"
-  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-  register: __podman_service_started
-  when:
-    - __podman_is_booted
-    - __podman_copy_content is changed or __podman_copy_file is changed
-      or __podman_template_file is changed
-    - __podman_service_name is not none
-    - __podman_service_name | length > 0
-    - __podman_activate_systemd_unit | bool
+    - name: Start service  # noqa no-handler
+      systemd:
+        name: "{{ __podman_service_name }}"
+        scope: "{{ __podman_systemd_scope }}"
+        state: started
+      become: "{{ __podman_rootless | ternary(true, omit) }}"
+      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+      environment:
+        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+      register: __podman_service_started
+      when:
+        - __podman_is_booted
+        - __podman_service_name is not none
+        - __podman_service_name | length > 0
+        - __podman_activate_systemd_unit | bool
 
-- name: Restart service  # noqa no-handler
-  systemd:
-    name: "{{ __podman_service_name }}"
-    scope: "{{ __podman_systemd_scope }}"
-    state: restarted
-  become: "{{ __podman_rootless | ternary(true, omit) }}"
-  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
-  when:
-    - __podman_is_booted
-    - not __podman_service_started is changed
-    - __podman_copy_content is changed or __podman_copy_file is changed
-      or __podman_template_file is changed
-    - __podman_service_name is not none
-    - __podman_service_name | length > 0
-    - __podman_activate_systemd_unit | bool
+    - name: Restart service  # noqa no-handler
+      systemd:
+        name: "{{ __podman_service_name }}"
+        scope: "{{ __podman_systemd_scope }}"
+        state: restarted
+      become: "{{ __podman_rootless | ternary(true, omit) }}"
+      become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+      environment:
+        XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+      when:
+        - __podman_is_booted
+        - not __podman_service_started is changed
+        - __podman_service_name is not none
+        - __podman_service_name | length > 0
+        - __podman_activate_systemd_unit | bool

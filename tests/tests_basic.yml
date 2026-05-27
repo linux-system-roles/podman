@@ -2,6 +2,8 @@
 ---
 - name: Ensure that the role runs with default parameters
   hosts: all
+  tags:
+    - tests::reboot
   vars_files:
     - vars/test_vars.yml
   vars:
@@ -332,6 +334,46 @@
               command: ls -alrtF {{ __test_tmpdir.path ~ '/' ~ item[0] }}-create
               loop: "{{ test_names_users }}"
               changed_when: false
+
+            - name: Reboot
+              reboot:
+                msg: Rebooting the system to check services are running.
+
+            - name: Check if pods are running after reboot
+              command: podman pod inspect {{ item[0] }} --format {{ __fmt | quote }}
+              changed_when: false
+              register: __output
+              failed_when: __output.stdout != 'Running'
+              become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+              become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+              vars:
+                __fmt: "{{ '{' ~ '{.State}' ~ '}' }}"
+              loop: "{{ test_names_users }}"
+
+            - name: Check Services after reboot
+              shell: |
+                set -euo pipefail
+                systemctl --{{ __state }} list-units -a -l --plain | \
+                  grep -E '{{ __regex }} '
+              changed_when: false
+              become: "{{ (item[1] != 'root') | ternary(true, omit) }}"
+              become_user: "{{ (item[1] != 'root') | ternary(item[1], omit) }}"
+              environment:
+                XDG_RUNTIME_DIR: /run/user/{{ item[2] }}
+              loop: "{{ test_names_users }}"
+              vars:
+                __state: "{{ (item[1] != 'root') | ternary('user', 'system') }}"
+                __regex: >-
+                  ^[  ]*podman-kube@.+-{{ item[0] }}[.]yml[.]service[ ]+loaded[
+                  ]+active
+
+            - name: Check ports, data after reboot
+              uri:
+                url: http://localhost:{{ item }}/index.txt
+                return_content: true
+              register: __return
+              failed_when: __return.content != "123"
+              loop: [15001, 15002]
 
         - name: Run role again to test for idempotency
           include_tasks: tasks/run_role_with_clear_facts.yml

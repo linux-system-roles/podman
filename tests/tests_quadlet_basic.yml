@@ -2,6 +2,8 @@
 ---
 - name: Ensure that the role can manage quadlet specs
   hosts: all
+  tags:
+    - tests::reboot
   vars_files:
     - vars/test_vars.yml
   vars:
@@ -262,7 +264,40 @@
           register: __result
           failed_when: __result.stdout != __json_secret_data
           changed_when: false
-          when: __podman_is_booted | bool
+
+        - name: Reboot
+          reboot:
+            msg: Rebooting the system to check services are running.
+
+        - name: Check services are running after reboot - user
+          shell:
+            executable: /bin/bash
+            cmd: |
+              set -euxo pipefail
+              exec 1>&2
+              systemctl --user list-units -a -l --plain | grep 'active.*exited.*quadlet-basic-mysql-volume'
+              systemctl --user list-units -a -l --plain | grep 'active.*running.*quadlet-basic-mysql[.]service'
+              systemctl --user list-units -a -l --plain | grep 'active.*exited.*quadlet-basic-network'
+          become: true
+          become_user: user_quadlet_basic
+          environment:
+            XDG_RUNTIME_DIR: /run/user/1111
+          changed_when: false
+
+        - name: Check services are running after reboot - root
+          shell:
+            executable: /bin/bash
+            cmd: |
+              set -euxo pipefail
+              exec 1>&2
+              systemctl --system list-units -a -l --plain | grep 'active.*exited.*quadlet-basic-mysql-volume'
+              systemctl --system list-units -a -l --plain | grep 'active.*running.*quadlet-basic-mysql[.]service'
+              systemctl --system list-units -a -l --plain | grep 'active.*exited.*quadlet-basic-network'
+          become: true
+          become_user: root
+          environment:
+            XDG_RUNTIME_DIR: /run/user/0
+          changed_when: false
 
         # must clean up in the reverse order of creating - and
         # ensure networks are removed last
@@ -293,14 +328,12 @@
               - __podman_test_debug_services | dict2items |
                 selectattr("key", "match", "quadlet-basic") |
                 list | length == 0
-          when: __podman_is_booted | bool
 
         - name: Ensure no linger
           stat:
             path: /var/lib/systemd/linger/user_quadlet_basic
           register: __stat
           failed_when: __stat.stat.exists
-          when: __podman_is_booted | bool
 
       rescue:
         - name: Show error
