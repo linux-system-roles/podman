@@ -5,6 +5,10 @@
 This role manages `podman` configuration, containers, and systemd services which
 run `podman` containers.
 
+## AI Information
+
+Some of this code was generated using the Cursor IDE with the assistance of the models Composer 2.5, Codex 5.3, and Sonnet 4.6.
+
 ## Requirements
 
 The role requires podman version 4.2 or later.
@@ -80,6 +84,12 @@ except for the following:
   treat this as a fatal error, and continue with the role.  If you do not
   specify this, then the global default `podman_continue_if_pull_fails` will be
   used, which is `false` by default.
+* `restarts_on` - List of managed file paths (via `podman_quadlet_specs` file
+  items) and/or `podman_secrets` names to watch from this kube play spec.
+  When any listed dependency changes or is removed, the pod's systemd service
+  is restarted. Supports `ANY_DEPENDENCIES` with the same meaning as for
+  quadlet specs. Dependency files use `restarts` with the pod's
+  `metadata.name` as the service name.
 * `kube_file_src` - This is the name of a file on the controller node which will
   be copied to `kube_file` on the managed node.  This is a file in Kubernetes
   YAML format.  Do not specify this if you specify `kube_file_content`.
@@ -183,6 +193,36 @@ and the following are:
   and has a valid quadlet unit suffix, it will be used as a quadlet unit,
   otherwise, it will just be copied.  If the file has a `.j2` suffix, that
   suffix will be stripped to determine the quadlet file type.
+* `restarts` - List of quadlet service unit names (without the `.service`
+  suffix) to restart when this file is created, updated, or removed (`state:
+  absent`). Use this on dependency files (`file`, `file_src`, `file_content`, or
+  non-unit `template_src`), not on quadlet unit specs. The special value
+  `ALL_SERVICES` restarts every `container` and `kube` service in
+  `podman_quadlet_specs` (present specs only). Restarts are deferred until all
+  quadlet specs are processed.
+* `restarts_on` - List of managed file paths and/or `podman_secrets` names to
+  watch from a `container` or `kube` quadlet spec. When any listed dependency
+  changes or is removed, this service is restarted. The special value
+  `ANY_DEPENDENCIES` watches every dependency file in `podman_quadlet_specs` and
+  every secret in `podman_secrets`. Prefer explicit paths and names when
+  possible.
+
+When a mounted configuration file is managed as a separate item in
+`podman_quadlet_specs`, specify the dependency before the container or kube unit
+that uses it, and use `restarts` or `restarts_on` so the service picks up
+changes without modifying the quadlet unit file. For example:
+
+```yaml
+podman_quadlet_specs:
+  - file: /opt/app/config.yml
+    file_content: "{{ app_config }}"
+    restarts: [myapp]
+  - name: myapp
+    type: container
+    Container:
+      Image: myapp:latest
+      Volume: /opt/app/config.yml:/etc/app/config.yml:ro
+```
 
 For example, if you specify:
 
@@ -209,8 +249,12 @@ for more information.
 
 This is a list of secret specs in almost the same format as used by
 [podman_secret](https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_secret_module.html#ansible-collections-containers-podman-podman-secret-module)
-There is an additional field:
+There are additional fields:
 
+* `restarts` - List of quadlet service unit names to restart when this secret is
+  created, updated, or removed. Supports `ALL_SERVICES` with the same meaning as
+  for quadlet dependency files (all `container` and `kube` services in
+  `podman_quadlet_specs`).
 * `run_as_user` - Use this to specify a secret for a specific user.  If you do
   not specify this, then the global default `podman_run_as_user` value will be
   used. Otherwise, `root` will be used.  NOTE: The user must already exist - the

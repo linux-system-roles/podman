@@ -29,7 +29,8 @@
   vars:
     __del_params: "^(kube_file_src|kube_file_content|run_as_user|run_as_group|\
       systemd_unit_scope|activate_systemd_unit|pull_image|\
-      continue_if_pull_fails|registry_username|registry_password)$"
+      continue_if_pull_fails|registry_username|registry_password|\
+      restarts_on)$"
 
 - name: Set per-container variables part 1
   set_fact:
