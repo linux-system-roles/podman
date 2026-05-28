@@ -200,6 +200,13 @@
     loop_var: __podman_credential_item
   no_log: "{{ podman_secure_logging }}"
 
+- name: Build restart dependency map
+  include_tasks: build_restart_map.yml
+  when:
+    - (podman_kube_specs | length > 0) or
+      (podman_quadlet_specs | length > 0) or (podman_secrets | length > 0)
+  no_log: "{{ podman_secure_logging }}"
+
 - name: Handle secrets
   include_tasks: handle_secret.yml
   loop: "{{ podman_secrets }}"
@@ -220,6 +227,10 @@
   loop_control:
     loop_var: __podman_quadlet_spec_item
   no_log: "{{ podman_secure_logging }}"
+
+- name: Flush pending service restarts
+  include_tasks: flush_pending_restarts.yml
+  when: __podman_pending_restarts | d([]) | length > 0
 
 - name: Cancel linger
   include_tasks: cancel_linger.yml

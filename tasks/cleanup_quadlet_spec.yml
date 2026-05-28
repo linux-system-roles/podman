@@ -47,15 +47,25 @@
     state: absent
   register: __podman_file_removed
 
+- name: Queue restarts for removed dependency files
+  include_tasks: queue_dependency_restarts.yml
+  vars:
+    __podman_queue_dependency_restart: "{{ __podman_file_removed is changed }}"
+  when:
+    - __podman_is_managed_dependency | bool
+    - __podman_path_service_pairs is defined
+
 # do this now if not booted
 # if booted, it will be done later, below
 - name: Clear parsed podman variable
   set_fact:
     __podman_quadlet_parsed: null
-  when: not __podman_is_booted
+  when:
+    - not __podman_is_booted
 
 - name: Perform resource cleanup at runtime
-  when: __podman_is_booted
+  when:
+    - __podman_is_booted
   block:
     - name: Refresh systemd  # noqa no-handler
       systemd:
@@ -245,14 +255,15 @@
 
         - name: For testing and debugging - create dict of quadlet services
           set_fact:
-            __podman_test_debug_services: "{{ __podman_test_debug_services | combine({item.0: __item_dict}) }}"
+            __podman_test_debug_services: "{{ __podman_test_debug_services | combine({__item_list[0]: __item_dict}) }}"
           loop: "{{ __service_list_lists }}"
           vars:
             __service_list_lists: "{{ __podman_test_service_output.stdout_lines |
               reject('search', 'not-found') | reject('search', 'masked') | reject('search', 'failed') |
-              map('trim') | map('split') | list }}"
+              map('trim') | list }}"
+            __item_list: "{{ item.split() | list }}"
             __item_dict:
-              name: "{{ item.0 }}"
-              loaded: "{{ item.1 }}"
-              active: "{{ item.2 }}"
-              status: "{{ item.3 }}"
+              name: "{{ __item_list[0] }}"
+              loaded: "{{ __item_list[1] }}"
+              active: "{{ __item_list[2] }}"
+              status: "{{ __item_list[3] }}"

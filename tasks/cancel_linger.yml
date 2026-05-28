@@ -42,6 +42,7 @@
   command: podman secret ls -n -q
   register: __podman_linger_secrets
   changed_when: false
+  no_log: "{{ podman_secure_logging }}"
   environment:
     XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
   become: true

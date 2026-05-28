@@ -33,6 +33,7 @@
   when:
     - __podman_quadlet_file is not none
     - __podman_quadlet_file | length > 0
+    - __podman_quadlet_file is search('^' ~ __podman_quadlet_path ~ '(/|$)')
 
 - name: Ensure quadlet file is copied
   copy:
@@ -70,6 +71,16 @@
   when:
     - __podman_copy_content is skipped
     - __podman_copy_file is skipped
+
+- name: Queue restarts for changed dependency files
+  include_tasks: queue_dependency_restarts.yml
+  vars:
+    __podman_queue_dependency_restart: "{{
+      (__podman_copy_content is changed) | default(false) or
+      (__podman_copy_file is changed) | default(false) }}"
+  when:
+    - __podman_is_managed_dependency | bool
+    - __podman_path_service_pairs is defined
 
 - name: Reload systemctl  # noqa no-handler
   systemd:
