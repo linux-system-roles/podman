@@ -1,6 +1,24 @@
 Changelog
 =========
 
+[1.12.0] - 2026-06-24
+--------------------
+
+### New Features
+
+- feat: Add restarts and restarts_on to allow services to be restarted if dependencies change (#296)
+
+### Bug Fixes
+
+- fix: use correct repo name for copr repo (#298)
+
+### Other Changes
+
+- refactor: use ansible.posix 2.1.X for EL7 compatibility [citest_skip] (#292)
+- ci: Add config file for CodeRabbit with custom rules (#293)
+- ci: Skip reviews for PRs with [citest_skip] in the title (#294)
+- test: remove unused files [citest_skip] (#299)
+
 [1.11.1] - 2026-05-12
 --------------------
 
