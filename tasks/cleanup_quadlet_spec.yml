@@ -172,7 +172,9 @@
     - name: Manage linger
       include_tasks: manage_linger.yml
       vars:
-        __podman_item_state: absent
+        __podman_linger_user: "{{ __podman_user }}"
+        __podman_linger_rootless: "{{ __podman_rootless }}"
+        __podman_linger_item_state: absent
 
     - name: Collect information for testing/debugging
       when:

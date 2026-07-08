@@ -2,7 +2,9 @@
 - name: Manage linger
   include_tasks: manage_linger.yml
   vars:
-    __podman_item_state: present
+    __podman_linger_user: "{{ __podman_user }}"
+    __podman_linger_rootless: "{{ __podman_rootless }}"
+    __podman_linger_item_state: present
 
 - name: Create host directories
   file: "{{ __defaults | combine(podman_host_directories[__hostitem])
@@ -22,6 +24,16 @@
 
 - name: Ensure container images are present
   include_tasks: handle_images.yml
+  vars:
+    __podman_image_user: "{{ __podman_user }}"
+    __podman_image_rootless: "{{ __podman_rootless }}"
+    __podman_image_xdg_runtime_dir: "{{ __podman_xdg_runtime_dir }}"
+    __podman_image_pull: "{{ __podman_pull_image }}"
+    __podman_image_continue_if_pull_fails: "{{ __podman_continue_if_pull_fails }}"
+    __podman_image_registry_username: "{{ __podman_registry_username }}"
+    __podman_image_registry_password: "{{ __podman_registry_password }}"
+    __podman_image_validate_certs: "{{ __podman_validate_certs }}"
+    __podman_images: "{{ __podman_quadlet_images }}"
 
 - name: Ensure the quadlet directory is present
   file:

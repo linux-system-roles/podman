@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: MIT
+---
+# parse podman_kube_specs into a list of dictionaries
+# each item in podman_kube_specs is the same as the parameters to
+# https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_play_module.html#ansible-collections-containers-podman-podman-play-module
+# with the following additions
+# kube_file_src: path to a file on the controller to be copied to kube_file on
+#   the managed node
+# kube_file_content: a string or YAML dict representation of the content of
+#   kube_file on the managed node
+# e.g. kube_file_src corresponds to the `src` parameter of the Ansible `copy`
+#   module
+# kube_file_content corresponds to the `content` parameter of the Ansible
+#   `copy` module
+#
+# Output: __podman_kube_specs_parsed - list of dicts, each with:
+#   kube_yamls - list of Kubernetes objects
+#   kube_primary - Pod object if present, else first object
+#   kube_str - YAML string for writing kube_file on the managed node
+#   kube_name - metadata.name of kube_primary
+#   kube_spec - podman_play parameters with role meta fields removed
+#   kube_file_field - kube_file field from the spec item, if any
+#   kube_file - resolved destination path for the kube yaml file
+#   user, systemd_unit_scope, systemd_scope, state, pull_image,
+#   continue_if_pull_fails, rootless, xdg_runtime_dir, kube_path,
+#   user_home_dir, registry_username, registry_password, validate_certs,
+#   run_as_group, activate_systemd_unit, service_name, restarts_on
+#
+# kube_file_content may be a YAML string, a dict (one object), or a list of
+# objects.  kube_file_src is a path on the controller to a YAML file that may
+# contain one or more documents.
+- name: Initialize parsed kube specs list
+  set_fact:
+    __podman_kube_specs_parsed: []
+
+- name: Parse kube specs
+  include_tasks: parse_kube_spec_item.yml
+  loop: "{{ podman_kube_specs }}"
+  loop_control:
+    loop_var: __podman_kube_spec_item
+  vars:
+    # These are the types that can have a systemd unit created for them, as opposed
+    # to types like ConfigMap or Secret.
+    __primary_types_pattern: "^(Pod|Deployment|StatefulSet|DaemonSet|Job)$"
+    __kube_user: "{{ __podman_kube_spec_item.get('run_as_user', podman_run_as_user) }}"
+    __kube_del_params: "^(kube_file_src|kube_file_content|run_as_user|run_as_group|\
+      systemd_unit_scope|activate_systemd_unit|pull_image|\
+      continue_if_pull_fails|registry_username|registry_password|\
+      restarts_on)$"
+    __kube_content: "{{ __podman_kube_spec_item.get('kube_file_content') }}"
+    __kube_src: "{{ __podman_kube_spec_item.get('kube_file_src') }}"
+    __kube_yamls: "{{ [__kube_content] if __kube_content is mapping
+      else __kube_content if __kube_content is iterable
+      and __kube_content is not string and __kube_content is not mapping
+      else __kube_content | from_yaml_all | list if __kube_content is string
+      and __kube_content | length > 0
+      else lookup('file', __kube_src) | from_yaml_all | list
+      if __kube_src and __kube_src | length > 0 and __kube_src is exists
+      else [] }}"
+    __kube_primary: "{{ __kube_yamls | selectattr('kind', 'defined') | selectattr('kind', 'match', __primary_types_pattern) |
+      list | first | d(__kube_yamls | first | d(none)) }}"
+    __kube_str: "{{ __kube_content if __kube_content is string and __kube_content | length > 0
+      else lookup('file', __kube_src) if __kube_src and __kube_src | length > 0 and __kube_src is exists
+      and __kube_content is none
+      else __kube_yamls | map('to_nice_yaml', explicit_start=true, explicit_end=true) | join('\n')
+      if __kube_yamls | length > 0
+      else none }}"
+    __kube_rootless: "{{ __kube_user != 'root' }}"
+    __kube_file_field: "{{ __podman_kube_spec_item.get('kube_file') }}"
+    __kube_systemd_unit_scope: "{{
+      __podman_kube_spec_item.get('systemd_unit_scope', podman_systemd_unit_scope) }}"
+    __kube_systemd_scope: "{{ __kube_systemd_unit_scope
+      if __kube_systemd_unit_scope and __kube_systemd_unit_scope | length > 0
+      else __kube_rootless | ternary('user', 'system') }}"
+    __kube_activate_systemd_unit: "{{
+      __podman_kube_spec_item.get('activate_systemd_unit', podman_activate_systemd_unit) }}"
+  no_log: "{{ podman_secure_logging }}"

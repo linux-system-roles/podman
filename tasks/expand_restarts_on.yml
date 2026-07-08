@@ -3,7 +3,7 @@
 ---
 # Expand restarts_on for one service spec into path and secret pairs.
 # Input: __restarts_on_spec, __podman_spec_name (from quadlet_spec_paths.yml
-#   or kube_restart_paths.yml)
+#   or expand_kube_restarts_on_for_spec.yml)
 - name: Expand restarts_on for service spec
   vars:
     __restarts_on_service: "{{ __podman_restart_services |

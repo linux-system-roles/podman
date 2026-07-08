@@ -112,7 +112,7 @@
     __podman_activate_systemd_unit: "{{
       __podman_quadlet_spec_item['activate_systemd_unit'] |
       d(podman_activate_systemd_unit) }}"
-    __podman_images_found: "{{ __podman_quadlet_str |
+    __podman_quadlet_images_found: "{{ __podman_quadlet_str |
       regex_search('(?m)^Image=\"?([^\"]+?)\"?$', '\\1')
       if __podman_quadlet_str
       and __podman_quadlet_type == 'container'
@@ -163,8 +163,8 @@
       if __file
       else __podman_quadlet_path ~ '/' ~ __podman_quadlet_name ~
       '.' ~ __podman_quadlet_type }}"
-    __podman_images: "{{ __podman_images_found
-      if __podman_images_found
+    __podman_quadlet_images: "{{ __podman_quadlet_images_found
+      if __podman_quadlet_images_found
       else __images + __init_images }}"
     __podman_volumes: "{{ __volumes_from_unit_spec +
       __volumes_from_kube_spec

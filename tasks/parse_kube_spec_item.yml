@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: MIT
+---
+# Parse one podman_kube_specs element and append to __podman_kube_specs_parsed.
+# Input: __podman_kube_spec_item (one podman_kube_specs element)
+#        intermediate variables set via vars in parse_kube_specs.yml
+- name: Get user information for kube spec
+  getent:
+    database: passwd
+    key: "{{ __kube_user }}"
+    fail_key: false
+  when: "'getent_passwd' not in ansible_facts or
+    __kube_user not in ansible_facts['getent_passwd']"
+  no_log: "{{ ansible_verbosity < 3 }}"
+
+- name: Fail if kube spec user does not exist
+  fail:
+    msg: >
+      The given podman user [{{ __kube_user }}] does not exist -
+      cannot continue
+  when: not ansible_facts["getent_passwd"][__kube_user]
+
+- name: Build parsed kube spec entry
+  vars:
+    __kube_user_home_dir: "{{
+      ansible_facts['getent_passwd'][__kube_user][4] }}"
+    __kube_path: "{{ __kube_user_home_dir ~ __podman_user_kube_path
+      if __kube_rootless else __podman_system_kube_path }}"
+    __kube_file_dest: "{{ __kube_file_field
+      if __kube_file_field and __kube_file_field is abs
+      else __kube_path ~ '/' ~ __kube_file_field
+      if __kube_file_field
+      else __kube_path ~ '/' ~ __kube_primary.metadata.name ~ '.yml'
+      if __kube_primary and __kube_primary.metadata.name is defined
+      else none }}"
+  block:
+    - name: Get kube service name using systemd-escape
+      command: >-
+        systemd-escape --template podman-kube@.service
+        {{ __kube_file_dest | quote }}
+      register: __kube_service_name
+      when:
+        - __kube_activate_systemd_unit | bool
+        - __kube_file_dest is not none
+        - __kube_file_dest | length > 0
+      changed_when: false
+      check_mode: false
+
+    - name: Add parsed kube spec item
+      set_fact:
+        __podman_kube_specs_parsed: "{{ __podman_kube_specs_parsed +
+          [__parsed_kube_spec_item] }}"
+      vars:
+        __parsed_kube_spec_item:
+          kube_yamls: "{{ __kube_yamls }}"
+          kube_primary: "{{ __kube_primary }}"
+          kube_str: "{{ __kube_str }}"
+          kube_name: "{{ __kube_primary.metadata.name if __kube_primary else none }}"
+          kube_spec: "{{ __podman_kube_spec_item |
+            dict2items | rejectattr('key', 'match', __kube_del_params) |
+            list | items2dict }}"
+          kube_file_field: "{{ __kube_file_field }}"
+          kube_file: "{{ __kube_file_dest }}"
+          user: "{{ __kube_user }}"
+          systemd_scope: "{{ __kube_systemd_scope }}"
+          state: "{{ ((__podman_kube_spec_item['state'] | d('')) == 'absent') |
+            ternary('absent', 'created') }}"
+          pull_image: "{{ __podman_kube_spec_item.get('pull_image', podman_pull_image) }}"
+          continue_if_pull_fails: "{{
+            __podman_kube_spec_item.get('continue_if_pull_fails', podman_continue_if_pull_fails) }}"
+          rootless: "{{ __kube_rootless }}"
+          xdg_runtime_dir: >-
+            /run/user/{{ ansible_facts["getent_passwd"][__kube_user][1] }}
+          kube_path: "{{ __kube_path }}"
+          user_home_dir: "{{ __kube_user_home_dir }}"
+          registry_username: "{{
+            __podman_kube_spec_item.get('registry_username', podman_registry_username) }}"
+          registry_password: "{{
+            __podman_kube_spec_item.get('registry_password', podman_registry_password) }}"
+          validate_certs: "{{ __podman_kube_spec_item.get('validate_certs', podman_validate_certs) }}"
+          run_as_group: "{{ __podman_kube_spec_item.get('run_as_group', none) }}"
+          activate_systemd_unit: "{{ __kube_activate_systemd_unit }}"
+          service_name: "{{ __kube_service_name.stdout | d('')
+            if __kube_activate_systemd_unit | bool else '' }}"
+          restarts_on: "{{ __podman_kube_spec_item.get('restarts_on', none) }}"
+      no_log: "{{ podman_secure_logging }}"

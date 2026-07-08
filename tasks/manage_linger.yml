@@ -1,30 +1,29 @@
+# SPDX-License-Identifier: MIT
 ---
-# Input:
-# * __podman_rootless - true or false
-# * __podman_user - name of user
-# * __podman_item_state - present or absent
+# Inputs set via vars by caller:
+# __podman_linger_user, __podman_linger_rootless, __podman_linger_item_state
 # Globals: __podman_cancel_user_linger
 - name: Enable linger if needed
   when:
     - __podman_is_booted | bool
-    - __podman_rootless | bool
-    - __podman_item_state | d('present') != 'absent'
+    - __podman_linger_rootless | bool
+    - __podman_linger_item_state | d('present') != 'absent'
   block:
     - name: Enable linger if needed
-      command: loginctl enable-linger {{ __podman_user | quote }}
+      command: loginctl enable-linger {{ __podman_linger_user | quote }}
       args:
-        creates: /var/lib/systemd/linger/{{ __podman_user }}
+        creates: /var/lib/systemd/linger/{{ __podman_linger_user }}
 
     - name: Mark user as not yet needing to cancel linger
       set_fact:
         __podman_cancel_user_linger: "{{ __podman_cancel_user_linger |
-          difference([__podman_user]) }}"
+          difference([__podman_linger_user]) }}"
 
 - name: Mark user for possible linger cancel
   set_fact:
     __podman_cancel_user_linger: "{{ __podman_cancel_user_linger |
-      union([__podman_user]) }}"
+      union([__podman_linger_user]) }}"
   when:
     - __podman_is_booted | bool
-    - __podman_rootless | bool
-    - __podman_item_state | d('present') == 'absent'
+    - __podman_linger_rootless | bool
+    - __podman_linger_item_state | d('present') == 'absent'

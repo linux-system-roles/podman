@@ -84,7 +84,7 @@ except for the following:
   treat this as a fatal error, and continue with the role.  If you do not
   specify this, then the global default `podman_continue_if_pull_fails` will be
   used, which is `false` by default.
-* `restarts_on` - List of managed file paths (via `podman_quadlet_specs` file
+* `restarts_on` - List of managed file paths (via `podman_kube_specs` file
   items) and/or `podman_secrets` names to watch from this kube play spec.
   When any listed dependency changes or is removed, the pod's systemd service
   is restarted. Supports `ANY_DEPENDENCIES` with the same meaning as for
@@ -95,20 +95,23 @@ except for the following:
   YAML format.  Do not specify this if you specify `kube_file_content`.
   `kube_file_content` takes precedence over `kube_file_src`.
 * `kube_file_content` - This is either a string in Kubernetes YAML format, or a
-  `dict` in Kubernetes YAML format.  It will be used as the contents of
-  `kube_file` on the managed node.  Do not specify this if you specify
-  `kube_file_src`. `kube_file_content` takes precedence over `kube_file_src`.
+  `dict` or `list` of `dict` in Kubernetes YAML format.  It will be used as the
+  contents of `kube_file` on the managed node.  Do not specify this if you
+  specify `kube_file_src`. `kube_file_content` takes precedence over
+  `kube_file_src`.
 * `kube_file` - This is the name of a file on the managed node that contains the
-  Kubernetes specification of the container/pod.  You typically do not have to specify
-  this unless you need to somehow copy this file to the managed node outside of the
-  role.  If you specify either `kube_file_src` or `kube_file_content`, you
-  do not have to specify this.  It is highly recommended to omit `kube_file` and
-  instead specify either `kube_file_src` or `kube_file_content` and let the role
-  manage the file path and name.
+  Kubernetes specification of the container/pod.  You typically do not have to
+  specify this unless you need to somehow copy this file to the managed node
+  outside of the role.  If you specify either `kube_file_src` or
+  `kube_file_content`, you do not have to specify this.  It is highly
+  recommended to omit `kube_file` and instead specify either `kube_file_src` or
+  `kube_file_content` and let the role manage the file path and name.
   * The file basename will be the `metadata.name` value from the K8s yaml, with a
     `.yml` suffix appended to it.
-  * The directory will be `/etc/containers/ansible-kubernetes.d` for system services.
-  * The directory will be `$HOME/.config/containers/ansible-kubernetes.d` for user services.
+  * The directory will be `/etc/containers/ansible-kubernetes.d` for system
+    services.
+  * The directory will be `$HOME/.config/containers/ansible-kubernetes.d` for
+    user services.
 
 For example, if you have
 
@@ -728,24 +731,37 @@ Create rootless container with volume mount:
         run_as_user: dbuser
         run_as_group: dbgroup
         kube_file_content:
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            name: db
-          spec:
-            containers:
-              - name: db
-                image: quay.io/db/db:stable
-                ports:
-                  - containerPort: 1234
-                    hostPort: 12340
-                volumeMounts:
-                  - mountPath: /var/lib/db:Z
-                    name: db
-            volumes:
-              - name: db
-                hostPath:
-                  path: /var/lib/db
+          - apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: db_config
+            data:
+              db_config: |
+                # database config goes here
+          - apiVersion: v1
+            kind: Pod
+            metadata:
+              name: db
+            spec:
+              containers:
+                - name: db
+                  image: quay.io/db/db:stable
+                  ports:
+                    - containerPort: 1234
+                      hostPort: 12340
+                  volumeMounts:
+                    - mountPath: /var/lib/db:Z
+                      name: db
+                    - mountPath: /etc/db_config.conf:Z
+                      name: db_config
+                      subPath: db_config.conf
+              volumes:
+                - name: db
+                  hostPath:
+                    path: /var/lib/db
+                - name: db_config
+                  configMap:
+                    name: db_config
       - state: started
         run_as_user: webapp
         run_as_group: webapp

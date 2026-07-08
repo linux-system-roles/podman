@@ -11,10 +11,10 @@
 
 - name: Resolve restart metadata for each kube play spec
   include_tasks: resolve_kube_restart_spec.yml
-  loop: "{{ podman_kube_specs }}"
+  loop: "{{ __podman_kube_specs_parsed }}"
   loop_control:
-    loop_var: __podman_restart_spec_item
-  when: podman_kube_specs | length > 0
+    loop_var: __podman_kube_parsed
+  when: __podman_kube_specs_parsed | length > 0
   no_log: "{{ podman_secure_logging }}"
 
 - name: Resolve restart metadata for each quadlet spec
@@ -52,12 +52,12 @@
 
 - name: Expand restarts_on for kube play specs
   include_tasks: expand_kube_restarts_on_for_spec.yml
-  loop: "{{ podman_kube_specs }}"
+  loop: "{{ __podman_kube_specs_parsed }}"
   loop_control:
-    loop_var: __restarts_on_spec
+    loop_var: __podman_kube_parsed
   when:
-    - __restarts_on_spec.get('restarts_on') is not none
-    - __restarts_on_spec.restarts_on | length > 0
+    - __podman_kube_parsed.restarts_on is not none
+    - __podman_kube_parsed.restarts_on | length > 0
   no_log: "{{ podman_secure_logging }}"
 
 - name: Expand restarts_on for quadlet specs

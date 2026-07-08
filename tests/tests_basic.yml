@@ -5,6 +5,7 @@
   vars_files:
     - vars/test_vars.yml
   vars:
+    podman_secure_logging: false
     podman_host_directories:
       "{{ __test_tmpdir.path ~ '/httpd1-create' }}":
         mode: "0777"
@@ -31,39 +32,52 @@
         log_level: debug
         run_as_user: "{{ __podman_test_username }}"
         kube_file_content:
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            labels:
-              app: test
-              io.containers.autoupdate: registry
-            name: httpd1
-          spec:
-            containers:
-              - name: httpd1
-                image: "{{ test_image }}"
-                command:
-                  - /bin/busybox-extras
-                  - httpd
-                  - -f
-                  - -p
-                  - 80
-                ports:
-                  - containerPort: 80
-                    hostPort: 15001
-                volumeMounts:
-                  - mountPath: /var/www:Z
-                    name: www
-                  - mountPath: /var/httpd-create:Z
-                    name: create
-                workingDir: /var/www
-            volumes:
-              - name: www
-                hostPath:
-                  path: "{{ __test_tmpdir.path ~ '/httpd1' }}"
-              - name: create
-                hostPath:
-                  path: "{{ __test_tmpdir.path ~ '/httpd1-create' }}"
+          - apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: testfile1
+            data:
+              testfile1.txt: |
+                this is a test
+          - apiVersion: v1
+            kind: Pod
+            metadata:
+              labels:
+                app: test
+                io.containers.autoupdate: registry
+              name: httpd1
+            spec:
+              containers:
+                - name: httpd1
+                  image: "{{ test_image }}"
+                  command:
+                    - /bin/busybox-extras
+                    - httpd
+                    - -f
+                    - -p
+                    - 80
+                  ports:
+                    - containerPort: 80
+                      hostPort: 15001
+                  volumeMounts:
+                    - mountPath: /var/www:Z
+                      name: www
+                    - mountPath: /var/httpd-create:Z
+                      name: create
+                    - mountPath: /etc/testfile1.txt:Z
+                      name: testfile1
+                      subPath: testfile1.txt
+                  workingDir: /var/www
+              volumes:
+                - name: www
+                  hostPath:
+                    path: "{{ __test_tmpdir.path ~ '/httpd1' }}"
+                - name: create
+                  hostPath:
+                    path: "{{ __test_tmpdir.path ~ '/httpd1-create' }}"
+                - name: testfile1
+                  configMap:
+                    name: testfile1
       - state: started
         debug: true
         log_level: debug
@@ -101,7 +115,22 @@
               - name: create
                 hostPath:
                   path: "{{ __test_tmpdir.path ~ '/httpd2-create' }}"
+    # NOTE: the ruamel yaml round trip converter used in role2collection
+    # will eat the YAML start and end document markers, so we need to use
+    # constructed strings for the markers in our embedded YAML.
+    __start_marker: "{{ '-' * 3 }}"
+    __end_marker: "{{ '.' * 3 }}"
     __podman_kube_file_content: |
+      {{ __start_marker }}
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: testfile3
+      data:
+        testfile3.txt: |
+          this is a test
+      {{ __end_marker }}
+      {{ __start_marker }}
       apiVersion: v1
       kind: Pod
       metadata:
@@ -127,6 +156,9 @@
                 name: www
               - mountPath: /var/httpd-create:Z
                 name: create
+              - mountPath: /etc/testfile3.txt:Z
+                name: testfile3
+                subPath: testfile3.txt
             workingDir: /var/www
         volumes:
           - name: www
@@ -135,6 +167,10 @@
           - name: create
             hostPath:
               path: "{{ __test_tmpdir.path ~ '/httpd3-create' }}"
+          - name: testfile3
+            configMap:
+              name: testfile3
+      {{ __end_marker }}
   tasks:
     - name: Create tmpdir for testing
       tempfile:
@@ -285,8 +321,8 @@
           include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             __sr_public: true
-            podman_kube_specs: "{{ __podman_kube_specs |
-              union([__podman_use_kube_file]) | list }}"
+            podman_kube_specs: "{{ __podman_kube_specs +
+              [__podman_use_kube_file] }}"
             podman_pull_retry: true
 
         - name: Runtime checks
@@ -336,8 +372,8 @@
         - name: Run role again to test for idempotency
           include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
-            podman_kube_specs: "{{ __podman_kube_specs |
-              union([__podman_use_kube_file]) | list }}"
+            podman_kube_specs: "{{ __podman_kube_specs +
+              [__podman_use_kube_file] }}"
           when: __podman_is_booted | bool
 
         - name: Runtime checks after idempotency
@@ -387,8 +423,8 @@
           include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             # noqa jinja[spacing]
-            podman_kube_specs: "{{ __podman_kube_specs |
-              union([__podman_use_kube_file]) |
+            podman_kube_specs: "{{ (__podman_kube_specs +
+              [__podman_use_kube_file]) |
               map('combine', {'state':'absent'}) | list }}"
             podman_create_host_directories: false
             podman_firewall: []
@@ -442,14 +478,28 @@
           include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
             # noqa jinja[spacing]
-            podman_kube_specs: "{{ __podman_kube_specs |
-              union([__podman_use_kube_file]) |
+            podman_kube_specs: "{{ (__podman_kube_specs +
+              [__podman_use_kube_file]) |
               map('combine', {'state':'absent'}) | list }}"
             podman_create_host_directories: false
             podman_firewall: []
             podman_selinux_ports: []
 
       rescue:
+        - name: Show kube files
+          shell:
+            executable: /bin/bash
+            cmd: |
+              set -uxo pipefail
+              exec 1>&2
+              for file in /etc/containers/ansible-kubernetes.d/*; do
+                if [ -f "$file" ]; then
+                  echo "File: $file"
+                  cat "$file"
+                fi
+              done
+          changed_when: false
+
         - name: Dump journal
           command: journalctl -ex
           changed_when: false
