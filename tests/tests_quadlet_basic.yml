@@ -131,9 +131,9 @@
             name: linux-system-roles.podman
             tasks_from: manage_linger.yml
           vars:
-            __podman_item_state: present
-            __podman_user: user_quadlet_basic
-            __podman_rootless: true
+            __podman_linger_item_state: present
+            __podman_linger_user: user_quadlet_basic
+            __podman_linger_rootless: true
 
         # try to workaround the rootless containers error
         # Error:
