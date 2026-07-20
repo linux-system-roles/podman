@@ -33,9 +33,18 @@ podman_firewall: []
 #     setype: http_port_t
 podman_selinux_ports: []
 
+# If true, use ansible_user as the default for podman_run_as_user
+# instead of root.  If ansible_user is undefined, fall back to whoami.
+# Setting podman_run_as_user explicitly overrides this.
+podman_run_as_ansible_user: false
+
 # The default user to run as - can be set per container to override
 # this in the podman_kube_specs list element using "run_as_user: username"
-podman_run_as_user: root
+# When podman_run_as_ansible_user is true and ansible_user is undefined,
+# tasks/main.yml sets this from whoami before use.
+podman_run_as_user: "{{ ansible_user if (podman_run_as_ansible_user | bool and ansible_user is defined)
+  else __podman_whoami.stdout if (podman_run_as_ansible_user | bool and __podman_whoami.stdout is defined)
+  else 'root' }}"
 
 # The default group to run as - can be set per container to override
 # this in the podman_kube_specs list element using "run_as_group: name"

@@ -119,6 +119,17 @@
     __has_pod_template_src_ext_j2: "{{ podman_quadlet_specs | selectattr('template_src', 'defined') |
       selectattr('template_src', 'search', '.pod.j2$') | list | length > 0 }}"
 
+# This will affect the value of podman_run_as_user if it is not explicitly set
+- name: Get current user via whoami when ansible_user is undefined
+  command: whoami
+  register: __podman_whoami
+  changed_when: false
+  check_mode: false
+  when:
+    - podman_run_as_ansible_user | bool
+    - ansible_user is not defined
+    - podman_run_as_user == 'root'
+
 - name: Check user and group information
   include_tasks: handle_user_group.yml
   vars:
