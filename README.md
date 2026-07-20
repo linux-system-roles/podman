@@ -334,7 +334,17 @@ podman_selinux_ports:
 This is the name of the user to use for all rootless containers.  You can also
 specify per-container username with `run_as_user` in `podman_kube_specs`.  NOTE:
 The user must already exist - the role will not create one.  The user must be
-present in `/etc/subuid` and `/etc/subgid`.
+present in `/etc/subuid` and `/etc/subgid`.  The default is `root`, unless
+`podman_run_as_ansible_user` is `true`, in which case the default is the value
+of `ansible_user` (or the result of `whoami` on the managed host if
+`ansible_user` is not set).
+
+### podman_run_as_ansible_user
+
+If `true`, use the value of `ansible_user` as the default for
+`podman_run_as_user` instead of `root`.  The default is `false`.  Setting
+`podman_run_as_user` explicitly overrides this.  If `ansible_user` is not
+defined the role falls back to the output of `whoami` on the managed host.
 
 ### podman_run_as_group
 
