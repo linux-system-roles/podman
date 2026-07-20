@@ -8,7 +8,7 @@
   when: __podman_queue_dependency_restart | bool
   vars:
     __podman_queue_restart_entries: "{{ __podman_path_service_pairs |
-      selectattr('path', 'match', '^' ~ __podman_quadlet_file ~ '$') | list }}"
+      selectattr('path', 'match', '^' ~ (__podman_quadlet_file | regex_escape) ~ '$') | list }}"
   block:
     - name: Append pending service restarts
       set_fact:

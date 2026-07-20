@@ -13,7 +13,7 @@
   when:
     - item | length > 0
     - __podman_restart_services |
-      selectattr('unit_name', 'match', '^' ~ item ~ '$') | list | length == 0
+      selectattr('unit_name', 'match', '^' ~ (item | regex_escape) ~ '$') | list | length == 0
 
 - name: Expand ALL_SERVICES for dependency path
   set_fact:
@@ -28,7 +28,7 @@
       [__svc | combine({'path': __path_item.path})] }}"
   vars:
     __svc: "{{ __podman_restart_services |
-      selectattr('unit_name', 'match', '^' ~ item ~ '$') | first | default({}) }}"
+      selectattr('unit_name', 'match', '^' ~ (item | regex_escape) ~ '$') | first | default({}) }}"
   loop: "{{ __path_item.restarts | difference(['ALL_SERVICES']) }}"
   when:
     - item | length > 0

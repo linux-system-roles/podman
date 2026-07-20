@@ -100,12 +100,12 @@
           vars:
             __subuid_match_line: "{{
               (__podman_register_subuids.content | b64decode).split('\n') | list |
-              select('match', '^' ~ __podman_handle_user ~ ':') | list }}"
+              select('match', '^' ~ (__podman_handle_user | regex_escape) ~ ':') | list }}"
             __subuid_data: "{{ __subuid_match_line[0].split(':') | list
               if __subuid_match_line else none }}"
             __subgid_match_line: "{{
               (__podman_register_subgids.content | b64decode).split('\n') | list |
-              select('match', '^' ~ __podman_handle_user ~ ':') | list }}"
+              select('match', '^' ~ (__podman_handle_user | regex_escape) ~ ':') | list }}"
             __subgid_data: "{{ __subgid_match_line[0].split(':') | list
               if __subgid_match_line else none }}"
 

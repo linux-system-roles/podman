@@ -7,7 +7,7 @@
 - name: Expand restarts_on for service spec
   vars:
     __restarts_on_service: "{{ __podman_restart_services |
-      selectattr('unit_name', 'match', '^' ~ __podman_spec_name ~ '$') |
+      selectattr('unit_name', 'match', '^' ~ (__podman_spec_name | regex_escape) ~ '$') |
       first | default({}) }}"
   block:
     - name: Expand ANY_DEPENDENCIES paths for restarts_on

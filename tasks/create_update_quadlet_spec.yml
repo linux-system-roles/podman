@@ -45,7 +45,7 @@
   when:
     - __podman_quadlet_file is not none
     - __podman_quadlet_file | length > 0
-    - __podman_quadlet_file is search('^' ~ __podman_quadlet_path ~ '(/|$)')
+    - __podman_quadlet_file is search('^' ~ (__podman_quadlet_path | regex_escape) ~ '(/|$)')
 
 - name: Ensure quadlet file is copied
   copy:
