@@ -1,0 +1,261 @@
+# SPDX-License-Identifier: MIT
+---
+- name: Ensure that podman_prune_images works
+  hosts: all
+  vars_files:
+    - vars/test_vars.yml
+  vars:
+    podman_use_copr: false
+    podman_fail_if_too_old: false
+    __podman_quadlet_specs:
+      - name: prune-test
+        type: container
+        Install:
+          WantedBy: default.target
+        Container:
+          Image: "{{ test_image }}"
+          ContainerName: prune-test-container
+          Exec: /bin/busybox-extras httpd -f -p 80
+  tasks:
+    - name: Test is only supported on x86_64
+      debug:
+        msg: >
+          This test is only supported on x86_64 because the test images
+          used are only available on that platform.
+      when: ansible_facts["architecture"] != "x86_64"
+
+    - name: End test
+      meta: end_play
+      when: ansible_facts["architecture"] != "x86_64"
+
+    - name: Run test
+      block:
+        - name: Run the role to install podman and set internal variables
+          include_tasks: tasks/run_role_with_clear_facts.yml
+
+        - name: Create user for testing
+          user:
+            name: user_prune_images
+            uid: 1222
+          when: not __podman_is_ostree
+
+        - name: Handle linger for user for ostree
+          when: __podman_is_ostree
+          include_role:
+            name: linux-system-roles.podman
+            tasks_from: manage_linger.yml
+          vars:
+            __podman_linger_item_state: present
+            __podman_linger_user: user_prune_images
+            __podman_linger_rootless: true
+
+        - name: Enable EL8 system to support rootless quadlets
+          when:
+            - ansible_facts["os_family"] == "RedHat"
+            - ansible_facts["distribution_version"] is version("9", "<")
+          block:
+            - name: Get local machine ID
+              slurp:
+                path: /etc/machine-id
+              register: __local_mach_id_enc
+              delegate_to: localhost
+
+            - name: Get ansible_facts machine_id
+              setup:
+                gather_subset: machine_id
+
+            - name: Skip test if cannot reboot
+              meta: end_host
+              when: ansible_facts["machine_id"] == __local_mac_id
+              vars:
+                __local_mac_id: "{{ __local_mach_id_enc.content |
+                  b64decode | trim }}"
+
+            - name: Enable cgroup controllers
+              changed_when: true
+              shell: |
+                set -euxo pipefail
+                cat > /etc/systemd/system/user-0.slice <<EOF
+                [Unit]
+                Before=systemd-logind.service
+                [Slice]
+                Slice=user.slice
+                [Install]
+                WantedBy=multi-user.target
+                EOF
+                if [ ! -d /etc/systemd/system/user@.service.d ]; then
+                  mkdir -p /etc/systemd/system/user@.service.d
+                fi
+                cat > /etc/systemd/system/user@.service.d/delegate.conf <<EOF
+                [Service]
+                Delegate=memory pids
+                EOF
+                if [ ! -d /etc/systemd/system/user-.slice.d ]; then
+                  mkdir -p /etc/systemd/system/user-.slice.d
+                fi
+                cat > /etc/systemd/system/user-.slice.d/override.conf <<EOF
+                [Slice]
+                Slice=user.slice
+                CPUAccounting=yes
+                MemoryAccounting=yes
+                IOAccounting=yes
+                TasksAccounting=yes
+                EOF
+                systemctl daemon-reload
+
+            - name: Configure cgroups in kernel
+              command: >-
+                grubby --update-kernel=ALL
+                --args=systemd.unified_cgroup_hierarchy=1
+              changed_when: true
+
+            - name: Reboot
+              reboot:
+
+        - name: Run the role to create quadlet and pull image
+          include_tasks: tasks/run_role_with_clear_facts.yml
+          vars:
+            podman_quadlet_specs: "{{ __podman_quadlet_specs |
+              map('combine', __run_as_user) | list }}"
+            __run_as_user:
+              run_as_user: user_prune_images
+
+        - name: End test when not booted
+          meta: end_host
+          when: not __podman_is_booted | bool
+
+        - name: Pull an extra image to simulate an old unused image
+          containers.podman.podman_image:
+            name: "{{ mysql_image }}"
+            force: true
+          become: true
+          become_user: user_prune_images
+
+        - name: Verify both images are present
+          command: podman images -n --format "{{ '{{' }}.Repository{{ '}}' }}"
+          register: __images_before
+          changed_when: false
+          become: true
+          become_user: user_prune_images
+
+        - name: Assert both images are present
+          assert:
+            that:
+              - __images_before.stdout is search("testimage")
+              - __images_before.stdout is search("mysql")
+
+        - name: Run the role again with podman_prune_images to test
+            prune on update
+          include_tasks: tasks/run_role_with_clear_facts.yml
+          vars:
+            podman_prune_images: true
+            podman_quadlet_specs: "{{ __podman_quadlet_specs |
+              map('combine', __run_as_user) | list }}"
+            __run_as_user:
+              run_as_user: user_prune_images
+
+        - name: Check images after prune on update
+          command: podman images -n --format "{{ '{{' }}.Repository{{ '}}' }}"
+          register: __images_after_update
+          changed_when: false
+          become: true
+          become_user: user_prune_images
+
+        - name: Assert unused image was pruned and running image remains
+          assert:
+            that:
+              - __images_after_update.stdout is search("testimage")
+              - __images_after_update.stdout is not search("mysql")
+
+        - name: Verify container is still running
+          command: podman ps --noheading
+            --format "{{ '{{' }}.Names{{ '}}' }}"
+          register: __containers_running
+          changed_when: false
+          become: true
+          become_user: user_prune_images
+
+        - name: Assert container is running
+          assert:
+            that:
+              - __containers_running.stdout is search("prune-test-container")
+
+        - name: Cleanup with prune on cleanup
+          include_tasks: tasks/run_role_with_clear_facts.yml
+          vars:
+            podman_prune_images: true
+            __podman_test_debug: true
+            __podman_test_debug_service_pattern: "*prune*"
+            podman_run_as_user: user_prune_images
+            __absent:
+                state: absent
+            podman_quadlet_specs: "{{ __podman_quadlet_specs |
+              reverse | map('combine', __absent) | list }}"
+
+        - name: Ensure no resources after cleanup
+          assert:
+            that:
+              - __podman_test_debug_images.stdout == ""
+              - __podman_test_debug_containers.stdout == ""
+              - __podman_test_debug_services | dict2items |
+                selectattr("key", "match", "prune-test") |
+                list | length == 0
+          when: __podman_is_booted | bool
+
+        - name: Ensure no linger
+          stat:
+            path: /var/lib/systemd/linger/user_prune_images
+          register: __stat
+          failed_when: __stat.stat.exists
+          when: __podman_is_booted | bool
+
+      rescue:
+        - name: Show error
+          debug:
+            msg: "{{ ansible_failed_result | to_nice_json }}"
+
+        - name: Debug
+          shell: |
+            set -x
+            set -o pipefail
+            exec 1>&2
+            podman images
+            podman container ls
+            # || true - grep returns 1 when no units match,
+            # which would fail the rescue block
+            systemctl list-units | grep prune || true
+          changed_when: false
+
+        - name: Check AVCs
+          command: grep type=AVC /var/log/audit/audit.log
+          changed_when: false
+          failed_when: false
+
+        - name: Dump journal
+          command: journalctl -ex
+          changed_when: false
+          failed_when: true
+
+      always:
+        - name: End test when not booted
+          meta: end_host
+          when: not __podman_is_booted | d(true) | bool
+
+        - name: Cleanup
+          tags: tests::cleanup
+          block:
+            - name: Cleanup user
+              include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_prune_images: true
+                podman_run_as_user: user_prune_images
+                __absent:
+                  state: absent
+                podman_quadlet_specs: "{{ __podman_quadlet_specs |
+                  reverse | map('combine', __absent) | list }}"
+
+            - name: Remove test user
+              user:
+                name: user_prune_images
+                uid: 1222
+                state: absent

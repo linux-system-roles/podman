@@ -154,20 +154,24 @@
         __volume_names: "{{ __config_maps + __secrets + __pvcs }}"
       no_log: "{{ podman_secure_logging }}"
 
-    - name: Clear parsed podman variable
-      set_fact:
-        __podman_quadlet_parsed: null
-
-    - name: Prune images no longer in use
+    # Prune all unused images after cleanup.  Images from other
+    # specs with state != absent are still in use by their running
+    # containers and will not be affected.
+    - name: Prune unused images
       command: podman image prune --all -f
       when:
         - podman_prune_images | bool
         - not __podman_rootless or __podman_xdg_stat.stat.exists
-      changed_when: true
+      register: __podman_prune_result
+      changed_when: __podman_prune_result.stdout | length > 0
       become: "{{ __podman_rootless | ternary(true, omit) }}"
       become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
       environment:
         XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+
+    - name: Clear parsed podman variable
+      set_fact:
+        __podman_quadlet_parsed: null
 
     - name: Manage linger
       include_tasks: manage_linger.yml

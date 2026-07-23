@@ -239,6 +239,24 @@
       else podman_validate_certs }}"
   no_log: "{{ podman_secure_logging }}"
 
+# podman image prune outputs deleted image IDs to stdout -
+# empty stdout means nothing was pruned.
+# On the create/update path, prune runs before pulling so that
+# the currently running image survives (still in use) and serves
+# as a rollback target.
+- name: Prune unused images before pulling
+  command: podman image prune --all -f
+  when:
+    - podman_prune_images | bool
+    - __podman_is_booted
+    - __podman_state != "absent"
+  register: __podman_prune_result
+  changed_when: __podman_prune_result.stdout | length > 0
+  become: "{{ __podman_rootless | ternary(true, omit) }}"
+  become_user: "{{ __podman_rootless | ternary(__podman_user, omit) }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ __podman_xdg_runtime_dir }}"
+
 - name: Cleanup quadlets
   include_tasks: cleanup_quadlet_spec.yml
   when: __podman_state == "absent"
