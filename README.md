@@ -597,9 +597,16 @@ can override this on a per-spec basis using `validate_certs`.
 
 ### podman_prune_images
 
-Boolean - default is `false` - by default, the role will not prune unused images
-when removing quadlets and other resources.  Set this to `true` to tell the role
-to remove unused images when cleaning up.
+Boolean - default is `false` - set this to `true` to remove unused images.
+The removal runs in two cases:
+
+* **Create/update** - before pulling new images, all unused images are pruned.
+  Because the prune runs while the current container is still running, its image
+  is still in use and will not be pruned, providing a natural rollback to the
+  previous version.
+* **Cleanup** (`state: absent`) - after removing a quadlet or kube spec, only
+  the images that belonged to the removed spec are deleted. Images used by other
+  specs are not affected.
 
 ### podman_transactional_update_reboot_ok
 

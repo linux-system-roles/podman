@@ -145,8 +145,8 @@ podman_registry_certificates: []
 # You can override this on a per-spec basis using validate_certs
 podman_validate_certs: null
 
-# Prune images when removing quadlets/kube specs -
-# this will remove all unused/unreferenced images
+# Prune unused images - when removing quadlets/kube specs,
+# and before pulling new images during create/update
 podman_prune_images: false
 
 # var to manage reboots for transactional update systems
