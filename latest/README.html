@@ -164,6 +164,8 @@ id="toc-podman_firewall">podman_firewall</a></li>
 id="toc-podman_selinux_ports">podman_selinux_ports</a></li>
 <li><a href="#podman_run_as_user"
 id="toc-podman_run_as_user">podman_run_as_user</a></li>
+<li><a href="#podman_run_as_ansible_user"
+id="toc-podman_run_as_ansible_user">podman_run_as_ansible_user</a></li>
 <li><a href="#podman_run_as_group"
 id="toc-podman_run_as_group">podman_run_as_group</a></li>
 <li><a href="#podman_systemd_unit_scope"
@@ -564,7 +566,18 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="
 can also specify per-container username with <code>run_as_user</code> in
 <code>podman_kube_specs</code>. NOTE: The user must already exist - the
 role will not create one. The user must be present in
-<code>/etc/subuid</code> and <code>/etc/subgid</code>.</p>
+<code>/etc/subuid</code> and <code>/etc/subgid</code>. The default is
+<code>root</code>, unless <code>podman_run_as_ansible_user</code> is
+<code>true</code>, in which case the default is the value of
+<code>ansible_user</code> (or the result of <code>whoami</code> on the
+managed host if <code>ansible_user</code> is not set).</p>
+<h2 id="podman_run_as_ansible_user">podman_run_as_ansible_user</h2>
+<p>If <code>true</code>, use the value of <code>ansible_user</code> as
+the default for <code>podman_run_as_user</code> instead of
+<code>root</code>. The default is <code>false</code>. Setting
+<code>podman_run_as_user</code> explicitly overrides this. If
+<code>ansible_user</code> is not defined the role falls back to the
+output of <code>whoami</code> on the managed host.</p>
 <h2 id="podman_run_as_group">podman_run_as_group</h2>
 <p>This is the name of the group to use for all rootless containers. You
 can also specify per-container group name with <code>run_as_group</code>
