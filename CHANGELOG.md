@@ -1,6 +1,27 @@
 Changelog
 =========
 
+[1.13.0] - 2026-07-27
+--------------------
+
+### New Features
+
+- feat: Add podman_run_as_ansible_user option (#307)
+- feat: prune unused images before pulling new ones during create/update (#312)
+
+### Bug Fixes
+
+- fix: support kube specs with multiple Kubernetes objects (#303)
+
+### Other Changes
+
+- ci: bump actions/checkout from 6 to 7 (#301)
+- ci: Use our own pr_title_lint.py instead of NPM commitlint [citest_skip] (#302)
+- refactor: regex_escape values used with match filter for exact matches (#306)
+- test: call manage_linger.yml with the correct parameters/variables (#308)
+- ci: bump tox-lsr version to 3.20.0 to fix tox 4.58 api breakage [citest_skip] (#309)
+- ci: Add support for Fedora 44 and drop Fedora 42 - use ansible-core 2.21 [citest_skip] (#311)
+
 [1.12.0] - 2026-06-24
 --------------------
 
