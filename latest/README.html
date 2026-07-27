@@ -834,10 +834,19 @@ from registries will validate TLS certs or not. The default
 <code>containers.podman.podman_image</code> module. You can override
 this on a per-spec basis using <code>validate_certs</code>.</p>
 <h2 id="podman_prune_images">podman_prune_images</h2>
-<p>Boolean - default is <code>false</code> - by default, the role will
-not prune unused images when removing quadlets and other resources. Set
-this to <code>true</code> to tell the role to remove unused images when
-cleaning up.</p>
+<p>Boolean - default is <code>false</code> - set this to
+<code>true</code> to remove unused images. The removal runs in two
+cases:</p>
+<ul>
+<li><strong>Create/update</strong> - before pulling new images, all
+unused images are pruned. Because the prune runs while the current
+container is still running, its image is still in use and will not be
+pruned, providing a natural rollback to the previous version.</li>
+<li><strong>Cleanup</strong> (<code>state: absent</code>) - after
+removing a quadlet or kube spec, only the images that belonged to the
+removed spec are deleted. Images used by other specs are not
+affected.</li>
+</ul>
 <h2
 id="podman_transactional_update_reboot_ok">podman_transactional_update_reboot_ok</h2>
 <p>This variable is applicable only for transactional update systems. If
