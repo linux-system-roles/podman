@@ -164,6 +164,8 @@ id="toc-podman_firewall">podman_firewall</a></li>
 id="toc-podman_selinux_ports">podman_selinux_ports</a></li>
 <li><a href="#podman_run_as_user"
 id="toc-podman_run_as_user">podman_run_as_user</a></li>
+<li><a href="#podman_run_as_ansible_user"
+id="toc-podman_run_as_ansible_user">podman_run_as_ansible_user</a></li>
 <li><a href="#podman_run_as_group"
 id="toc-podman_run_as_group">podman_run_as_group</a></li>
 <li><a href="#podman_systemd_unit_scope"
@@ -311,7 +313,7 @@ role. If you do not specify this, then the global default
 <code>podman_continue_if_pull_fails</code> will be used, which is
 <code>false</code> by default.</li>
 <li><code>restarts_on</code> - List of managed file paths (via
-<code>podman_quadlet_specs</code> file items) and/or
+<code>podman_kube_specs</code> file items) and/or
 <code>podman_secrets</code> names to watch from this kube play spec.
 When any listed dependency changes or is removed, the pod's systemd
 service is restarted. Supports <code>ANY_DEPENDENCIES</code> with the
@@ -325,11 +327,12 @@ this if you specify <code>kube_file_content</code>.
 <code>kube_file_content</code> takes precedence over
 <code>kube_file_src</code>.</li>
 <li><code>kube_file_content</code> - This is either a string in
-Kubernetes YAML format, or a <code>dict</code> in Kubernetes YAML
-format. It will be used as the contents of <code>kube_file</code> on the
-managed node. Do not specify this if you specify
-<code>kube_file_src</code>. <code>kube_file_content</code> takes
-precedence over <code>kube_file_src</code>.</li>
+Kubernetes YAML format, or a <code>dict</code> or <code>list</code> of
+<code>dict</code> in Kubernetes YAML format. It will be used as the
+contents of <code>kube_file</code> on the managed node. Do not specify
+this if you specify <code>kube_file_src</code>.
+<code>kube_file_content</code> takes precedence over
+<code>kube_file_src</code>.</li>
 <li><code>kube_file</code> - This is the name of a file on the managed
 node that contains the Kubernetes specification of the container/pod.
 You typically do not have to specify this unless you need to somehow
@@ -563,7 +566,18 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="
 can also specify per-container username with <code>run_as_user</code> in
 <code>podman_kube_specs</code>. NOTE: The user must already exist - the
 role will not create one. The user must be present in
-<code>/etc/subuid</code> and <code>/etc/subgid</code>.</p>
+<code>/etc/subuid</code> and <code>/etc/subgid</code>. The default is
+<code>root</code>, unless <code>podman_run_as_ansible_user</code> is
+<code>true</code>, in which case the default is the value of
+<code>ansible_user</code> (or the result of <code>whoami</code> on the
+managed host if <code>ansible_user</code> is not set).</p>
+<h2 id="podman_run_as_ansible_user">podman_run_as_ansible_user</h2>
+<p>If <code>true</code>, use the value of <code>ansible_user</code> as
+the default for <code>podman_run_as_user</code> instead of
+<code>root</code>. The default is <code>false</code>. Setting
+<code>podman_run_as_user</code> explicitly overrides this. If
+<code>ansible_user</code> is not defined the role falls back to the
+output of <code>whoami</code> on the managed host.</p>
 <h2 id="podman_run_as_group">podman_run_as_group</h2>
 <p>This is the name of the group to use for all rootless containers. You
 can also specify per-container group name with <code>run_as_group</code>
@@ -820,10 +834,19 @@ from registries will validate TLS certs or not. The default
 <code>containers.podman.podman_image</code> module. You can override
 this on a per-spec basis using <code>validate_certs</code>.</p>
 <h2 id="podman_prune_images">podman_prune_images</h2>
-<p>Boolean - default is <code>false</code> - by default, the role will
-not prune unused images when removing quadlets and other resources. Set
-this to <code>true</code> to tell the role to remove unused images when
-cleaning up.</p>
+<p>Boolean - default is <code>false</code> - set this to
+<code>true</code> to remove unused images. The removal runs in two
+cases:</p>
+<ul>
+<li><strong>Create/update</strong> - before pulling new images, all
+unused images are pruned. Because the prune runs while the current
+container is still running, its image is still in use and will not be
+pruned, providing a natural rollback to the previous version.</li>
+<li><strong>Cleanup</strong> (<code>state: absent</code>) - after
+removing a quadlet or kube spec, only the images that belonged to the
+removed spec are deleted. Images used by other specs are not
+affected.</li>
+</ul>
 <h2
 id="podman_transactional_update_reboot_ok">podman_transactional_update_reboot_ok</h2>
 <p>This variable is applicable only for transactional update systems. If
@@ -951,30 +974,43 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href=
 <span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_user</span><span class="kw">:</span><span class="at"> dbuser</span></span>
 <span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_group</span><span class="kw">:</span><span class="at"> dbgroup</span></span>
 <span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">kube_file_content</span><span class="kw">:</span></span>
-<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
-<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
-<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">image</span><span class="kw">:</span><span class="at"> quay.io/db/db:stable</span></span>
-<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">1234</span></span>
-<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="fu">hostPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">12340</span></span>
-<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/db:Z</span></span>
-<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
-<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
-<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /var/lib/db</span></span>
-<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">state</span><span class="kw">:</span><span class="at"> started</span></span>
-<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_user</span><span class="kw">:</span><span class="at"> webapp</span></span>
-<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_group</span><span class="kw">:</span><span class="at"> webapp</span></span>
-<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">kube_file_src</span><span class="kw">:</span><span class="at"> /path/to/webapp.yml</span></span>
-<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">roles</span><span class="kw">:</span></span>
-<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> linux-system-roles.podman</span></span></code></pre></div>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db_config</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">data</span><span class="kw">:</span></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="fu">              db_config</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>                # database config goes here</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> quay.io/db/db:stable</span></span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">1234</span></span>
+<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a><span class="at">                      </span><span class="fu">hostPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">12340</span></span>
+<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/db:Z</span></span>
+<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a><span class="at">                      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
+<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/db_config.conf:Z</span></span>
+<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a><span class="at">                      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db_config</span></span>
+<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a><span class="at">                      </span><span class="fu">subPath</span><span class="kw">:</span><span class="at"> db_config.conf</span></span>
+<span id="cb23-42"><a href="#cb23-42" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb23-43"><a href="#cb23-43" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
+<span id="cb23-44"><a href="#cb23-44" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb23-45"><a href="#cb23-45" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /var/lib/db</span></span>
+<span id="cb23-46"><a href="#cb23-46" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db_config</span></span>
+<span id="cb23-47"><a href="#cb23-47" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">configMap</span><span class="kw">:</span></span>
+<span id="cb23-48"><a href="#cb23-48" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db_config</span></span>
+<span id="cb23-49"><a href="#cb23-49" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">state</span><span class="kw">:</span><span class="at"> started</span></span>
+<span id="cb23-50"><a href="#cb23-50" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_user</span><span class="kw">:</span><span class="at"> webapp</span></span>
+<span id="cb23-51"><a href="#cb23-51" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_group</span><span class="kw">:</span><span class="at"> webapp</span></span>
+<span id="cb23-52"><a href="#cb23-52" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">kube_file_src</span><span class="kw">:</span><span class="at"> /path/to/webapp.yml</span></span>
+<span id="cb23-53"><a href="#cb23-53" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">roles</span><span class="kw">:</span></span>
+<span id="cb23-54"><a href="#cb23-54" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> linux-system-roles.podman</span></span></code></pre></div>
 <p>Create container running as root with Podman volume:</p>
 <div class="sourceCode" id="cb24"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Manage podman root containers and services</span></span>
