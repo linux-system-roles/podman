@@ -1,6 +1,18 @@
 Changelog
 =========
 
+[1.14.0] - 2026-08-06
+--------------------
+
+### New Features
+
+- feat: Write roles fingerprints to /var/log/sysroles.jsonl [citest_skip] (#316)
+
+### Other Changes
+
+- ci: bump actions/setup-python from 6 to 7 (#314)
+- ci: ensure dependabot updates do not invoke ci tests [citest_skip] (#315)
+
 [1.13.0] - 2026-07-27
 --------------------
 
