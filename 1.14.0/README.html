@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<!--
+==============================================================================
+           "GitHub HTML5 Pandoc Template" v2.2 — by Tristano Ajmone
+==============================================================================
+Copyright © Tristano Ajmone, 2017-2020, MIT License (MIT). Project's home:
+
+- https://github.com/tajmone/pandoc-goodies
+
+The CSS in this template reuses source code taken from the following projects:
+
+- GitHub Markdown CSS: Copyright © Sindre Sorhus, MIT License (MIT):
+  https://github.com/sindresorhus/github-markdown-css
+
+- Primer CSS: Copyright © 2016-2017 GitHub Inc., MIT License (MIT):
+  http://primercss.io/
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The MIT License
+
+Copyright (c) Tristano Ajmone, 2017-2020 (github.com/tajmone/pandoc-goodies)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+Copyright (c) 2017 GitHub Inc.
+
+"GitHub Pandoc HTML5 Template" is Copyright (c) Tristano Ajmone, 2017-2020,
+released under the MIT License (MIT); it contains readaptations of substantial
+portions of the following third party softwares:
+
+(1) "GitHub Markdown CSS", Copyright (c) Sindre Sorhus, MIT License (MIT).
+(2) "Primer CSS", Copyright (c) 2016 GitHub Inc., MIT License (MIT).
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+==============================================================================-->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>podman</title>
+  <style type="text/css">
+@charset "UTF-8";.markdown-body{-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;color:#24292e;font-family:-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";font-size:16px;line-height:1.5;word-wrap:break-word;box-sizing:border-box;min-width:200px;margin:0 auto;padding:45px}.markdown-body a{color:#0366d6;background-color:transparent;text-decoration:none;-webkit-text-decoration-skip:objects}.markdown-body a:active,.markdown-body a:hover{outline-width:0}.markdown-body a:hover{text-decoration:underline}.markdown-body a:not([href]){color:inherit;text-decoration:none}.markdown-body strong{font-weight:600}.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4,.markdown-body h5,.markdown-body h6{margin-top:24px;margin-bottom:16px;font-weight:600;line-height:1.25}.markdown-body h1{font-size:2em;margin:.67em 0;padding-bottom:.3em;border-bottom:1px solid #eaecef}.markdown-body h2{padding-bottom:.3em;font-size:1.5em;border-bottom:1px solid #eaecef}.markdown-body h3{font-size:1.25em}.markdown-body h4{font-size:1em}.markdown-body h5{font-size:.875em}.markdown-body h6{font-size:.85em;color:#6a737d}.markdown-body img{border-style:none}.markdown-body svg:not(:root){overflow:hidden}.markdown-body hr{box-sizing:content-box;height:.25em;margin:24px 0;padding:0;overflow:hidden;background-color:#e1e4e8;border:0}.markdown-body hr::before{display:table;content:""}.markdown-body hr::after{display:table;clear:both;content:""}.markdown-body input{margin:0;overflow:visible;font:inherit;font-family:inherit;font-size:inherit;line-height:inherit}.markdown-body [type=checkbox]{box-sizing:border-box;padding:0}.markdown-body *{box-sizing:border-box}.markdown-body blockquote{margin:0}.markdown-body ol,.markdown-body ul{padding-left:2em}.markdown-body ol ol,.markdown-body ul ol{list-style-type:lower-roman}.markdown-body ol ol,.markdown-body ol ul,.markdown-body ul ol,.markdown-body ul ul{margin-top:0;margin-bottom:0}.markdown-body ol ol ol,.markdown-body ol ul ol,.markdown-body ul ol ol,.markdown-body ul ul ol{list-style-type:lower-alpha}.markdown-body li>p{margin-top:16px}.markdown-body li+li{margin-top:.25em}.markdown-body dd{margin-left:0}.markdown-body dl{padding:0}.markdown-body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:600}.markdown-body dl dd{padding:0 16px;margin-bottom:16px}.markdown-body code{font-family:SFMono-Regular,Consolas,"Liberation Mono",Menlo,Courier,monospace}.markdown-body pre{font:12px SFMono-Regular,Consolas,"Liberation Mono",Menlo,Courier,monospace;word-wrap:normal}.markdown-body blockquote,.markdown-body dl,.markdown-body ol,.markdown-body p,.markdown-body pre,.markdown-body table,.markdown-body ul{margin-top:0;margin-bottom:16px}.markdown-body blockquote{padding:0 1em;color:#6a737d;border-left:.25em solid #dfe2e5}.markdown-body blockquote>:first-child{margin-top:0}.markdown-body blockquote>:last-child{margin-bottom:0}.markdown-body table{display:block;width:100%;overflow:auto;border-spacing:0;border-collapse:collapse}.markdown-body table th{font-weight:600}.markdown-body table td,.markdown-body table th{padding:6px 13px;border:1px solid #dfe2e5}.markdown-body table tr{background-color:#fff;border-top:1px solid #c6cbd1}.markdown-body table tr:nth-child(2n){background-color:#f6f8fa}.markdown-body img{max-width:100%;box-sizing:content-box;background-color:#fff}.markdown-body code{padding:.2em 0;margin:0;font-size:85%;background-color:rgba(27,31,35,.05);border-radius:3px}.markdown-body code::after,.markdown-body code::before{letter-spacing:-.2em;content:" "}.markdown-body pre>code{padding:0;margin:0;font-size:100%;word-break:normal;white-space:pre;background:0 0;border:0}.markdown-body .highlight{margin-bottom:16px}.markdown-body .highlight pre{margin-bottom:0;word-break:normal}.markdown-body .highlight pre,.markdown-body pre{padding:16px;overflow:auto;font-size:85%;line-height:1.45;background-color:#f6f8fa;border-radius:3px}.markdown-body pre code{display:inline;max-width:auto;padding:0;margin:0;overflow:visible;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}.markdown-body pre code::after,.markdown-body pre code::before{content:normal}.markdown-body .full-commit .btn-outline:not(:disabled):hover{color:#005cc5;border-color:#005cc5}.markdown-body kbd{box-shadow:inset 0 -1px 0 #959da5;display:inline-block;padding:3px 5px;font:11px/10px SFMono-Regular,Consolas,"Liberation Mono",Menlo,Courier,monospace;color:#444d56;vertical-align:middle;background-color:#fcfcfc;border:1px solid #c6cbd1;border-bottom-color:#959da5;border-radius:3px;box-shadow:inset 0 -1px 0 #959da5}.markdown-body :checked+.radio-label{position:relative;z-index:1;border-color:#0366d6}.markdown-body .task-list-item{list-style-type:none}.markdown-body .task-list-item+.task-list-item{margin-top:3px}.markdown-body .task-list-item input{margin:0 .2em .25em -1.6em;vertical-align:middle}.markdown-body::before{display:table;content:""}.markdown-body::after{display:table;clear:both;content:""}.markdown-body>:first-child{margin-top:0!important}.markdown-body>:last-child{margin-bottom:0!important}.Alert,.Error,.Note,.Success,.Warning{padding:11px;margin-bottom:24px;border-style:solid;border-width:1px;border-radius:4px}.Alert p,.Error p,.Note p,.Success p,.Warning p{margin-top:0}.Alert p:last-child,.Error p:last-child,.Note p:last-child,.Success p:last-child,.Warning p:last-child{margin-bottom:0}.Alert{color:#246;background-color:#e2eef9;border-color:#bac6d3}.Warning{color:#4c4a42;background-color:#fff9ea;border-color:#dfd8c2}.Error{color:#911;background-color:#fcdede;border-color:#d2b2b2}.Success{color:#22662c;background-color:#e2f9e5;border-color:#bad3be}.Note{color:#2f363d;background-color:#f6f8fa;border-color:#d5d8da}.Alert h1,.Alert h2,.Alert h3,.Alert h4,.Alert h5,.Alert h6{color:#246;margin-bottom:0}.Warning h1,.Warning h2,.Warning h3,.Warning h4,.Warning h5,.Warning h6{color:#4c4a42;margin-bottom:0}.Error h1,.Error h2,.Error h3,.Error h4,.Error h5,.Error h6{color:#911;margin-bottom:0}.Success h1,.Success h2,.Success h3,.Success h4,.Success h5,.Success h6{color:#22662c;margin-bottom:0}.Note h1,.Note h2,.Note h3,.Note h4,.Note h5,.Note h6{color:#2f363d;margin-bottom:0}.Alert h1:first-child,.Alert h2:first-child,.Alert h3:first-child,.Alert h4:first-child,.Alert h5:first-child,.Alert h6:first-child,.Error h1:first-child,.Error h2:first-child,.Error h3:first-child,.Error h4:first-child,.Error h5:first-child,.Error h6:first-child,.Note h1:first-child,.Note h2:first-child,.Note h3:first-child,.Note h4:first-child,.Note h5:first-child,.Note h6:first-child,.Success h1:first-child,.Success h2:first-child,.Success h3:first-child,.Success h4:first-child,.Success h5:first-child,.Success h6:first-child,.Warning h1:first-child,.Warning h2:first-child,.Warning h3:first-child,.Warning h4:first-child,.Warning h5:first-child,.Warning h6:first-child{margin-top:0}h1.title,p.subtitle{text-align:center}h1.title.followed-by-subtitle{margin-bottom:0}p.subtitle{font-size:1.5em;font-weight:600;line-height:1.25;margin-top:0;margin-bottom:16px;padding-bottom:.3em}div.line-block{white-space:pre-line}
+  </style>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<article class="markdown-body">
+<header>
+<h1 class="title">podman</h1>
+</header>
+<hr>
+<nav id="TOC">
+<h1 class="toc-title">Contents</h1>
+<ul>
+<li><a href="#ai-information" id="toc-ai-information">AI
+Information</a></li>
+<li><a href="#requirements" id="toc-requirements">Requirements</a>
+<ul>
+<li><a href="#collection-requirements"
+id="toc-collection-requirements">Collection requirements</a></li>
+<li><a href="#users-groups-subuid-subgid"
+id="toc-users-groups-subuid-subgid">Users, groups, subuid,
+subgid</a></li>
+</ul></li>
+<li><a href="#role-variables" id="toc-role-variables">Role Variables</a>
+<ul>
+<li><a href="#podman_kube_specs"
+id="toc-podman_kube_specs">podman_kube_specs</a></li>
+<li><a href="#podman_quadlet_specs"
+id="toc-podman_quadlet_specs">podman_quadlet_specs</a></li>
+<li><a href="#podman_secrets"
+id="toc-podman_secrets">podman_secrets</a></li>
+<li><a href="#podman_create_host_directories"
+id="toc-podman_create_host_directories">podman_create_host_directories</a></li>
+<li><a href="#podman_host_directories"
+id="toc-podman_host_directories">podman_host_directories</a></li>
+<li><a href="#podman_firewall"
+id="toc-podman_firewall">podman_firewall</a></li>
+<li><a href="#podman_selinux_ports"
+id="toc-podman_selinux_ports">podman_selinux_ports</a></li>
+<li><a href="#podman_run_as_user"
+id="toc-podman_run_as_user">podman_run_as_user</a></li>
+<li><a href="#podman_run_as_ansible_user"
+id="toc-podman_run_as_ansible_user">podman_run_as_ansible_user</a></li>
+<li><a href="#podman_run_as_group"
+id="toc-podman_run_as_group">podman_run_as_group</a></li>
+<li><a href="#podman_systemd_unit_scope"
+id="toc-podman_systemd_unit_scope">podman_systemd_unit_scope</a></li>
+<li><a href="#podman_activate_systemd_units"
+id="toc-podman_activate_systemd_units">podman_activate_systemd_units</a></li>
+<li><a href="#podman_pull_image"
+id="toc-podman_pull_image">podman_pull_image</a></li>
+<li><a href="#podman_continue_if_pull_fails"
+id="toc-podman_continue_if_pull_fails">podman_continue_if_pull_fails</a></li>
+<li><a href="#podman_containers_conf"
+id="toc-podman_containers_conf">podman_containers_conf</a></li>
+<li><a href="#podman_registries_conf"
+id="toc-podman_registries_conf">podman_registries_conf</a></li>
+<li><a href="#podman_storage_conf"
+id="toc-podman_storage_conf">podman_storage_conf</a></li>
+<li><a href="#podman_policy_json"
+id="toc-podman_policy_json">podman_policy_json</a></li>
+<li><a href="#podman_use_copr-experimental"
+id="toc-podman_use_copr-experimental">podman_use_copr
+(EXPERIMENTAL)</a></li>
+<li><a href="#podman_fail_if_too_old-experimental"
+id="toc-podman_fail_if_too_old-experimental">podman_fail_if_too_old
+(EXPERIMENTAL)</a></li>
+<li><a href="#podman_registry_username"
+id="toc-podman_registry_username">podman_registry_username</a></li>
+<li><a href="#podman_registry_password"
+id="toc-podman_registry_password">podman_registry_password</a></li>
+<li><a href="#podman_credential_files"
+id="toc-podman_credential_files">podman_credential_files</a></li>
+<li><a href="#podman_registry_certificates"
+id="toc-podman_registry_certificates">podman_registry_certificates</a></li>
+<li><a href="#podman_validate_certs"
+id="toc-podman_validate_certs">podman_validate_certs</a></li>
+<li><a href="#podman_prune_images"
+id="toc-podman_prune_images">podman_prune_images</a></li>
+<li><a href="#podman_transactional_update_reboot_ok"
+id="toc-podman_transactional_update_reboot_ok">podman_transactional_update_reboot_ok</a></li>
+<li><a href="#podman_secure_logging"
+id="toc-podman_secure_logging">podman_secure_logging</a></li>
+</ul></li>
+<li><a href="#variables-exported-by-the-role"
+id="toc-variables-exported-by-the-role">Variables Exported by the
+Role</a>
+<ul>
+<li><a href="#podman_version"
+id="toc-podman_version">podman_version</a></li>
+<li><a href="#podman_subuid_info-podman_subgid_info"
+id="toc-podman_subuid_info-podman_subgid_info">podman_subuid_info,
+podman_subgid_info</a></li>
+<li><a href="#podman_use_new_toml_formatter"
+id="toc-podman_use_new_toml_formatter">podman_use_new_toml_formatter</a></li>
+</ul></li>
+<li><a href="#example-playbooks" id="toc-example-playbooks">Example
+Playbooks</a></li>
+<li><a href="#license" id="toc-license">License</a></li>
+<li><a href="#author-information" id="toc-author-information">Author
+Information</a></li>
+</ul>
+</nav>
+<hr>
+<p>This role manages <code>podman</code> configuration, containers, and
+systemd services which run <code>podman</code> containers.</p>
+<h1 id="ai-information">AI Information</h1>
+<p>Some of this code was generated using the Cursor IDE with the
+assistance of the models Composer 2.5, Codex 5.3, and Sonnet 4.6.</p>
+<h1 id="requirements">Requirements</h1>
+<p>The role requires podman version 4.2 or later. The role requires
+podman version 4.4 or later for quadlet support and secret support. The
+role requires podman version 4.5 or later for support for using
+healthchecks (only supported when using quadlet Container types). The
+role requires podman version 5.0 or later for support for using <a
+href="https://github.com/containers/podman/releases/tag/v5.0.0">Pod
+quadlet types</a>.</p>
+<h2 id="collection-requirements">Collection requirements</h2>
+<p>The role requires the following collections:</p>
+<ul>
+<li><code>containers.podman</code></li>
+<li><code>fedora.linux_system_roles</code></li>
+</ul>
+<p>Use this to install the collections:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ansible-galaxy</span> collection install <span class="at">-vv</span> <span class="at">-r</span> meta/collection-requirements.yml</span></code></pre></div>
+<h2 id="users-groups-subuid-subgid">Users, groups, subuid, subgid</h2>
+<p>Users and groups specified in <code>podman_run_as_user</code>,
+<code>podman_run_as_group</code>, and specified in a kube spec as
+<code>run_as_user</code> and <code>run_as_group</code> have the
+following restrictions:</p>
+<ul>
+<li>They must be already present on the system - the role will not
+create the users or groups - the role will exit with an error if a
+non-existent user or group is specified</li>
+<li>The user must already exist in <code>/etc/subuid</code> and
+<code>/etc/subgid</code>, or otherwise be provided by your identity
+management system - the role will exit with an error if a specified user
+is not present in <code>/etc/subuid</code> and <code>/etc/subgid</code>.
+The role uses <code>getsubids</code> to check the user and group if
+available, or checks the files directly if <code>getsubids</code> is not
+available.</li>
+</ul>
+<h1 id="role-variables">Role Variables</h1>
+<h2 id="podman_kube_specs">podman_kube_specs</h2>
+<p>This is a <code>list</code>. Each element of the list is a
+<code>dict</code> describing a podman pod and corresponding systemd unit
+to manage. The format of the <code>dict</code> is mostly like the <a
+href="https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_play_module.html#ansible-collections-containers-podman-podman-play-module">podman_play
+module</a> except for the following:</p>
+<ul>
+<li><code>state</code> - default is <code>created</code>. This takes 3
+values:
+<ul>
+<li><code>started</code> - Create the pods and systemd services, and
+start them running</li>
+<li><code>created</code> - Create the pods and systemd services, but do
+not start them</li>
+<li><code>absent</code> - Remove the pods and systemd services</li>
+</ul></li>
+<li><code>run_as_user</code> - Use this to specify a per-pod user. If
+you do not specify this, then the global default
+<code>podman_run_as_user</code> value will be used. Otherwise,
+<code>root</code> will be used. NOTE: The user must already exist - the
+role will not create one. The user must be present in
+<code>/etc/subuid</code> and <code>/etc/subgid</code>.</li>
+<li><code>run_as_group</code> - Use this to specify a per-pod group. If
+you do not specify this, then the global default
+<code>podman_run_as_group</code> value will be used. Otherwise,
+<code>root</code> will be used. NOTE: The group must already exist - the
+role will not create one.</li>
+<li><code>systemd_unit_scope</code> - The scope to use for the systemd
+unit. If you do not specify this, then the global default
+<code>podman_systemd_unit_scope</code> will be used. Otherwise, the
+scope will be <code>system</code> for root containers, and
+<code>user</code> for user containers.</li>
+<li><code>activate_systemd_unit</code> - Whether or not to activate the
+systemd unit when it is created. If you do not specify this, then the
+global default <code>podman_activate_systemd_unit</code> will be used,
+which is <code>true</code> by default.</li>
+<li><code>pull_image</code> - Ensure the image is pulled before use. If
+you do not specify this, then the global default
+<code>podman_pull_image</code> will be used, which is <code>true</code>
+by default.</li>
+<li><code>continue_if_pull_fails</code> - If pulling the image, and the
+pull fails, do not treat this as a fatal error, and continue with the
+role. If you do not specify this, then the global default
+<code>podman_continue_if_pull_fails</code> will be used, which is
+<code>false</code> by default.</li>
+<li><code>restarts_on</code> - List of managed file paths (via
+<code>podman_kube_specs</code> file items) and/or
+<code>podman_secrets</code> names to watch from this kube play spec.
+When any listed dependency changes or is removed, the pod's systemd
+service is restarted. Supports <code>ANY_DEPENDENCIES</code> with the
+same meaning as for quadlet specs. Dependency files use
+<code>restarts</code> with the pod's <code>metadata.name</code> as the
+service name.</li>
+<li><code>kube_file_src</code> - This is the name of a file on the
+controller node which will be copied to <code>kube_file</code> on the
+managed node. This is a file in Kubernetes YAML format. Do not specify
+this if you specify <code>kube_file_content</code>.
+<code>kube_file_content</code> takes precedence over
+<code>kube_file_src</code>.</li>
+<li><code>kube_file_content</code> - This is either a string in
+Kubernetes YAML format, or a <code>dict</code> or <code>list</code> of
+<code>dict</code> in Kubernetes YAML format. It will be used as the
+contents of <code>kube_file</code> on the managed node. Do not specify
+this if you specify <code>kube_file_src</code>.
+<code>kube_file_content</code> takes precedence over
+<code>kube_file_src</code>.</li>
+<li><code>kube_file</code> - This is the name of a file on the managed
+node that contains the Kubernetes specification of the container/pod.
+You typically do not have to specify this unless you need to somehow
+copy this file to the managed node outside of the role. If you specify
+either <code>kube_file_src</code> or <code>kube_file_content</code>, you
+do not have to specify this. It is highly recommended to omit
+<code>kube_file</code> and instead specify either
+<code>kube_file_src</code> or <code>kube_file_content</code> and let the
+role manage the file path and name.
+<ul>
+<li>The file basename will be the <code>metadata.name</code> value from
+the K8s yaml, with a <code>.yml</code> suffix appended to it.</li>
+<li>The directory will be
+<code>/etc/containers/ansible-kubernetes.d</code> for system
+services.</li>
+<li>The directory will be
+<code>$HOME/.config/containers/ansible-kubernetes.d</code> for user
+services.</li>
+</ul></li>
+</ul>
+<p>For example, if you have</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">podman_kube_specs</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">state</span><span class="kw">:</span><span class="at"> started</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">kube_file_content</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myappname</span></span></code></pre></div>
+<p>This will be copied to the file
+<code>/etc/containers/ansible-kubernetes.d/myappname.yml</code> on the
+managed node.</p>
+<h2 id="podman_quadlet_specs">podman_quadlet_specs</h2>
+<p>List of [Quadlet specifications] (<a
+href="https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html">https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html</a>)
+A quadlet spec is uniquely identified by a name and a type, where type
+is one of the types of units like container, kube, network, volume, etc.
+You can either pass in <code>name</code> and <code>type</code>
+explicitly, or the <code>name</code> and <code>type</code> will be
+derived from the file name given in <code>file</code>,
+<code>file_src</code>, or <code>template_src</code>.</p>
+<p>By default, the files will be copied to or created in
+<code>/etc/containers/systemd/$name.$type</code> for root containers,
+and <code>$HOME/.config/containers/systemd/$name.$type</code> for
+rootless containers, on the managed node. You can provide a different
+location by using <code>file</code>, but then you will likely need to
+change the systemd configuration to find the file, which is not
+supported by this role.</p>
+<p>When a quadlet spec depends on some other file e.g. a
+<code>quadlet.kube</code> that depends on the <code>Yaml</code> file or
+a <code>ConfigMap</code>, then that file must be specified in the
+<code>podman_quadlet_specs</code> list <em>before</em> the file that
+uses it. For example, if you have a file <code>my-app.kube</code>:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[Kube]</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="dt">ConfigMap</span><span class="ot">=</span><span class="st">my-app-config.yml</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">Yaml</span><span class="ot">=</span><span class="st">my-app.yml</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span></code></pre></div>
+<p>Then you must specify <code>my-app-config.yml</code> and
+<code>my-app.yml</code> before <code>my-app.kube</code>:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_quadlet_specs</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">file_src</span><span class="kw">:</span><span class="at"> my-app-config.yml</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">file_src</span><span class="kw">:</span><span class="at"> my-app.yml</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">file_src</span><span class="kw">:</span><span class="at"> my-app.kube</span></span></code></pre></div>
+<p>Most of the parameters for each quadlet spec are the same as for
+<code>podman_kube_spec</code> above except that the <code>*kube*</code>
+parameters are not supported, and the following are:</p>
+<ul>
+<li><code>name</code> - The name of the unit. If not given, it will be
+derived from <code>file</code>, <code>file_src</code>, or
+<code>template_src</code>. For example, if you specify
+<code>file_src: /path/to/my-container.container</code> then the
+<code>name</code> will be <code>my-container</code>.</li>
+<li><code>type</code> - The type of unit (container, kube, volume,
+etc.). If not given, it will be derived from <code>file</code>,
+<code>file_src</code>, or <code>template_src</code>. For example, if you
+specify <code>file_src: /path/to/my-container.container</code> then the
+<code>type</code> will be <code>container</code>. If the derived type is
+not recognized as a valid quadlet type, for example, if you specify
+<code>file_src: my-kube.yml</code>, then it will just be copied and not
+processed as a quadlet spec.</li>
+<li><code>file_src</code> - The name of the file on the control node to
+copy to the managed node to use as the source of the quadlet unit. If
+this file is in the quadlet unit format and has a valid quadlet unit
+suffix, it will be used as a quadlet unit, otherwise, it will just be
+copied.</li>
+<li><code>file</code> - The name of the file on the managed node to use
+as the source of the quadlet unit. If this file is in the quadlet unit
+format and has a valid quadlet unit suffix, it will be used as a quadlet
+unit, otherwise, it will be treated as a regular file.</li>
+<li><code>file_content</code> - The contents of a file to copy to the
+managed node, in string format. This is useful to pass in short files
+that can easily be specified inline. You must also specify
+<code>name</code> and <code>type</code>.</li>
+<li><code>template_src</code> - The name of the file on the control node
+which will be processed as a Jinja <code>template</code> file then
+copied to the managed node to use as the source of the quadlet unit. If
+this file is in the quadlet unit format and has a valid quadlet unit
+suffix, it will be used as a quadlet unit, otherwise, it will just be
+copied. If the file has a <code>.j2</code> suffix, that suffix will be
+stripped to determine the quadlet file type.</li>
+<li><code>restarts</code> - List of quadlet service unit names (without
+the <code>.service</code> suffix) to restart when this file is created,
+updated, or removed (<code>state: absent</code>). Use this on dependency
+files (<code>file</code>, <code>file_src</code>,
+<code>file_content</code>, or non-unit <code>template_src</code>), not
+on quadlet unit specs. The special value <code>ALL_SERVICES</code>
+restarts every <code>container</code> and <code>kube</code> service in
+<code>podman_quadlet_specs</code> (present specs only). Restarts are
+deferred until all quadlet specs are processed.</li>
+<li><code>restarts_on</code> - List of managed file paths and/or
+<code>podman_secrets</code> names to watch from a <code>container</code>
+or <code>kube</code> quadlet spec. When any listed dependency changes or
+is removed, this service is restarted. The special value
+<code>ANY_DEPENDENCIES</code> watches every dependency file in
+<code>podman_quadlet_specs</code> and every secret in
+<code>podman_secrets</code>. Prefer explicit paths and names when
+possible.</li>
+</ul>
+<p>When a mounted configuration file is managed as a separate item in
+<code>podman_quadlet_specs</code>, specify the dependency before the
+container or kube unit that uses it, and use <code>restarts</code> or
+<code>restarts_on</code> so the service picks up changes without
+modifying the quadlet unit file. For example:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_quadlet_specs</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">file</span><span class="kw">:</span><span class="at"> /opt/app/config.yml</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">file_content</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;{{ app_config }}&quot;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">restarts</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">myapp</span><span class="kw">]</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapp</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> container</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">Container</span><span class="kw">:</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">Image</span><span class="kw">:</span><span class="at"> myapp:latest</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">Volume</span><span class="kw">:</span><span class="at"> /opt/app/config.yml:/etc/app/config.yml:ro</span></span></code></pre></div>
+<p>For example, if you specify:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_quadlet_specs</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">template_src</span><span class="kw">:</span><span class="at"> my-app.container.j2</span></span></code></pre></div>
+<p>Then the local file <code>templates/my-app.container.j2</code> will
+be processed as a Jinja template file, then copied to
+<code>/etc/containers/systemd/my-app.container</code> as a quadlet
+container unit spec on the managed node.</p>
+<p><em>NOTE</em>: When removing quadlets, you must remove networks
+<em>last</em>. You cannot remove a network that is in use by a
+container.</p>
+<p><em>NOTE</em>: When specifying a <code>Pod</code> for a
+<code>Container</code> to use, you must add a <code>.pod</code> to the
+podname e.g. <code>Pod=my-name.pod</code>. The pod must already exist
+and be running, so specify any pods first in
+<code>podman_quadlet_specs</code> before the containers that use them.
+See <a
+href="https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#pod">podman
+quadlet doc</a> for more information.</p>
+<h2 id="podman_secrets">podman_secrets</h2>
+<p>This is a list of secret specs in almost the same format as used by
+<a
+href="https://docs.ansible.com/ansible/latest/collections/containers/podman/podman_secret_module.html#ansible-collections-containers-podman-podman-secret-module">podman_secret</a>
+There are additional fields:</p>
+<ul>
+<li><code>restarts</code> - List of quadlet service unit names to
+restart when this secret is created, updated, or removed. Supports
+<code>ALL_SERVICES</code> with the same meaning as for quadlet
+dependency files (all <code>container</code> and <code>kube</code>
+services in <code>podman_quadlet_specs</code>).</li>
+<li><code>run_as_user</code> - Use this to specify a secret for a
+specific user. If you do not specify this, then the global default
+<code>podman_run_as_user</code> value will be used. Otherwise,
+<code>root</code> will be used. NOTE: The user must already exist - the
+role will not create one.</li>
+</ul>
+<p>You are <em>strongly</em> encouraged to use Ansible Vault to encrypt
+the value of the <code>data</code> field.</p>
+<h2
+id="podman_create_host_directories">podman_create_host_directories</h2>
+<p>This is a boolean, default value is <code>false</code>. If
+<code>true</code>, the role will ensure host directories specified in
+host mounts in <code>volumes.hostPath</code> specifications in the
+Kubernetes YAML given in <code>podman_kube_specs</code>, and from
+<code>Volume</code> configuration in quadlet Container specification
+where a host path is specified. NOTE: Directories must be specified as
+absolute paths (for root containers), or paths relative to the home
+directory (for non-root containers), in order for the role to manage
+them. Anything else will be assumed to be some other sort of volume and
+will be ignored. The role will apply its default ownership/permissions
+to the directories. If you need to set ownership/permissions, see
+<code>podman_host_directories</code>.</p>
+<h2 id="podman_host_directories">podman_host_directories</h2>
+<p>This is a <code>dict</code>. When using
+<code>podman_create_host_directories</code>, this tells the role what
+permissions/ownership to apply to automatically created host
+directories. Each key is the absolute path of host directory to manage.
+The value is in the format of the parameters to the <a
+href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html#ansible-collections-ansible-builtin-file-module">file
+module</a>. If you do not specify a value, the role will use its
+built-in default values. If you want to specify a value to be used for
+all host directories, use the special key <code>DEFAULT</code>.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_host_directories</span><span class="kw">:</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">&quot;/var/lib/data&quot;</span><span class="kw">:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> dbuser</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group</span><span class="kw">:</span><span class="at"> dbgroup</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0600&quot;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">DEFAULT</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> root</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group</span><span class="kw">:</span><span class="at"> root</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0644&quot;</span></span></code></pre></div>
+<p>The role will use <code>dbuser:dbgroup</code> <code>0600</code> for
+<code>/var/lib/data</code>, and <code>root:root</code> <code>0644</code>
+for all other host directories created by the role.</p>
+<h2 id="podman_firewall">podman_firewall</h2>
+<p>This is a <code>list</code> of <code>dict</code> in the same format
+as used by the <code>fedora.linux_system_roles.firewall</code> role. Use
+this to specify ports that you want the role to manage in the
+firewall.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_firewall</span><span class="kw">:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> 8080/tcp</span></span></code></pre></div>
+<h2 id="podman_selinux_ports">podman_selinux_ports</h2>
+<p>This is a <code>list</code> of <code>dict</code> in the same format
+as used by the <code>fedora.linux_system_roles.selinux</code> role. Use
+this if you want the role to manage the SELinux policy for ports used by
+the role.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_selinux_ports</span><span class="kw">:</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">ports</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> tcp</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">setype</span><span class="kw">:</span><span class="at"> http_port_t</span></span></code></pre></div>
+<h2 id="podman_run_as_user">podman_run_as_user</h2>
+<p>This is the name of the user to use for all rootless containers. You
+can also specify per-container username with <code>run_as_user</code> in
+<code>podman_kube_specs</code>. NOTE: The user must already exist - the
+role will not create one. The user must be present in
+<code>/etc/subuid</code> and <code>/etc/subgid</code>. The default is
+<code>root</code>, unless <code>podman_run_as_ansible_user</code> is
+<code>true</code>, in which case the default is the value of
+<code>ansible_user</code> (or the result of <code>whoami</code> on the
+managed host if <code>ansible_user</code> is not set).</p>
+<h2 id="podman_run_as_ansible_user">podman_run_as_ansible_user</h2>
+<p>If <code>true</code>, use the value of <code>ansible_user</code> as
+the default for <code>podman_run_as_user</code> instead of
+<code>root</code>. The default is <code>false</code>. Setting
+<code>podman_run_as_user</code> explicitly overrides this. If
+<code>ansible_user</code> is not defined the role falls back to the
+output of <code>whoami</code> on the managed host.</p>
+<h2 id="podman_run_as_group">podman_run_as_group</h2>
+<p>This is the name of the group to use for all rootless containers. You
+can also specify per-container group name with <code>run_as_group</code>
+in <code>podman_kube_specs</code>. NOTE: The group must already exist -
+the role will not create one.</p>
+<h2 id="podman_systemd_unit_scope">podman_systemd_unit_scope</h2>
+<p>This is systemd scope to use by default for all systemd units. You
+can also specify per-container scope with
+<code>systemd_unit_scope</code> in <code>podman_kube_specs</code>. By
+default, rootless containers will use <code>user</code> and root
+containers will use <code>system</code>.</p>
+<h2
+id="podman_activate_systemd_units">podman_activate_systemd_units</h2>
+<p>Activate each systemd unit as soon as it is created. The default is
+<code>true</code>. You can also do this on a per-unit basis by using
+<code>activate_systemd_units</code> in the spec for each unit. For
+example, if you are deploying several specs, and you only want the last
+one in the list to activate which will trigger the others to activate
+via dependencies, then set <code>activate_systemd_unit: false</code> for
+each one except the last one uses
+<code>activate_systemd_unit: true</code>. <em>NOTE</em>: quadlet units
+are implicitly enabled when created - you cannot currently use
+<code>activate_systemd_unit</code> to disable those units - you can use
+<code>activate_systemd_unit</code> to create units stopped or
+started.</p>
+<h2 id="podman_pull_image">podman_pull_image</h2>
+<p>Ensure that each image mentioned in a kube or quadlet spec is present
+by pulling the image before it is used. The default is
+<code>true</code>. Use <code>false</code> if the managed node already
+has the correct version, or is not able to pull images. You can also
+specify this on a per-unit basis with <code>pull_image</code>.</p>
+<h2
+id="podman_continue_if_pull_fails">podman_continue_if_pull_fails</h2>
+<p>If the image pull attempt fails, do not treat this as a fatal error,
+and continue with the role run. The default is <code>false</code> - a
+pull attempt failure is a fatal error. You can set this on a per-unit
+basis with <code>continue_if_pull_fails</code>.</p>
+<h2 id="podman_containers_conf">podman_containers_conf</h2>
+<p>These are the containers.conf(5) settings, provided as a
+<code>dict</code>. These settings will be provided in a drop-in file in
+the <code>containers.conf.d</code> directory. If running as root (see
+<code>podman_run_as_user</code>), the system settings will be managed,
+otherwise, the user settings will be managed. See the man page for the
+directory locations.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_containers_conf</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">default_sysctls</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> net.ipv4.ping_group_range=0 1000</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> user.max_ipc_namespaces=125052</span></span></code></pre></div>
+<h2 id="podman_registries_conf">podman_registries_conf</h2>
+<p>These are the containers-registries.conf(5) settings, provided as a
+<code>dict</code>. These settings will be provided in a drop-in file in
+the <code>registries.conf.d</code> directory. If running as root (see
+<code>podman_run_as_user</code>), the system settings will be managed,
+otherwise, the user settings will be managed. See the man page for the
+directory locations.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_registries_conf</span><span class="kw">:</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">aliases</span><span class="kw">:</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">myregistry</span><span class="kw">:</span><span class="at"> registry.example.com</span></span></code></pre></div>
+<h2 id="podman_storage_conf">podman_storage_conf</h2>
+<p>These are the containers-storage.conf(5) settings, provided as a
+<code>dict</code>. If running as root (see
+<code>podman_run_as_user</code>), the system settings will be managed,
+otherwise, the user settings will be managed. See the man page for the
+file locations.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_storage_conf</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storage</span><span class="kw">:</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runroot</span><span class="kw">:</span><span class="at"> /var/big/partition/container/storage</span></span></code></pre></div>
+<h2 id="podman_policy_json">podman_policy_json</h2>
+<p>These are the containers-policy.json(5) settings, provided as a
+<code>dict</code>. If running as root (see
+<code>podman_run_as_user</code>), the system settings will be managed,
+otherwise, the user settings will be managed. See the man page for the
+file locations.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_policy_json</span><span class="kw">:</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">default</span><span class="kw">:</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> insecureAcceptAnything</span></span></code></pre></div>
+<h2 id="podman_use_copr-experimental">podman_use_copr
+(EXPERIMENTAL)</h2>
+<p>Boolean - default is unset - if you want to enable the copr repo to
+use the latest development version of podman, use
+<code>podman_use_copr: true</code></p>
+<h2 id="podman_fail_if_too_old-experimental">podman_fail_if_too_old
+(EXPERIMENTAL)</h2>
+<p>Boolean - default is unset - by default, the role will fail with an
+error if you are using an older version of podman and try to use a
+feature only supported by a newer version. For example, if you attempt
+to manage quadlet or secrets with podman 4.3 or earlier, the role will
+fail with an error. If you want the role to be skipped instead, use
+<code>podman_fail_if_too_old: false</code>.</p>
+<h2 id="podman_registry_username">podman_registry_username</h2>
+<p>String - default is unset - username to use to authenticate to the
+registry. You must also set <code>podman_registry_password</code>. You
+can override this on a per-spec basis with
+<code>registry_username</code>. The use of
+<code>container_image_user</code> was unsupported and is deprecated.</p>
+<h2 id="podman_registry_password">podman_registry_password</h2>
+<p>String - default is unset - password to use to authenticate to the
+registry. You must also set <code>podman_registry_username</code>. You
+can override this on a per-spec basis with
+<code>registry_password</code>. The use of
+<code>container_image_password</code> was unsupported and is
+deprecated.</p>
+<h2 id="podman_credential_files">podman_credential_files</h2>
+<p>This is a <code>list</code>. Each element of the list is a
+<code>dict</code> describing a podman credential file used to
+authenticate to registries. See <code>man containers-auth.json</code>
+and
+<code>man containers-registries.conf</code>:<code>credential-helpers</code>
+for more information about the format of these files, and the default
+directory search path. NOTE: These files contain authentication
+credentials. Please be careful with them. You are strongly encouraged to
+use Ansible Vault to encrypt them. The keys of each <code>dict</code>
+are as follows:</p>
+<ul>
+<li><code>state</code> - default is <code>present</code>. Use
+<code>absent</code> to remove files.</li>
+<li><code>file_src</code> - This is the name of a file on the controller
+node which will be copied to <code>file</code> on the managed node. Do
+not specify this if you specify <code>file_content</code> or
+<code>template_src</code>, which will take precedence over
+<code>file_src</code>.</li>
+<li><code>template_src</code> - This is the name of a file on the
+controller node which will be templated using the <code>template</code>
+module and copied to <code>file</code> on the managed node. Do not
+specify this if you specify <code>file_content</code> or
+<code>file_src</code>.</li>
+<li><code>file_content</code> - This is a string in
+<code>containers-auth.json</code> format. It will be used as the
+contents of <code>file</code> on the managed node. Do not specify this
+if you specify <code>file_src</code> or <code>template_src</code>.</li>
+<li><code>file</code> - This is the name of a file on the managed node
+that will contain the <code>auth.json</code> contents. The default value
+will be <code>$HOME/.config/containers/auth.json</code>. If you specify
+a relative path, it will be relative to
+<code>$HOME/.config/containers</code>. If you specify something other
+than the defaults mentioned in <code>man containers-auth.json</code>,
+you will also need to configure <code>credential-helpers</code> in
+<code>containers-registries.conf</code> using
+<code>podman_registries_conf</code>. Any missing parent directories will
+be created.</li>
+<li><code>run_as_user</code> - Use this to specify a per-credential file
+owner. If you do not specify this, then the global default
+<code>podman_run_as_user</code> value will be used. Otherwise,
+<code>root</code> will be used. NOTE: The user must already exist - the
+role will not create one. The user must be present in
+<code>/etc/subuid</code> and <code>/etc/subgid</code>. NOTE: This is
+used as the user for the <code>$HOME</code> directory if
+<code>file</code> is not specified, and as the owner of the file. If you
+want the owner of the file to be different than the user used for
+<code>$HOME</code>, specify <code>file</code> as an absolute path.</li>
+<li><code>run_as_group</code> - Use this to specify a per-credential
+file group. If you do not specify this, then the global default
+<code>podman_run_as_group</code> value will be used. Otherwise,
+<code>root</code> will be used. NOTE: The group must already exist - the
+role will not create one.</li>
+<li><code>mode</code> - The mode of the file - default is
+<code>"0600"</code>.</li>
+</ul>
+<p>For example, if you have</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">podman_credential_files</span><span class="kw">:</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">file_src</span><span class="kw">:</span><span class="at"> auth.json</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_user</span><span class="kw">:</span><span class="at"> my_user</span></span></code></pre></div>
+<p>The local file <code>auth.json</code> will be looked up in the usual
+Ansible <code>file</code> search paths and will be copied to the file
+<code>/home/my_user/.config/containers/auth.json</code> on the managed
+node. The file owner will be <code>my_user</code> and the mode will be
+<code>"0600"</code>. The directories <code>/home/my_user/.config</code>
+and <code>/home/my_user/.config/containers</code> will be created if
+they do not exist.</p>
+<h2 id="podman_registry_certificates">podman_registry_certificates</h2>
+<p>This variable is a <code>list</code> of <code>dict</code> elements
+that allows you to manage TLS certificates and keys used to connect to
+registries. The directories, formats, and files are as described in
+<code>man containers-certs.d</code>. The names of the keys used for TLS
+certificates and keys follow the <a
+href="https://linux-system-roles.github.io/documentation/tls_crypto_parameter_and_key_names.html">system
+roles TLS naming conventions</a>. NOTE: the <code>client_</code> prefix
+has been dropped here for <code>cert</code> and <code>private_key</code>
+because there are only clients in this context.</p>
+<p>NOTE: You are strongly encouraged to use Ansible Vault to encrypt
+private keys and any other sensitive values.</p>
+<p>The keys of each <code>dict</code> are as follows:</p>
+<ul>
+<li><code>state</code> - default is <code>present</code>. Use
+<code>absent</code> to remove files.</li>
+<li><code>run_as_user</code> - This is the user that will be the owner
+of the files, and is used to find the <code>$HOME</code> directory for
+the files. If you do not specify this, then the global default
+<code>podman_run_as_user</code> value will be used. Otherwise,
+<code>root</code> will be used.</li>
+<li><code>run_as_group</code> - This is the group that will be the owner
+of the files. If you do not specify this, then the global default
+<code>podman_run_as_group</code> value will be used. Otherwise,
+<code>root</code> will be used.</li>
+<li><code>registry_host</code> - Required - the hostname or
+<code>hostname:port</code> of the registry. This will be used as the
+name of the directory under
+<code>$HOME/.config/containers/certs.d</code> (for rootless containers)
+or <code>/etc/containers/certs.d</code> (for system containers) which
+will hold the certificates and keys. If using <code>state: absent</code>
+and all of the files are removed, the directory will be removed.</li>
+<li><code>cert</code> - name of the file in the <code>certs.d</code>
+directory holding the TLS client certificate. If not specified, use the
+basename of <code>cert_src</code>. If that isn't specified, use
+<code>client.cert</code>.</li>
+<li><code>private_key</code> - name of the file in the
+<code>certs.d</code> directory holding the TLS client private key. If
+not specified, use the basename of <code>private_key_src</code>. If that
+isn't specified, use <code>client.key</code></li>
+<li><code>ca_cert</code> - name of the file in the <code>certs.d</code>
+directory holding the TLS CA certificate. If not specified, use the
+basename of <code>ca_cert_src</code>. If that isn't specified, use
+<code>ca.crt</code></li>
+<li><code>cert_src</code> - name of the file on the control node to be
+copied to <code>cert</code>.</li>
+<li><code>private_key_src</code> - name of the file on the control node
+to be copied to <code>private_key</code>.</li>
+<li><code>ca_cert_src</code> - name of the file on the control node to
+be copied to <code>ca_cert</code>.</li>
+<li><code>cert_content</code> - contents of the certificate to be copied
+to <code>cert</code>.</li>
+<li><code>private_key_content</code> - contents of the private key to be
+copied to <code>private_key</code>.</li>
+</ul>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_run_as_user</span><span class="kw">:</span><span class="at"> root</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_registry_certificates</span><span class="kw">:</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">registry_host</span><span class="kw">:</span><span class="at"> quay.io:5000</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cert_src</span><span class="kw">:</span><span class="at"> client.cert</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">    private_key_content</span><span class="kw">: </span><span class="at">!vault </span><span class="ch">|</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>      $ANSIBLE_VAULT.....</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ca_cert_src</span><span class="kw">:</span><span class="at"> ca.crt</span></span></code></pre></div>
+<p>This will create the directory
+<code>/etc/containers/certs.d/quay.io:5000/</code>, will copy the local
+file <code>client.cert</code> looked up from the usual Ansible file
+lookup path to
+<code>/etc/containers/certs.d/quay.io:5000/client.cert</code>, will copy
+the contents of the Ansible Vault encrypted
+<code>private_key_content</code> to
+<code>/etc/containers/certs.d/quay.io:5000/client.key</code>, and will
+copy the local file <code>ca.crt</code> looked up from the usual Ansible
+file lookup path to
+<code>/etc/containers/certs.d/quay.io:5000/ca.crt</code>.</p>
+<h2 id="podman_validate_certs">podman_validate_certs</h2>
+<p>Boolean - default is null - use this to control if pulling images
+from registries will validate TLS certs or not. The default
+<code>null</code> means to use whatever is the default used by the
+<code>containers.podman.podman_image</code> module. You can override
+this on a per-spec basis using <code>validate_certs</code>.</p>
+<h2 id="podman_prune_images">podman_prune_images</h2>
+<p>Boolean - default is <code>false</code> - set this to
+<code>true</code> to remove unused images. The removal runs in two
+cases:</p>
+<ul>
+<li><strong>Create/update</strong> - before pulling new images, all
+unused images are pruned. Because the prune runs while the current
+container is still running, its image is still in use and will not be
+pruned, providing a natural rollback to the previous version.</li>
+<li><strong>Cleanup</strong> (<code>state: absent</code>) - after
+removing a quadlet or kube spec, only the images that belonged to the
+removed spec are deleted. Images used by other specs are not
+affected.</li>
+</ul>
+<h2
+id="podman_transactional_update_reboot_ok">podman_transactional_update_reboot_ok</h2>
+<p>This variable is applicable only for transactional update systems. If
+a transactional update requires a reboot, the role will proceed with the
+reboot if <code>podman_transactional_update_reboot_ok</code> is set to
+<code>true</code>. If set to <code>false</code>, the role will notify
+the user that a reboot is required, allowing for custom handling of the
+reboot requirement. If this variable is not set, the role will fail to
+ensure the reboot requirement is not overlooked. For non-transactional
+update systems, this variable is ignored.</p>
+<h2 id="podman_secure_logging">podman_secure_logging</h2>
+<p>Boolean - default is <code>true</code>. If <code>true</code>, the
+role suppresses sensitive output from tasks that handle credentials,
+secrets, and other sensitive data by setting <code>no_log: true</code>
+on those tasks. This prevents passwords, API tokens, registry
+credentials, and similar sensitive information from appearing in Ansible
+logs and console output.</p>
+<p>If you need to debug issues with credential handling or secret
+management, you can temporarily set
+<code>podman_secure_logging: false</code> to see the full output from
+these tasks. However, be aware that this may expose sensitive
+information in logs, so it should only be used in development or
+troubleshooting scenarios.</p>
+<h1 id="variables-exported-by-the-role">Variables Exported by the
+Role</h1>
+<h2 id="podman_version">podman_version</h2>
+<p>This is the version string of the version used by podman. You can
+generally use this in your templates. For example, if you want to
+specify a quadlet <code>template_src</code> for a container, and have it
+use healthchecks and secrets if using podman 4.5 or later:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_quadlet_specs</span><span class="kw">:</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">template_src</span><span class="kw">:</span><span class="at"> my-app.container.j2</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_secrets</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-pwd</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">data</span><span class="kw">:</span><span class="at"> .....</span></span></code></pre></div>
+<p>my-app.container.j2:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[Container]</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="dt">{% if podman_version is version(&quot;4.5&quot;, &quot;&gt;</span><span class="ot">=</span><span class="st">&quot;) %}</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="dt">Secret</span><span class="ot">=</span><span class="st">my-app-pwd,type=env,target=MYAPP_PASSWORD</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="dt">HealthCmd</span><span class="ot">=</span><span class="st">/usr/bin/test -f /path/to/my-app.file</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="dt">HealthOnFailure</span><span class="ot">=</span><span class="st">kill</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="dt">{% else %}</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="dt">PodmanArgs</span><span class="ot">=</span><span class="st">--secret=my-app-pwd,type=env,target=MYAPP_PASSWORD</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="dt">{% endif %}</span></span></code></pre></div>
+<h2 id="podman_subuid_info-podman_subgid_info">podman_subuid_info,
+podman_subgid_info</h2>
+<p>The role needs to ensure any users are present in the subuid and
+subgid information. Once it extracts this data, it will be available in
+<code>podman_subuid_info</code> and <code>podman_subgid_info</code>.
+These are dicts. The key is the user name, and the value is a
+<code>dict</code> with two fields:</p>
+<ul>
+<li><code>start</code> - the start of the id range for that user, as an
+<code>int</code></li>
+<li><code>range</code> - the id range for that user, as an
+<code>int</code></li>
+</ul>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_host_directories</span><span class="kw">:</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">&quot;/var/lib/db&quot;</span><span class="kw">:</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0777&quot;</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;{{ 1001 + podman_subuid_info[&#39;dbuser&#39;][&#39;start&#39;] - 1 }}&quot;</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;{{ 2001 + podman_subgid_info[&#39;dbuser&#39;][&#39;start&#39;] - 1 }}&quot;</span></span></code></pre></div>
+<p>Where <code>1001</code> is the uid for user <code>dbuser</code>, and
+<code>2001</code> is the gid for the group you want to use.</p>
+<p><strong>NOTE</strong>: depending on the namespace used by your
+containers, you might not be able to use the subuid and subgid
+information, which comes from <code>getsubids</code> if available, or
+directly from the files <code>/etc/subuid</code> and
+<code>/etc/subgid</code> on the host. See <a
+href="https://www.redhat.com/sysadmin/rootless-podman-user-namespace-modes">podman
+user namespace modes</a> for more information.</p>
+<h2
+id="podman_use_new_toml_formatter">podman_use_new_toml_formatter</h2>
+<p>The old TOML formatter had a peculiar quirk. If you had a sub-dict
+defined like this:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_containers_conf</span><span class="kw">:</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">environment</span><span class="kw">:</span><span class="at"> production</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">status</span><span class="kw">:</span><span class="at"> tier2</span></span></code></pre></div>
+<p>Then the old TOML formatter would render this as</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode toml"><code class="sourceCode toml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[containers]</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="dt">annotations</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;environment=production&quot;</span><span class="op">,</span> <span class="st">&quot;status=tier2&quot;</span><span class="op">,]</span></span></code></pre></div>
+<p>This is not good if you also want to format a sub-dict in TOML as a
+table:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode toml"><code class="sourceCode toml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[containers.annotations]</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="dt">environment</span> <span class="op">=</span> <span class="st">&quot;production&quot;</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="dt">status</span> <span class="op">=</span> <span class="st">&quot;tier2&quot;</span></span></code></pre></div>
+<p>The option <code>podman_use_new_toml_formatter</code> is a boolean
+used to control this behavior. By default, this is <code>false</code>,
+you get the old behavior. If you use
+<code>podman_use_new_toml_formatter: true</code> you get the new
+behavior. If you have something like the example and you want to use the
+new TOML formatter, rewrite this as</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_use_new_toml_formatter</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_containers_conf</span><span class="kw">:</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> environment=production</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> status=tier2</span></span></code></pre></div>
+<h1 id="example-playbooks">Example Playbooks</h1>
+<p>Create rootless container with volume mount:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Manage podman containers and services</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hosts</span><span class="kw">:</span><span class="at"> all</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">vars</span><span class="kw">:</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">podman_create_host_directories</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">podman_firewall</span><span class="kw">:</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> 8080-8081/tcp</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">state</span><span class="kw">:</span><span class="at"> enabled</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> 12340/tcp</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">state</span><span class="kw">:</span><span class="at"> enabled</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">podman_selinux_ports</span><span class="kw">:</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">ports</span><span class="kw">:</span><span class="at"> 8080-8081</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">setype</span><span class="kw">:</span><span class="at"> http_port_t</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">podman_kube_specs</span><span class="kw">:</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">state</span><span class="kw">:</span><span class="at"> started</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_user</span><span class="kw">:</span><span class="at"> dbuser</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_group</span><span class="kw">:</span><span class="at"> dbgroup</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">kube_file_content</span><span class="kw">:</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db_config</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">data</span><span class="kw">:</span></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="fu">              db_config</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>                # database config goes here</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> quay.io/db/db:stable</span></span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">1234</span></span>
+<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a><span class="at">                      </span><span class="fu">hostPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">12340</span></span>
+<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/db:Z</span></span>
+<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a><span class="at">                      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
+<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/db_config.conf:Z</span></span>
+<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a><span class="at">                      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db_config</span></span>
+<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a><span class="at">                      </span><span class="fu">subPath</span><span class="kw">:</span><span class="at"> db_config.conf</span></span>
+<span id="cb23-42"><a href="#cb23-42" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb23-43"><a href="#cb23-43" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db</span></span>
+<span id="cb23-44"><a href="#cb23-44" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb23-45"><a href="#cb23-45" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /var/lib/db</span></span>
+<span id="cb23-46"><a href="#cb23-46" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db_config</span></span>
+<span id="cb23-47"><a href="#cb23-47" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">configMap</span><span class="kw">:</span></span>
+<span id="cb23-48"><a href="#cb23-48" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db_config</span></span>
+<span id="cb23-49"><a href="#cb23-49" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">state</span><span class="kw">:</span><span class="at"> started</span></span>
+<span id="cb23-50"><a href="#cb23-50" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_user</span><span class="kw">:</span><span class="at"> webapp</span></span>
+<span id="cb23-51"><a href="#cb23-51" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run_as_group</span><span class="kw">:</span><span class="at"> webapp</span></span>
+<span id="cb23-52"><a href="#cb23-52" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">kube_file_src</span><span class="kw">:</span><span class="at"> /path/to/webapp.yml</span></span>
+<span id="cb23-53"><a href="#cb23-53" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">roles</span><span class="kw">:</span></span>
+<span id="cb23-54"><a href="#cb23-54" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> linux-system-roles.podman</span></span></code></pre></div>
+<p>Create container running as root with Podman volume:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Manage podman root containers and services</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hosts</span><span class="kw">:</span><span class="at"> all</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">vars</span><span class="kw">:</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">podman_firewall</span><span class="kw">:</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> 8080/tcp</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">state</span><span class="kw">:</span><span class="at"> enabled</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">podman_kube_specs</span><span class="kw">:</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">state</span><span class="kw">:</span><span class="at"> started</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">kube_file_content</span><span class="kw">:</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ubi8-httpd</span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ubi8-httpd</span></span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.access.redhat.com/ubi8/httpd-24</span></span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="fu">hostPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/www/html:Z</span></span>
+<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ubi8-html</span></span>
+<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ubi8-html</span></span>
+<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
+<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> ubi8-html-volume</span></span>
+<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">roles</span><span class="kw">:</span></span>
+<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> linux-system-roles.podman</span></span></code></pre></div>
+<p>Create quadlet application with secrets. Defer starting the
+application until all of the units have been created. Note the order of
+the files in <code>podman_quadlet_specs</code> are in dependency order.
+Using <code>podman_create_host_directories: true</code> will create any
+host mounted directories specified by a <code>Volume=</code> directive
+in the container spec.</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_create_host_directories</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_activate_systemd_unit</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_quadlet_specs</span><span class="kw">:</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> quadlet-demo</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> network</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="fu">    file_content</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>      [Network]</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>      Subnet=192.168.30.0/24</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>      Gateway=192.168.30.1</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>      Label=app=wordpress</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">file_src</span><span class="kw">:</span><span class="at"> quadlet-demo-mysql.volume</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">template_src</span><span class="kw">:</span><span class="at"> quadlet-demo-mysql.container.j2</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">file_src</span><span class="kw">:</span><span class="at"> envoy-proxy-configmap.yml</span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">file_src</span><span class="kw">:</span><span class="at"> quadlet-demo.yml</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">file_src</span><span class="kw">:</span><span class="at"> quadlet-demo.kube</span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">activate_systemd_unit</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_firewall</span><span class="kw">:</span></span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> 8000/tcp</span></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">state</span><span class="kw">:</span><span class="at"> enabled</span></span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> 9000/tcp</span></span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">state</span><span class="kw">:</span><span class="at"> enabled</span></span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a><span class="fu">podman_secrets</span><span class="kw">:</span></span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-root-password-container</span></span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">state</span><span class="kw">:</span><span class="at"> present</span></span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">skip_existing</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">data</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;{{ root_password_from_vault }}&quot;</span></span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-root-password-kube</span></span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">state</span><span class="kw">:</span><span class="at"> present</span></span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">skip_existing</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true" tabindex="-1"></a><span class="fu">    data</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb25-31"><a href="#cb25-31" aria-hidden="true" tabindex="-1"></a>      apiVersion: v1</span>
+<span id="cb25-32"><a href="#cb25-32" aria-hidden="true" tabindex="-1"></a>      data:</span>
+<span id="cb25-33"><a href="#cb25-33" aria-hidden="true" tabindex="-1"></a>        password: &quot;{{ root_password_from_vault | b64encode }}&quot;</span>
+<span id="cb25-34"><a href="#cb25-34" aria-hidden="true" tabindex="-1"></a>      kind: Secret</span>
+<span id="cb25-35"><a href="#cb25-35" aria-hidden="true" tabindex="-1"></a>      metadata:</span>
+<span id="cb25-36"><a href="#cb25-36" aria-hidden="true" tabindex="-1"></a>        name: mysql-root-password-kube</span>
+<span id="cb25-37"><a href="#cb25-37" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> envoy-certificates</span></span>
+<span id="cb25-38"><a href="#cb25-38" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">state</span><span class="kw">:</span><span class="at"> present</span></span>
+<span id="cb25-39"><a href="#cb25-39" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">skip_existing</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb25-40"><a href="#cb25-40" aria-hidden="true" tabindex="-1"></a><span class="fu">    data</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb25-41"><a href="#cb25-41" aria-hidden="true" tabindex="-1"></a>      apiVersion: v1</span>
+<span id="cb25-42"><a href="#cb25-42" aria-hidden="true" tabindex="-1"></a>      data:</span>
+<span id="cb25-43"><a href="#cb25-43" aria-hidden="true" tabindex="-1"></a>        certificate.key: {{ key_from_vault | b64encode }}</span>
+<span id="cb25-44"><a href="#cb25-44" aria-hidden="true" tabindex="-1"></a>        certificate.pem: {{ cert_from_vault | b64encode }}</span>
+<span id="cb25-45"><a href="#cb25-45" aria-hidden="true" tabindex="-1"></a>      kind: Secret</span>
+<span id="cb25-46"><a href="#cb25-46" aria-hidden="true" tabindex="-1"></a>      metadata:</span>
+<span id="cb25-47"><a href="#cb25-47" aria-hidden="true" tabindex="-1"></a>        name: envoy-certificates</span></code></pre></div>
+<h1 id="license">License</h1>
+<p>MIT.</p>
+<h1 id="author-information">Author Information</h1>
+<p>Based on <code>podman-container-systemd</code> by Ilkka Tengvall <a
+href="mailto:ilkka.tengvall@iki.fi">ilkka.tengvall@iki.fi</a>.</p>
+<p>Authors: Thom Carlin, Rich Megginson, Adam Miller, Valentin
+Rothberg</p>
+</article>
+</body>
+</html>
