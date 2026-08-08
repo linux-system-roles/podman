@@ -115,6 +115,7 @@
         - name: Run the role to create quadlet and pull image
           include_tasks: tasks/run_role_with_clear_facts.yml
           vars:
+            podman_prune_images: true
             podman_quadlet_specs: "{{ __podman_quadlet_specs |
               map('combine', __run_as_user) | list }}"
             __run_as_user:
