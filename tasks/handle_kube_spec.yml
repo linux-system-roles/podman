@@ -32,25 +32,6 @@
     - __podman_kube_parsed.kube_file_field is none or
       __podman_kube_parsed.kube_file_field | length == 0
 
-# podman image prune outputs deleted image IDs to stdout -
-# empty stdout means nothing was pruned.
-# On the create/update path, prune runs before pulling so that
-# the currently running image survives (still in use) and serves
-# as a rollback target.
-- name: Prune unused images before pulling
-  command: podman image prune --all -f
-  when:
-    - podman_prune_images | bool
-    - __podman_is_booted
-    - __podman_kube_parsed.state != "absent"
-  register: __podman_prune_result
-  changed_when: __podman_prune_result.stdout | length > 0
-  become: "{{ __podman_kube_parsed.rootless | ternary(true, omit) }}"
-  become_user: "{{ __podman_kube_parsed.rootless |
-    ternary(__podman_kube_parsed.user, omit) }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ __podman_kube_parsed.xdg_runtime_dir }}"
-
 - name: Cleanup containers and services
   include_tasks: cleanup_kube_spec.yml
   when: __podman_kube_parsed.state == "absent"
