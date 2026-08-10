@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[1.14.1] - 2026-08-10
+--------------------
+
+### Bug Fixes
+
+- fix: re-order tasks to allow prune_images to complete on a new host (#318)
+
 [1.14.0] - 2026-08-06
 --------------------
 
