@@ -38,10 +38,6 @@
       if 'file_src' in __podman_restart_spec_item else none }}"
     __podman_spec_template_src: "{{ __podman_restart_spec_item['template_src']
       if 'template_src' in __podman_restart_spec_item else none }}"
-    __podman_spec_has_file_data: "{{
-      'file_content' in __podman_restart_spec_item or
-      __podman_restart_spec_item.get('file_src') or
-      __podman_restart_spec_item.get('template_src') }}"
   vars:
     __podman_spec_home: "{{
       ansible_facts['getent_passwd'][__podman_spec_user][4] }}"
@@ -87,3 +83,7 @@
       '.' ~ __podman_spec_type
       if __podman_spec_name and __podman_spec_type
       else '' }}"
+    __podman_spec_has_file_data: "{{
+      'file_content' in __podman_restart_spec_item or
+      __podman_restart_spec_item.get('file_src', '') | length > 0 or
+      __podman_restart_spec_item.get('template_src', '') | length > 0 }}"
