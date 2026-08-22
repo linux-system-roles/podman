@@ -142,6 +142,122 @@
               - file: "{{ __dep_file }}"
                 state: absent
 
+    - name: Test explicit restarts on template_src dependency file
+      block:
+        - name: Run role - deploy template_src dependency and container
+          include_tasks: tasks/run_role_with_clear_facts.yml
+          vars:
+            __sr_public: true
+            __dep_template_version: version1
+            podman_quadlet_specs:
+              - file: "{{ __dep_file }}"
+                template_src: templates/lsr-dep-index.html.j2
+                restarts: [lsr-dep-http]
+              - "{{ __dep_quadlet_container }}"
+
+        - name: Wait for httpd to serve template_src content
+          uri:
+            url: "http://127.0.0.1:{{ __dep_port }}/"
+            return_content: true
+          register: __dep_http_tmpl_v1
+          until: __dep_http_tmpl_v1.content is search('version1')
+          retries: 15
+          delay: 2
+
+        - name: Run role - update template_src dependency file
+          include_tasks: tasks/run_role_with_clear_facts.yml
+          vars:
+            __sr_public: true
+            __dep_template_version: version2
+            podman_quadlet_specs:
+              - file: "{{ __dep_file }}"
+                template_src: templates/lsr-dep-index.html.j2
+                restarts: [lsr-dep-http]
+              - "{{ __dep_quadlet_container }}"
+
+        - name: Verify container serves updated template_src content
+          uri:
+            url: "http://127.0.0.1:{{ __dep_port }}/"
+            return_content: true
+          register: __dep_http_tmpl_v2
+          until: __dep_http_tmpl_v2.content is search('version2')
+          retries: 15
+          delay: 2
+
+        - name: Assert updated template_src content
+          assert:
+            that: __dep_http_tmpl_v2.content is search('version2')
+
+      always:
+        - name: Cleanup template_src restarts test
+          tags:
+            - tests::cleanup
+          include_tasks: tasks/run_role_with_clear_facts.yml
+          vars:
+            podman_quadlet_specs:
+              - name: lsr-dep-http
+                type: container
+                state: absent
+              - file: "{{ __dep_file }}"
+                state: absent
+
+    - name: Test explicit restarts on file_src dependency file
+      block:
+        - name: Run role - deploy file_src dependency and container
+          include_tasks: tasks/run_role_with_clear_facts.yml
+          vars:
+            __sr_public: true
+            podman_quadlet_specs:
+              - file: "{{ __dep_file }}"
+                file_src: files/lsr-dep-index-v1.html
+                restarts: [lsr-dep-http]
+              - "{{ __dep_quadlet_container }}"
+
+        - name: Wait for httpd to serve file_src content
+          uri:
+            url: "http://127.0.0.1:{{ __dep_port }}/"
+            return_content: true
+          register: __dep_http_fsrc_v1
+          until: __dep_http_fsrc_v1.content is search('version1')
+          retries: 15
+          delay: 2
+
+        - name: Run role - update file_src dependency file
+          include_tasks: tasks/run_role_with_clear_facts.yml
+          vars:
+            __sr_public: true
+            podman_quadlet_specs:
+              - file: "{{ __dep_file }}"
+                file_src: files/lsr-dep-index-v2.html
+                restarts: [lsr-dep-http]
+              - "{{ __dep_quadlet_container }}"
+
+        - name: Verify container serves updated file_src content
+          uri:
+            url: "http://127.0.0.1:{{ __dep_port }}/"
+            return_content: true
+          register: __dep_http_fsrc_v2
+          until: __dep_http_fsrc_v2.content is search('version2')
+          retries: 15
+          delay: 2
+
+        - name: Assert updated file_src content
+          assert:
+            that: __dep_http_fsrc_v2.content is search('version2')
+
+      always:
+        - name: Cleanup file_src restarts test
+          tags:
+            - tests::cleanup
+          include_tasks: tasks/run_role_with_clear_facts.yml
+          vars:
+            podman_quadlet_specs:
+              - name: lsr-dep-http
+                type: container
+                state: absent
+              - file: "{{ __dep_file }}"
+                state: absent
+
     - name: Test explicit restarts on dependency file for kube play
       block:
         - name: Run role - create kube play dependency file
