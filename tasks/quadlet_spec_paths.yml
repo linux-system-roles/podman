@@ -38,10 +38,13 @@
       if 'file_src' in __podman_restart_spec_item else none }}"
     __podman_spec_template_src: "{{ __podman_restart_spec_item['template_src']
       if 'template_src' in __podman_restart_spec_item else none }}"
+    # Jinja returns the last evaluated operand, so using the raw values
+    # produces a string, which `| bool` then evaluates to false meaning the
+    # trigger wouldn't run
     __podman_spec_has_file_data: "{{
       'file_content' in __podman_restart_spec_item or
-      __podman_restart_spec_item.get('file_src') or
-      __podman_restart_spec_item.get('template_src') }}"
+      __podman_restart_spec_item.get('file_src') is truthy or
+      __podman_restart_spec_item.get('template_src') is truthy }}"
   vars:
     __podman_spec_home: "{{
       ansible_facts['getent_passwd'][__podman_spec_user][4] }}"
