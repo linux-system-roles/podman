@@ -1,6 +1,19 @@
 Changelog
 =========
 
+[1.14.2] - 2026-08-24
+--------------------
+
+### Bug Fixes
+
+- fix(quadlet_spec_paths): Test for file_src and template_src for restart should use length gt 0 (#325)
+
+### Other Changes
+
+- ci: use commit hash for github action, add persist-credentials false [citest_skip] (#320)
+- ci: refactor build_docs so that pandoc runs in isolated read-only job [citest_skip] (#321)
+- ci: use exact match for systemroller instead of contains [citest_skip] (#322)
+
 [1.14.1] - 2026-08-10
 --------------------
 
