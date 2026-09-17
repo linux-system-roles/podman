@@ -1,6 +1,24 @@
 Changelog
 =========
 
+[1.14.3] - 2026-09-17
+--------------------
+
+### Bug Fixes
+
+- fix: Relax collection-requirements version constraints (#323)
+
+### Other Changes
+
+- ci(build_docs): fix pandoc container syntax [citest_skip] (#327)
+- ci: [citest_skip] bump codespell-project/actions-codespell from 2.1 to 2.2 (#328)
+- ci: [citest_skip] bump myrotvorets/set-commit-status-action from 2774e1f040c82ed70a76b4b5cd53bb11ffaedd0a to c0f880c99d91381c6fdb97726f03feb8004409b4 (#329)
+- ci: [citest_skip] bump actions/download-artifact from 7.0.0 to 8.0.1 (#330)
+- refactor: Relax collection constraints, gate vendored modules by python version, update ci versions [citest_skip] (#331)
+- ci: do not run ci tests by default, require citest comment or label [citest_skip] (#332)
+- ci: replace weekly_ci with periodic_ci, stagger schedules [citest_skip] (#333)
+- ci: update status when action triggered by issue comment (#334)
+
 [1.14.2] - 2026-08-24
 --------------------
 
