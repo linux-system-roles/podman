@@ -6,15 +6,24 @@
     - vars/test_vars.yml
   vars:
     podman_secure_logging: false
+    # Argument specs template podman_host_directories at include time,
+    # before the role sets podman_subuid_info.  Use /etc/subuid and
+    # /etc/subgid values read in the play after the test user is created.
     podman_host_directories:
       "{{ __test_tmpdir.path ~ '/httpd1-create' }}":
         mode: "0777"
-        owner: "{{ 3001 +
-          podman_subuid_info[__podman_test_username]['start'] - 1 }}"
-        group: "{{ 3001 +
-          podman_subgid_info[__podman_test_username]['start'] - 1 }}"
+        owner: "{{ 3001 + (__test_subuid_start | int) - 1 }}"
+        group: "{{ 3001 + (__test_subgid_start | int) - 1 }}"
     podman_run_as_user: root
     __podman_test_username: podman_basic_user
+    __test_subuid_start: "{{
+      ((__test_subuid_file.content | b64decode).split('\n') | list |
+       select('match', '^' ~ (__podman_test_username | regex_escape) ~ ':') |
+       list | first).split(':')[1] }}"
+    __test_subgid_start: "{{
+      ((__test_subgid_file.content | b64decode).split('\n') | list |
+       select('match', '^' ~ (__podman_test_username | regex_escape) ~ ':') |
+       list | first).split(':')[1] }}"
     test_names_users:
       - [httpd1, "{{ __podman_test_username }}", 3001]
       - [httpd2, root, 0]
@@ -209,6 +218,16 @@
           user:
             name: "{{ __podman_test_username }}"
             uid: 3001
+
+        - name: Read /etc/subuid for host directory ownership
+          slurp:
+            path: /etc/subuid
+          register: __test_subuid_file
+
+        - name: Read /etc/subgid for host directory ownership
+          slurp:
+            path: /etc/subgid
+          register: __test_subgid_file
 
         - name: Create tempfile for kube_src
           tempfile:
