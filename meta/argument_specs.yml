@@ -1,0 +1,344 @@
+# SPDX-License-Identifier: MIT
+---
+argument_specs:
+  main:
+    short_description: The podman role.
+    description: >
+      The podman role configures Podman containers, pods, and systemd
+      units on the managed host. It can deploy Kubernetes YAML via
+      `podman kube play`, Quadlet units, secrets, registry credentials,
+      and related containers.conf settings.
+    options:
+      podman_kube_specs:
+        type: raw
+        default: []
+        description: >
+          List of Kubernetes pod specifications to manage with Podman.
+          Each item is a dictionary in the same format as
+          `containers.podman.podman_play`, with additional role fields
+          such as `kube_file_src`, `kube_file_content`, `run_as_user`,
+          and `restarts_on`. `kube_file_content` accepts a YAML string,
+          a dictionary, or a list of dictionaries.
+      podman_create_host_directories:
+        type: bool
+        default: false
+        description: >
+          Whether to create host directories specified in kube
+          `volumes.hostPath` mounts and in Quadlet `Volume` host paths.
+          Directories must be absolute paths for root containers or
+          paths relative to the home directory for rootless containers.
+      podman_host_directories:
+        type: dict
+        default: {}
+        description: >
+          Ownership and permission parameters to apply when creating
+          host directories. Each key is a host directory path and each
+          value is a dictionary of `ansible.builtin.file` parameters.
+          The special key `DEFAULT` applies to all other directories.
+      podman_firewall:
+        type: list
+        elements: dict
+        default: []
+        description: >
+          Firewall configuration dictionaries passed to the firewall
+          system role for ports used by containers, for example
+          `port: 8080/tcp`.
+      podman_selinux_ports:
+        type: list
+        elements: dict
+        default: []
+        description: >
+          SELinux port policy dictionaries passed to the selinux system
+          role, for example `ports: 8080` with `setype: http_port_t`.
+      podman_run_as_ansible_user:
+        type: bool
+        default: false
+        description: >
+          Whether to use `ansible_user` as the default for
+          `podman_run_as_user` instead of `root`. An explicit
+          `podman_run_as_user` value overrides this. When `ansible_user`
+          is undefined, the role uses `whoami` on the managed host.
+      podman_run_as_user:
+        type: str
+        default: "{{ ansible_user if (podman_run_as_ansible_user | bool and ansible_user is defined)
+          else __podman_whoami.stdout if (podman_run_as_ansible_user | bool and __podman_whoami.stdout is defined)
+          else 'root' }}"
+        description: >
+          The default user for rootless containers and related files.
+          Per-spec `run_as_user` overrides this. The user must already
+          exist and be present in `/etc/subuid` and `/etc/subgid`.
+      podman_run_as_group:
+        type: raw
+        default: null
+        description: >
+          The default group for rootless containers. Accepts a group
+          name string or `null` to determine the group from the user on
+          the managed host. Per-spec `run_as_group` overrides this. The
+          group must already exist.
+      podman_systemd_unit_scope:
+        type: raw
+        default: null
+        description: >
+          The default systemd scope for generated units. Accepts
+          `user`, `system`, or `null` to use `user` for rootless
+          containers and `system` for root containers. Per-spec
+          `systemd_unit_scope` overrides this.
+      podman_containers_conf:
+        type: dict
+        default: {}
+        description: >
+          containers.conf(5) settings written as a drop-in TOML file.
+          System settings are managed when running as root, otherwise
+          user settings are managed.
+      podman_registries_conf:
+        type: dict
+        default: {}
+        description: >
+          containers-registries.conf(5) settings written as a drop-in
+          file. System settings are managed when running as root,
+          otherwise user settings are managed.
+      podman_storage_conf:
+        type: dict
+        default: {}
+        description: >
+          containers-storage.conf(5) settings. System settings are
+          managed when running as root, otherwise user settings are
+          managed.
+      podman_policy_json:
+        type: dict
+        default: {}
+        description: >
+          containers-policy.json(5) settings. System settings are
+          managed when running as root, otherwise user settings are
+          managed.
+      podman_quadlet_specs:
+        type: raw
+        default: []
+        description: >
+          List of Quadlet specifications. Each item is a dictionary
+          identified by `name` and `type`, or derived from `file`,
+          `file_src`, or `template_src`. Items may include Quadlet
+          section dictionaries such as `Container` or `Kube`, plus
+          `restarts` and `restarts_on` for dependency restarts.
+      podman_secrets:
+        type: raw
+        default: []
+        description: >
+          List of secret specifications in the same format as
+          `containers.podman.podman_secret`, with additional `restarts`
+          and `run_as_user` fields. Encrypt `data` with Ansible Vault.
+      podman_activate_systemd_unit:
+        type: bool
+        default: true
+        description: >
+          Whether to activate each systemd unit when it is created.
+          Per-spec `activate_systemd_unit` overrides this. Quadlet
+          units are implicitly enabled when created.
+      podman_pull_image:
+        type: bool
+        default: true
+        description: >
+          Whether to pull images referenced by kube or Quadlet specs
+          before use. Per-spec `pull_image` overrides this.
+      podman_continue_if_pull_fails:
+        type: bool
+        default: false
+        description: >
+          Whether to continue the role if an image pull fails. Per-spec
+          `continue_if_pull_fails` overrides this.
+      podman_pull_retry:
+        type: bool
+        default: false
+        description: >
+          Whether to retry failed image pulls using the default Ansible
+          `until` behavior.
+      podman_registry_username:
+        type: str
+        default: "{{ container_image_user | d('') }}"
+        description: >
+          The username used to authenticate to container registries.
+          Requires `podman_registry_password`. Per-spec
+          `registry_username` overrides this.
+      podman_registry_password:
+        type: str
+        default: "{{ container_image_password | d('') }}"
+        description: >
+          The password used to authenticate to container registries.
+          Requires `podman_registry_username`. Per-spec
+          `registry_password` overrides this.
+      podman_credential_files:
+        type: list
+        elements: dict
+        default: []
+        description: >
+          List of registry credential files in containers-auth.json
+          format. Encrypt these files with Ansible Vault.
+        options:
+          state:
+            type: str
+            default: present
+            choices:
+              - present
+              - absent
+            description: >
+              Whether the credential file should exist (`present`) or
+              be removed (`absent`).
+          file_src:
+            type: str
+            description: >
+              Path on the controller of a credential file to copy to
+              `file` on the managed host.
+          template_src:
+            type: str
+            description: >
+              Path on the controller of a Jinja template to render to
+              `file` on the managed host.
+          file_content:
+            type: str
+            description: >
+              Inline containers-auth.json content to write to `file` on
+              the managed host.
+          file:
+            type: str
+            description: >
+              Path on the managed host for the credential file. Relative
+              paths are relative to `$HOME/.config/containers`.
+          run_as_user:
+            type: str
+            description: >
+              Owner of the credential file and the user whose `$HOME` is
+              used when `file` is omitted.
+          run_as_group:
+            type: str
+            description: >
+              Group owner of the credential file.
+          mode:
+            type: raw
+            default: "0600"
+            description: >
+              File mode for the credential file. Accepts a string such
+              as `0600` or an integer.
+      podman_registry_certificates:
+        type: list
+        elements: dict
+        default: []
+        description: >
+          List of TLS client certificates and keys used to connect to
+          registries, stored under containers certs.d directories.
+        options:
+          state:
+            type: str
+            default: present
+            choices:
+              - present
+              - absent
+            description: >
+              Whether the certificate files should exist (`present`) or
+              be removed (`absent`).
+          run_as_user:
+            type: str
+            description: >
+              Owner of the certificate files and the user whose `$HOME`
+              is used for rootless certs.d paths.
+          run_as_group:
+            type: str
+            description: >
+              Group owner of the certificate files.
+          registry_host:
+            type: str
+            required: true
+            description: >
+              Hostname or `hostname:port` of the registry, used as the
+              certs.d subdirectory name.
+          cert:
+            type: str
+            description: >
+              Name of the TLS client certificate file in the certs.d
+              directory.
+          private_key:
+            type: str
+            description: >
+              Name of the TLS client private key file in the certs.d
+              directory.
+          key:
+            type: str
+            description: >
+              Alternate name for the TLS client private key file in the
+              certs.d directory.
+          ca_cert:
+            type: str
+            description: >
+              Name of the TLS CA certificate file in the certs.d
+              directory.
+          cert_src:
+            type: str
+            description: >
+              Path on the controller of the TLS client certificate to
+              copy to `cert`.
+          private_key_src:
+            type: str
+            description: >
+              Path on the controller of the TLS client private key to
+              copy to `private_key`.
+          key_src:
+            type: str
+            description: >
+              Alternate path on the controller of the TLS client private
+              key to copy to `key`.
+          ca_cert_src:
+            type: str
+            description: >
+              Path on the controller of the TLS CA certificate to copy
+              to `ca_cert`.
+          cert_content:
+            type: str
+            description: >
+              Inline TLS client certificate content to write to `cert`.
+          private_key_content:
+            type: str
+            description: >
+              Inline TLS client private key content to write to
+              `private_key`.
+          key_content:
+            type: str
+            description: >
+              Alternate inline TLS client private key content to write
+              to `key`.
+          ca_cert_content:
+            type: str
+            description: >
+              Inline TLS CA certificate content to write to `ca_cert`.
+      podman_validate_certs:
+        type: raw
+        default: null
+        description: >
+          Whether image pulls validate TLS certificates. Accepts a
+          boolean or `null` to use the `containers.podman.podman_image`
+          module default. Per-spec `validate_certs` overrides this.
+      podman_prune_images:
+        type: bool
+        default: false
+        description: >
+          Whether to prune unused images before pulling new images and
+          after removing kube or Quadlet specs.
+      podman_transactional_update_reboot_ok:
+        type: raw
+        default: null
+        description: >
+          Whether to permit reboots required by transactional updates.
+          Set to `true` to allow reboots, `false` to skip the reboot, or
+          `null` so the role fails if a reboot is required. Ignored on
+          non-transactional systems.
+      podman_use_new_toml_formatter:
+        type: bool
+        default: false
+        description: >
+          Whether to format nested dictionaries in containers.conf TOML
+          as tables instead of the legacy key=value array form.
+      podman_secure_logging:
+        type: bool
+        default: true
+        description: >
+          Whether to suppress potentially sensitive output from tasks
+          that handle credentials and secrets by setting `no_log`. Set
+          to `false` only for debugging credential handling.

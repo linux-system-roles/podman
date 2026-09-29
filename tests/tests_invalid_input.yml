@@ -1,0 +1,414 @@
+# SPDX-License-Identifier: MIT
+---
+# Verify meta/argument_specs.yml and tasks/assert_role_vars.yml reject bad
+# parameters. Each block runs the role expecting failure; rescue records
+# that outcome.
+- name: Verify invalid parameters are rejected
+  hosts: all
+  tasks:
+    - name: Run invalid input tests
+      block:
+        # ====================================================
+        # Section 1: Verify role works with valid defaults
+        # ====================================================
+        - name: Run role with valid defaults
+          ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+
+        - name: Mark valid defaults succeeded
+          ansible.builtin.set_fact:
+            __valid_defaults_succeeded: true
+
+        - name: Assert role completed with valid defaults
+          ansible.builtin.assert:
+            that:
+              - __valid_defaults_succeeded | default(false)
+            fail_msg: >-
+              Role should succeed with default parameters
+
+        # ====================================================
+        # Section 2: argument_specs validation (Ansible 2.11+)
+        # ====================================================
+        - name: Run argument specs validation tests
+          when: ansible_version.full is version("2.11", ">=")
+          block:
+            - name: Argument specs reject non-bool podman_create_host_directories
+              block:
+                - name: Run role with non-boolean podman_create_host_directories
+                  ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+                  vars:
+                    podman_create_host_directories: not_a_bool
+              rescue:
+                - name: Mark invalid podman_create_host_directories rejected
+                  ansible.builtin.set_fact:
+                    __invalid_input_create_host_dirs_type_failed: true
+
+            - name: Assert invalid podman_create_host_directories type was rejected
+              ansible.builtin.assert:
+                that:
+                  - >-
+                    __invalid_input_create_host_dirs_type_failed
+                    | default(false)
+                fail_msg: >-
+                  argument_specs should reject
+                  podman_create_host_directories with a non-boolean type
+
+            - name: Argument specs reject non-bool podman_secure_logging
+              block:
+                - name: Run role with non-boolean podman_secure_logging
+                  ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+                  vars:
+                    podman_secure_logging: not_a_bool
+              rescue:
+                - name: Mark invalid podman_secure_logging rejected
+                  ansible.builtin.set_fact:
+                    __invalid_input_secure_logging_type_failed: true
+
+            - name: Assert invalid podman_secure_logging type was rejected
+              ansible.builtin.assert:
+                that:
+                  - __invalid_input_secure_logging_type_failed | default(false)
+                fail_msg: >-
+                  argument_specs should reject podman_secure_logging with
+                  a non-boolean type
+
+            - name: Argument specs reject non-list podman_firewall
+              block:
+                - name: Run role with non-list podman_firewall
+                  ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+                  vars:
+                    podman_firewall: not_a_list
+              rescue:
+                - name: Mark invalid podman_firewall rejected
+                  ansible.builtin.set_fact:
+                    __invalid_input_firewall_type_failed: true
+
+            - name: Assert invalid podman_firewall type was rejected
+              ansible.builtin.assert:
+                that:
+                  - __invalid_input_firewall_type_failed | default(false)
+                fail_msg: >-
+                  argument_specs should reject podman_firewall with a
+                  non-list type
+
+            - name: Argument specs reject non-dict podman_containers_conf
+              block:
+                - name: Run role with non-dict podman_containers_conf
+                  ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+                  vars:
+                    podman_containers_conf: not_a_dict
+              rescue:
+                - name: Mark invalid podman_containers_conf rejected
+                  ansible.builtin.set_fact:
+                    __invalid_input_containers_conf_type_failed: true
+
+            - name: Assert invalid podman_containers_conf type was rejected
+              ansible.builtin.assert:
+                that:
+                  - >-
+                    __invalid_input_containers_conf_type_failed
+                    | default(false)
+                fail_msg: >-
+                  argument_specs should reject podman_containers_conf with
+                  a non-dict type
+
+            - name: Argument specs reject invalid credential file state
+              block:
+                - name: Run role with invalid credential file state
+                  ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+                  vars:
+                    podman_credential_files:
+                      - state: invalid_choice
+                        file_src: auth.json
+              rescue:
+                - name: Mark invalid credential file state rejected
+                  ansible.builtin.set_fact:
+                    __invalid_input_cred_state_choice_failed: true
+
+            - name: Assert invalid credential file state was rejected
+              ansible.builtin.assert:
+                that:
+                  - __invalid_input_cred_state_choice_failed | default(false)
+                fail_msg: >-
+                  argument_specs should reject podman_credential_files
+                  state value 'invalid_choice'
+
+            - name: Argument specs reject invalid registry certificate state
+              block:
+                - name: Run role with invalid registry certificate state
+                  ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+                  vars:
+                    podman_registry_certificates:
+                      - registry_host: registry.example.com
+                        state: invalid_choice
+              rescue:
+                - name: Mark invalid registry certificate state rejected
+                  ansible.builtin.set_fact:
+                    __invalid_input_cert_state_choice_failed: true
+
+            - name: Assert invalid registry certificate state was rejected
+              ansible.builtin.assert:
+                that:
+                  - __invalid_input_cert_state_choice_failed | default(false)
+                fail_msg: >-
+                  argument_specs should reject
+                  podman_registry_certificates state value
+                  'invalid_choice'
+
+            - name: Argument specs reject missing registry_host
+              block:
+                - name: Run role without required registry_host
+                  ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+                  vars:
+                    podman_registry_certificates:
+                      - cert_src: client.cert
+              rescue:
+                - name: Mark missing registry_host rejected
+                  ansible.builtin.set_fact:
+                    __invalid_input_missing_registry_host_failed: true
+                  when: >-
+                    'missing required arguments' in
+                    (ansible_failed_result | default({}) | to_json)
+
+            - name: Assert missing registry_host was rejected
+              ansible.builtin.assert:
+                that:
+                  - >-
+                    __invalid_input_missing_registry_host_failed
+                    | default(false)
+                fail_msg: >-
+                  argument_specs should reject
+                  podman_registry_certificates entries missing the
+                  required registry_host field
+
+        # ====================================================
+        # Section 3: assert_role_vars validation (all versions)
+        # ====================================================
+        - name: Assert rejects podman_kube_specs as a string
+          block:
+            - name: Run role with podman_kube_specs as a string
+              ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_kube_specs: not_a_list
+          rescue:
+            - name: Mark podman_kube_specs string rejected
+              ansible.builtin.set_fact:
+                __invalid_input_kube_specs_string_failed: true
+              when: >-
+                'podman_kube_specs must be a list' in
+                (ansible_failed_result | default({}) | to_json)
+
+        - name: Assert podman_kube_specs as string was rejected
+          ansible.builtin.assert:
+            that:
+              - __invalid_input_kube_specs_string_failed | default(false)
+            fail_msg: >-
+              assert_role_vars should reject podman_kube_specs when
+              given a string value
+
+        - name: Assert rejects kube_file_content as integer
+          block:
+            - name: Run role with kube_file_content as integer
+              ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_kube_specs:
+                  - kube_file_content: 12345
+          rescue:
+            - name: Mark kube_file_content integer rejected
+              ansible.builtin.set_fact:
+                __invalid_input_kube_file_content_int_failed: true
+              when: >-
+                'kube_file_content must be a string' in
+                (ansible_failed_result | default({}) | to_json)
+
+        - name: Assert kube_file_content as integer was rejected
+          ansible.builtin.assert:
+            that:
+              - >-
+                __invalid_input_kube_file_content_int_failed
+                | default(false)
+            fail_msg: >-
+              assert_role_vars should reject kube_file_content when
+              given an integer value
+
+        - name: Assert rejects podman_quadlet_specs as a string
+          block:
+            - name: Run role with podman_quadlet_specs as a string
+              ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_quadlet_specs: not_a_list
+          rescue:
+            - name: Mark podman_quadlet_specs string rejected
+              ansible.builtin.set_fact:
+                __invalid_input_quadlet_specs_string_failed: true
+              when: >-
+                'podman_quadlet_specs must be a list' in
+                (ansible_failed_result | default({}) | to_json)
+
+        - name: Assert podman_quadlet_specs as string was rejected
+          ansible.builtin.assert:
+            that:
+              - >-
+                __invalid_input_quadlet_specs_string_failed
+                | default(false)
+            fail_msg: >-
+              assert_role_vars should reject podman_quadlet_specs when
+              given a string value
+
+        - name: Assert rejects podman_secrets as a string
+          block:
+            - name: Run role with podman_secrets as a string
+              ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_secrets: not_a_list
+          rescue:
+            - name: Mark podman_secrets string rejected
+              ansible.builtin.set_fact:
+                __invalid_input_secrets_string_failed: true
+              when: >-
+                'podman_secrets must be a list' in
+                (ansible_failed_result | default({}) | to_json)
+
+        - name: Assert podman_secrets as string was rejected
+          ansible.builtin.assert:
+            that:
+              - __invalid_input_secrets_string_failed | default(false)
+            fail_msg: >-
+              assert_role_vars should reject podman_secrets when given
+              a string value
+
+        - name: Assert rejects podman_run_as_group as integer
+          block:
+            - name: Run role with podman_run_as_group as integer
+              ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_run_as_group: 12345
+          rescue:
+            - name: Mark podman_run_as_group integer rejected
+              ansible.builtin.set_fact:
+                __invalid_input_run_as_group_int_failed: true
+              when: >-
+                'podman_run_as_group must be null or a string' in
+                (ansible_failed_result | default({}) | to_json)
+
+        - name: Assert podman_run_as_group as integer was rejected
+          ansible.builtin.assert:
+            that:
+              - __invalid_input_run_as_group_int_failed | default(false)
+            fail_msg: >-
+              assert_role_vars should reject podman_run_as_group when
+              given an integer value
+
+        - name: Assert rejects podman_systemd_unit_scope as integer
+          block:
+            - name: Run role with podman_systemd_unit_scope as integer
+              ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_systemd_unit_scope: 12345
+          rescue:
+            - name: Mark podman_systemd_unit_scope integer rejected
+              ansible.builtin.set_fact:
+                __invalid_input_unit_scope_int_failed: true
+              when: >-
+                'podman_systemd_unit_scope must be null or a string' in
+                (ansible_failed_result | default({}) | to_json)
+
+        - name: Assert podman_systemd_unit_scope as integer was rejected
+          ansible.builtin.assert:
+            that:
+              - __invalid_input_unit_scope_int_failed | default(false)
+            fail_msg: >-
+              assert_role_vars should reject podman_systemd_unit_scope
+              when given an integer value
+
+        - name: Assert rejects podman_validate_certs as string
+          block:
+            - name: Run role with podman_validate_certs as string
+              ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_validate_certs: not_a_bool
+          rescue:
+            - name: Mark podman_validate_certs string rejected
+              ansible.builtin.set_fact:
+                __invalid_input_validate_certs_string_failed: true
+              when: >-
+                'podman_validate_certs must be null or a boolean' in
+                (ansible_failed_result | default({}) | to_json)
+
+        - name: Assert podman_validate_certs as string was rejected
+          ansible.builtin.assert:
+            that:
+              - >-
+                __invalid_input_validate_certs_string_failed
+                | default(false)
+            fail_msg: >-
+              assert_role_vars should reject podman_validate_certs when
+              given a string value
+
+        - name: Assert rejects podman_transactional_update_reboot_ok as string
+          block:
+            - name: Run role with transactional_update_reboot_ok as string
+              ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_transactional_update_reboot_ok: not_a_bool
+          rescue:
+            - name: Mark transactional_update_reboot_ok string rejected
+              ansible.builtin.set_fact:
+                __invalid_input_tu_reboot_string_failed: true
+              when: >-
+                'podman_transactional_update_reboot_ok must be null or a boolean' in
+                (ansible_failed_result | default({}) | to_json)
+
+        - name: Assert transactional_update_reboot_ok as string was rejected
+          ansible.builtin.assert:
+            that:
+              - __invalid_input_tu_reboot_string_failed | default(false)
+            fail_msg: >-
+              assert_role_vars should reject
+              podman_transactional_update_reboot_ok when given a string
+              value
+
+        - name: Assert rejects credential file mode as boolean
+          block:
+            - name: Run role with credential file mode as boolean
+              ansible.builtin.include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_credential_files:
+                  - file_src: auth.json
+                    mode: true
+          rescue:
+            - name: Mark credential file mode boolean rejected
+              ansible.builtin.set_fact:
+                __invalid_input_cred_mode_bool_failed: true
+              when: >-
+                'mode must be a string' in
+                (ansible_failed_result | default({}) | to_json)
+
+        - name: Assert credential file mode as boolean was rejected
+          ansible.builtin.assert:
+            that:
+              - __invalid_input_cred_mode_bool_failed | default(false)
+            fail_msg: >-
+              assert_role_vars should reject
+              podman_credential_files mode when given a boolean value
+
+      always:
+        - name: Clear test facts
+          ansible.builtin.set_fact:
+            __valid_defaults_succeeded:
+            __invalid_input_create_host_dirs_type_failed:
+            __invalid_input_secure_logging_type_failed:
+            __invalid_input_firewall_type_failed:
+            __invalid_input_containers_conf_type_failed:
+            __invalid_input_cred_state_choice_failed:
+            __invalid_input_cert_state_choice_failed:
+            __invalid_input_missing_registry_host_failed:
+            __invalid_input_kube_specs_string_failed:
+            __invalid_input_kube_file_content_int_failed:
+            __invalid_input_quadlet_specs_string_failed:
+            __invalid_input_secrets_string_failed:
+            __invalid_input_run_as_group_int_failed:
+            __invalid_input_unit_scope_int_failed:
+            __invalid_input_validate_certs_string_failed:
+            __invalid_input_tu_reboot_string_failed:
+            __invalid_input_cred_mode_bool_failed:
+          tags: tests::cleanup

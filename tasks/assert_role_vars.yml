@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: MIT
+---
+- name: Assert podman_kube_specs is a list of dicts
+  ansible.builtin.assert:
+    that:
+      - >-
+        podman_kube_specs is sequence and podman_kube_specs is not string
+        and podman_kube_specs is not mapping
+        and podman_kube_specs | reject('mapping') | list | length == 0
+    fail_msg: >-
+      podman_kube_specs must be a list of dictionaries,
+      got {{ podman_kube_specs | type_debug }}
+  when: podman_kube_specs is defined
+
+- name: Assert kube_file_content is a string, dict, or list of dicts
+  ansible.builtin.assert:
+    that:
+      - >-
+        item.kube_file_content is string
+        or item.kube_file_content is mapping
+        or (item.kube_file_content is sequence
+            and item.kube_file_content is not string
+            and item.kube_file_content is not mapping
+            and item.kube_file_content | reject('mapping') | list | length == 0)
+    fail_msg: >-
+      podman_kube_specs[{{ idx }}].kube_file_content must be a string, a
+      dictionary, or a list of dictionaries,
+      got {{ item.kube_file_content | type_debug }}
+  loop: "{{ podman_kube_specs }}"
+  loop_control:
+    index_var: idx
+    label: "{{ item.kube_file | d(item.kube_file_src | d('unnamed')) }}"
+  when: item.kube_file_content is defined
+
+- name: Assert podman_quadlet_specs is a list of dicts
+  ansible.builtin.assert:
+    that:
+      - >-
+        podman_quadlet_specs is sequence and podman_quadlet_specs is not string
+        and podman_quadlet_specs is not mapping
+        and podman_quadlet_specs | reject('mapping') | list | length == 0
+    fail_msg: >-
+      podman_quadlet_specs must be a list of dictionaries,
+      got {{ podman_quadlet_specs | type_debug }}
+  when: podman_quadlet_specs is defined
+
+- name: Assert podman_secrets is a list of dicts
+  ansible.builtin.assert:
+    that:
+      - >-
+        podman_secrets is sequence and podman_secrets is not string
+        and podman_secrets is not mapping
+        and podman_secrets | reject('mapping') | list | length == 0
+    fail_msg: >-
+      podman_secrets must be a list of dictionaries,
+      got {{ podman_secrets | type_debug }}
+  when: podman_secrets is defined
+
+- name: Assert podman_run_as_group is null or a string
+  ansible.builtin.assert:
+    that:
+      - >-
+        (podman_run_as_group is none)
+        or (podman_run_as_group is string)
+    fail_msg: >-
+      podman_run_as_group must be null or a string,
+      got {{ podman_run_as_group | type_debug }}
+  when: podman_run_as_group is defined
+
+- name: Assert podman_systemd_unit_scope is null or a string
+  ansible.builtin.assert:
+    that:
+      - >-
+        (podman_systemd_unit_scope is none)
+        or (podman_systemd_unit_scope is string)
+    fail_msg: >-
+      podman_systemd_unit_scope must be null or a string,
+      got {{ podman_systemd_unit_scope | type_debug }}
+  when: podman_systemd_unit_scope is defined
+
+- name: Assert podman_validate_certs is null or a boolean
+  ansible.builtin.assert:
+    that:
+      - >-
+        (podman_validate_certs is none)
+        or (podman_validate_certs is sameas true)
+        or (podman_validate_certs is sameas false)
+    fail_msg: >-
+      podman_validate_certs must be null or a boolean,
+      got {{ podman_validate_certs | type_debug }}
+
+- name: Assert podman_transactional_update_reboot_ok is null or a boolean
+  ansible.builtin.assert:
+    that:
+      - >-
+        (podman_transactional_update_reboot_ok is none)
+        or (podman_transactional_update_reboot_ok is sameas true)
+        or (podman_transactional_update_reboot_ok is sameas false)
+    fail_msg: >-
+      podman_transactional_update_reboot_ok must be null or a boolean,
+      got {{ podman_transactional_update_reboot_ok | type_debug }}
+
+- name: Assert mode in podman_credential_files is a string or integer
+  ansible.builtin.assert:
+    that:
+      - (item.mode | type_debug) in ['str', 'int', 'unicode']
+    fail_msg: >-
+      podman_credential_files[{{ idx }}].mode must be a string or integer,
+      got {{ item.mode | type_debug }}
+  loop: "{{ podman_credential_files }}"
+  loop_control:
+    index_var: idx
+    label: "{{ item.file | d(item.file_src | d('unnamed')) }}"
+  when: item.mode is defined
