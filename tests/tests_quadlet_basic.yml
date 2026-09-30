@@ -123,6 +123,7 @@
           vars:
             __test_hostdir_list: /tmp/lsr_podman_hostdir_list
             __test_hostdir_string: /tmp/lsr_podman_hostdir_string
+            __test_hostdir_nosource: /tmp/lsr_podman_hostdir_nosource
           block:
             - name: Run role - create host directories from Volume specs
               include_tasks: tasks/run_role_with_clear_facts.yml
@@ -141,6 +142,7 @@
                       ContainerName: hostdir-list
                       Volume:
                         - "{{ __test_hostdir_list }}:/data:Z"
+                        - "{{ __test_hostdir_nosource }}:Z"
                   - name: hostdir-string
                     type: container
                     state: created
@@ -161,6 +163,7 @@
                 - "{{ __test_hostdir_list }}"
                 - "{{ __test_hostdir_string }}"
                 - "{{ __test_hostdir_list }}:/data:Z"
+                - "{{ __test_hostdir_nosource }}"
 
             - name: Verify only the host part of each Volume was created
               assert:
@@ -168,6 +171,7 @@
                   - __test_hostdir_stat.results[0].stat.isdir | d(false)
                   - __test_hostdir_stat.results[1].stat.isdir | d(false)
                   - not __test_hostdir_stat.results[2].stat.exists
+                  - not __test_hostdir_stat.results[3].stat.exists
 
           always:
             - name: Cleanup host directory test containers
@@ -180,6 +184,7 @@
               loop:
                 - hostdir-list
                 - hostdir-string
+              tags: tests::cleanup
 
             - name: Remove the host directories
               file:
@@ -189,6 +194,8 @@
                 - "{{ __test_hostdir_list }}"
                 - "{{ __test_hostdir_string }}"
                 - "{{ __test_hostdir_list }}:/data:Z"
+                - "{{ __test_hostdir_nosource }}"
+              tags: tests::cleanup
 
         - name: Create user for testing
           user:
