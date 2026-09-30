@@ -119,6 +119,77 @@
                 - nopull
                 - bogus
 
+        - name: Verify host directories are created from Volume specs
+          vars:
+            __test_hostdir_list: /tmp/lsr_podman_hostdir_list
+            __test_hostdir_string: /tmp/lsr_podman_hostdir_string
+          block:
+            - name: Run role - create host directories from Volume specs
+              include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_create_host_directories: true
+                podman_quadlet_specs:
+                  - name: hostdir-list
+                    type: container
+                    state: created
+                    pull_image: false
+                    activate_systemd_unit: false
+                    Install:
+                      WantedBy: default.target
+                    Container:
+                      Image: "{{ test_image }}"
+                      ContainerName: hostdir-list
+                      Volume:
+                        - "{{ __test_hostdir_list }}:/data:Z"
+                  - name: hostdir-string
+                    type: container
+                    state: created
+                    pull_image: false
+                    activate_systemd_unit: false
+                    Install:
+                      WantedBy: default.target
+                    Container:
+                      Image: "{{ test_image }}"
+                      ContainerName: hostdir-string
+                      Volume: "{{ __test_hostdir_string }}:/data:ro,Z"
+
+            - name: Check the host directories
+              stat:
+                path: "{{ item }}"
+              register: __test_hostdir_stat
+              loop:
+                - "{{ __test_hostdir_list }}"
+                - "{{ __test_hostdir_string }}"
+                - "{{ __test_hostdir_list }}:/data:Z"
+
+            - name: Verify only the host part of each Volume was created
+              assert:
+                that:
+                  - __test_hostdir_stat.results[0].stat.isdir | d(false)
+                  - __test_hostdir_stat.results[1].stat.isdir | d(false)
+                  - not __test_hostdir_stat.results[2].stat.exists
+
+          always:
+            - name: Cleanup host directory test containers
+              include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_quadlet_specs:
+                  - state: absent
+                    name: "{{ item }}"
+                    type: container
+              loop:
+                - hostdir-list
+                - hostdir-string
+
+            - name: Remove the host directories
+              file:
+                path: "{{ item }}"
+                state: absent
+              loop:
+                - "{{ __test_hostdir_list }}"
+                - "{{ __test_hostdir_string }}"
+                - "{{ __test_hostdir_list }}:/data:Z"
+
         - name: Create user for testing
           user:
             name: user_quadlet_basic
