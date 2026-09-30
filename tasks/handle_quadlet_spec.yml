@@ -170,14 +170,19 @@
       __volumes_from_kube_spec
       if podman_create_host_directories else [] }}"
   vars:
+    __container_volumes: "{{
+      __podman_quadlet_spec.get('Container', {}).get('Volume', []) }}"
+    __pod_volumes: "{{
+      __podman_quadlet_spec.get('Pod', {}).get('Volume', []) }}"
     __volumes_from_container: "{{
-      __podman_quadlet_spec.get('Container', {}).get('Volume', []) |
-        map('regex_search', '^([^:]+):.+$') | reject('search', '[.]volume$') |
-        select | list }}"
+      ([__container_volumes] if __container_volumes is string
+        else __container_volumes) |
+        map('regex_search', '^([^:]+):.+$', '\\1') | select |
+        map('first') | reject('search', '[.]volume$') | list }}"
     __volumes_from_pod: "{{
-      __podman_quadlet_spec.get('Pod', {}).get('Volume', []) |
-        map('regex_search', '^([^:]+):.+$') | reject('search', '[.]volume$') |
-        select | list }}"
+      ([__pod_volumes] if __pod_volumes is string else __pod_volumes) |
+        map('regex_search', '^([^:]+):.+$', '\\1') | select |
+        map('first') | reject('search', '[.]volume$') | list }}"
     __file: "{{ __podman_quadlet_spec_item['file']
       if 'file' in __podman_quadlet_spec_item
       else none }}"
