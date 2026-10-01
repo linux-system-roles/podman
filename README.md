@@ -272,12 +272,16 @@ This is a boolean, default value is `false`.  If `true`, the role will ensure
 host directories specified in host mounts in `volumes.hostPath` specifications
 in the Kubernetes YAML given in `podman_kube_specs`, and from `Volume`
 configuration in quadlet Container specification where a host path is specified.
-NOTE: Directories must be specified as absolute paths (for root containers), or
-paths relative to the home directory (for non-root containers), in order for the
-role to manage them. For a quadlet `Volume`, a host path that starts with `.`
-is resolved relative to the directory of the quadlet unit file, as Quadlet
-does. Anything else will be assumed to be some other sort of volume and will be
-ignored. The role will apply its default
+NOTE: For Kubernetes `hostPath` volumes, directories must be specified as
+absolute paths (for root containers), or paths relative to the home directory
+(for non-root containers), in order for the role to manage them. For a quadlet
+`Volume`, the host path must be absolute or start with `.`; a path that starts
+with `.` is resolved relative to the directory of the quadlet unit file, as
+Quadlet does. For example, `Volume: ./data:/data` creates
+`/etc/containers/systemd/data` for root containers and
+`$HOME/.config/containers/systemd/data` for rootless containers. Anything else,
+such as a named volume (`data:/data`), will be assumed to be some other sort of
+volume and will be ignored. The role will apply its default
 ownership/permissions to the directories. If you need to set
 ownership/permissions, see `podman_host_directories`.
 

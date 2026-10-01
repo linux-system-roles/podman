@@ -1,0 +1,31 @@
+---
+DOCUMENTATION:
+  name: podman_resolve_relative_path
+  author: system roles team
+  version_added: 'historical'
+  short_description: Resolve a relative path the way Quadlet does
+  description:
+    - If the path starts with C(.), join it to the base directory and
+      normalize it lexically, as Quadlet does for a relative Volume source.
+      C(.) and C(..) components are removed and symlinks are not resolved.
+    - Any other path is returned unchanged.
+  positional: _input, base
+  options:
+    _input:
+      description: The path to resolve
+      type: str
+      required: true
+    base:
+      description: The directory to resolve a relative path against
+      type: str
+      required: true
+
+EXAMPLES: |
+  # "../data" with the quadlet file in /etc/containers/systemd
+  # gives "/etc/containers/data"
+  host_dir: "{{ '../data' | podman_resolve_relative_path('/etc/containers/systemd') }}"
+
+RETURN:
+  _value:
+    description: The resolved path
+    type: str
