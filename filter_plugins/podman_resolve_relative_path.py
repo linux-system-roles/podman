@@ -10,7 +10,11 @@ __metaclass__ = type
 
 import os
 
-from ansible.module_utils.six import string_types
+# ansible six is deprecated, see podman_from_ini.py
+try:
+    lsr_string_types = (basestring,)
+except NameError:
+    lsr_string_types = (str,)
 
 
 def _resolve(path, base):
@@ -28,7 +32,7 @@ def podman_resolve_relative_path(paths, base):
     os.path.normpath does the same. Other paths are returned unchanged.
     Accepts a single path or a list of paths.
     """
-    if isinstance(paths, string_types):
+    if isinstance(paths, lsr_string_types):
         return _resolve(paths, base)
     return [_resolve(path, base) for path in paths]
 
