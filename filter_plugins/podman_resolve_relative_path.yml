@@ -5,15 +5,16 @@ DOCUMENTATION:
   version_added: 'historical'
   short_description: Resolve a relative path the way Quadlet does
   description:
-    - If the path starts with C(.), join it to the base directory and
+    - If a path starts with C(.), join it to the base directory and
       normalize it lexically, as Quadlet does for a relative Volume source.
       C(.) and C(..) components are removed and symlinks are not resolved.
     - Any other path is returned unchanged.
+    - Accepts a single path or a list of paths.
   positional: _input, base
   options:
     _input:
-      description: The path to resolve
-      type: str
+      description: The path, or list of paths, to resolve
+      type: raw
       required: true
     base:
       description: The directory to resolve a relative path against
@@ -27,5 +28,5 @@ EXAMPLES: |
 
 RETURN:
   _value:
-    description: The resolved path
-    type: str
+    description: The resolved path, or list of resolved paths
+    type: raw
