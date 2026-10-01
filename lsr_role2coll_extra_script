@@ -15,3 +15,8 @@ fqcn="$LSR_NAMESPACE.$LSR_COLLECTION.podman_from_ini"
 find tasks -type f \
   -exec sed -i "s/\([ 	]\)podman_from_ini\>/\1$fqcn/g" \
   {} \;
+
+fqcn="$LSR_NAMESPACE.$LSR_COLLECTION.podman_resolve_relative_path"
+find tasks -type f \
+  -exec sed -i "s/\([ 	]\)podman_resolve_relative_path\>/\1$fqcn/g" \
+  {} \;
