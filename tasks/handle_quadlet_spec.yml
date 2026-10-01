@@ -206,8 +206,7 @@
       if __podman_quadlet_str
       and __podman_quadlet_type in ['container', 'pod']
       else __volumes_from_container + __volumes_from_pod) |
-      map('regex_replace', '^(?=[.])', __quadlet_dir ~ '/') |
-      map('regex_replace', '/[.](?=/|$)', '') | list
+      map('podman_resolve_relative_path', __quadlet_dir) | list
       if podman_create_host_directories else [] }}"
     __host_paths: "{{ __podman_kube | selectattr('spec', 'defined') |
       map(attribute='spec') | selectattr('volumes', 'defined') |
