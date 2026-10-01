@@ -274,8 +274,10 @@ in the Kubernetes YAML given in `podman_kube_specs`, and from `Volume`
 configuration in quadlet Container specification where a host path is specified.
 NOTE: Directories must be specified as absolute paths (for root containers), or
 paths relative to the home directory (for non-root containers), in order for the
-role to manage them. Anything else will be assumed to be some other sort of
-volume and will be ignored. The role will apply its default
+role to manage them. For a quadlet `Volume`, a host path that starts with `.`
+is resolved relative to the directory of the quadlet unit file, as Quadlet
+does. Anything else will be assumed to be some other sort of volume and will be
+ignored. The role will apply its default
 ownership/permissions to the directories. If you need to set
 ownership/permissions, see `podman_host_directories`.
 

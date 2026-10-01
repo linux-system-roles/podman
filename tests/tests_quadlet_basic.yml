@@ -124,6 +124,9 @@
             __test_hostdir_list: /tmp/lsr_podman_hostdir_list
             __test_hostdir_string: /tmp/lsr_podman_hostdir_string
             __test_hostdir_nosource: /tmp/lsr_podman_hostdir_nosource
+            __test_hostdir_content: /tmp/lsr_podman_hostdir_content
+            __test_hostdir_content_nosource: /tmp/lsr_podman_hostdir_content_nosource
+            __test_quadlet_dir: /etc/containers/systemd
           block:
             - name: Run role - create host directories from Volume specs
               include_tasks: tasks/run_role_with_clear_facts.yml
@@ -143,6 +146,8 @@
                       Volume:
                         - "{{ __test_hostdir_list }}:/data:Z"
                         - "{{ __test_hostdir_nosource }}:Z"
+                        - ./lsr_podman_hostdir_relative:/rel:Z
+                        - lsr_podman_hostdir_named:/named
                   - name: hostdir-string
                     type: container
                     state: created
@@ -154,6 +159,21 @@
                       Image: "{{ test_image }}"
                       ContainerName: hostdir-string
                       Volume: "{{ __test_hostdir_string }}:/data:ro,Z"
+                  - name: hostdir-content
+                    type: container
+                    state: created
+                    pull_image: false
+                    activate_systemd_unit: false
+                    file_content: |
+                      [Container]
+                      Image={{ test_image }}
+                      ContainerName=hostdir-content
+                      Volume={{ __test_hostdir_content }}:/data:Z
+                      Volume=./lsr_podman_hostdir_relative_content:/rel:Z
+                      Volume={{ __test_hostdir_content_nosource }}:Z
+
+                      [Install]
+                      WantedBy=default.target
 
             - name: Check the host directories
               stat:
@@ -164,6 +184,11 @@
                 - "{{ __test_hostdir_string }}"
                 - "{{ __test_hostdir_list }}:/data:Z"
                 - "{{ __test_hostdir_nosource }}"
+                - "{{ __test_quadlet_dir }}/lsr_podman_hostdir_relative"
+                - lsr_podman_hostdir_named
+                - "{{ __test_hostdir_content }}"
+                - "{{ __test_quadlet_dir }}/lsr_podman_hostdir_relative_content"
+                - "{{ __test_hostdir_content_nosource }}"
 
             - name: Verify only the host part of each Volume was created
               assert:
@@ -172,6 +197,11 @@
                   - __test_hostdir_stat.results[1].stat.isdir | d(false)
                   - not __test_hostdir_stat.results[2].stat.exists
                   - not __test_hostdir_stat.results[3].stat.exists
+                  - __test_hostdir_stat.results[4].stat.isdir | d(false)
+                  - not __test_hostdir_stat.results[5].stat.exists
+                  - __test_hostdir_stat.results[6].stat.isdir | d(false)
+                  - __test_hostdir_stat.results[7].stat.isdir | d(false)
+                  - not __test_hostdir_stat.results[8].stat.exists
 
           always:
             - name: Cleanup host directory test containers
@@ -184,6 +214,7 @@
               loop:
                 - hostdir-list
                 - hostdir-string
+                - hostdir-content
               tags: tests::cleanup
 
             - name: Remove the host directories
@@ -195,6 +226,11 @@
                 - "{{ __test_hostdir_string }}"
                 - "{{ __test_hostdir_list }}:/data:Z"
                 - "{{ __test_hostdir_nosource }}"
+                - "{{ __test_quadlet_dir }}/lsr_podman_hostdir_relative"
+                - lsr_podman_hostdir_named
+                - "{{ __test_hostdir_content }}"
+                - "{{ __test_quadlet_dir }}/lsr_podman_hostdir_relative_content"
+                - "{{ __test_hostdir_content_nosource }}"
               tags: tests::cleanup
 
         - name: Create user for testing
@@ -307,6 +343,57 @@
           register: __stat
           failed_when: not __stat.stat.exists
           when: __podman_is_booted | bool
+
+        - name: Verify relative Volume host directory for a rootless user
+          when: not __bootc_validation | d(false)
+          vars:
+            __test_user_hostdir: /home/user_quadlet_basic/.config/containers/systemd/lsr_podman_hostdir_relative
+          block:
+            - name: Run role - rootless relative Volume
+              include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_create_host_directories: true
+                podman_quadlet_specs:
+                  - name: hostdir-relative-user
+                    type: container
+                    run_as_user: user_quadlet_basic
+                    state: created
+                    pull_image: false
+                    activate_systemd_unit: false
+                    Install:
+                      WantedBy: default.target
+                    Container:
+                      Image: "{{ test_image }}"
+                      ContainerName: hostdir-relative-user
+                      Volume: ./lsr_podman_hostdir_relative:/rel:Z
+
+            - name: Check the rootless host directory
+              stat:
+                path: "{{ __test_user_hostdir }}"
+              register: __test_user_hostdir_stat
+
+            - name: Verify the rootless host directory is owned by the user
+              assert:
+                that:
+                  - __test_user_hostdir_stat.stat.isdir | d(false)
+                  - __test_user_hostdir_stat.stat.pw_name == 'user_quadlet_basic'
+
+          always:
+            - name: Cleanup rootless host directory test container
+              include_tasks: tasks/run_role_with_clear_facts.yml
+              vars:
+                podman_quadlet_specs:
+                  - name: hostdir-relative-user
+                    type: container
+                    run_as_user: user_quadlet_basic
+                    state: absent
+              tags: tests::cleanup
+
+            - name: Remove the rootless host directory
+              file:
+                path: "{{ __test_user_hostdir }}"
+                state: absent
+              tags: tests::cleanup
 
         - name: Run the role - root
           include_tasks: tasks/run_role_with_clear_facts.yml
