@@ -158,11 +158,7 @@
 
 - name: Set per-container variables part 5
   set_fact:
-    __podman_quadlet_file: "{{ __file if __file and __file is abs
-      else __podman_quadlet_path ~ '/' ~ __file
-      if __file
-      else __podman_quadlet_path ~ '/' ~ __podman_quadlet_name ~
-      '.' ~ __podman_quadlet_type }}"
+    __podman_quadlet_file: "{{ __quadlet_file }}"
     __podman_quadlet_images: "{{ __podman_quadlet_images_found
       if __podman_quadlet_images_found
       else __images + __init_images }}"
@@ -170,6 +166,12 @@
       __volumes_from_kube_spec
       if podman_create_host_directories else [] }}"
   vars:
+    __quadlet_file: "{{ __file if __file and __file is abs
+      else __podman_quadlet_path ~ '/' ~ __file
+      if __file
+      else __podman_quadlet_path ~ '/' ~ __podman_quadlet_name ~
+      '.' ~ __podman_quadlet_type }}"
+    __quadlet_dir: "{{ __quadlet_file | dirname }}"
     __container_volumes: "{{
       __podman_quadlet_spec.get('Container', {}).get('Volume', []) }}"
     __pod_volumes: "{{
@@ -177,12 +179,12 @@
     __volumes_from_container: "{{
       ([__container_volumes] if __container_volumes is string
         else __container_volumes) |
-        map('regex_search', '^([^:]+):/.*$', '\\1') | select |
-        map('first') | reject('search', '[.]volume$') | list }}"
+        map('regex_search', '^([./][^:]*):/.*$', '\\1') | select |
+        map('first') | list }}"
     __volumes_from_pod: "{{
       ([__pod_volumes] if __pod_volumes is string else __pod_volumes) |
-        map('regex_search', '^([^:]+):/.*$', '\\1') | select |
-        map('first') | reject('search', '[.]volume$') | list }}"
+        map('regex_search', '^([./][^:]*):/.*$', '\\1') | select |
+        map('first') | list }}"
     __file: "{{ __podman_quadlet_spec_item['file']
       if 'file' in __podman_quadlet_spec_item
       else none }}"
@@ -199,13 +201,13 @@
       map(attribute='initContainers') | flatten |
       selectattr('image', 'defined') | map(attribute='image') | list
       if __podman_kube else [] }}"
-    __volumes_from_unit_spec: "{{ __podman_quadlet_str |
-      regex_findall('(?m)^Volume=\"?([^:]+):.+$') |
-      reject('search', '[.]volume$') | list
+    __volumes_from_unit_spec: "{{ (__podman_quadlet_str |
+      regex_findall('(?m)^Volume=\"?([./][^:\"]*):/.*$')
       if __podman_quadlet_str
       and __podman_quadlet_type in ['container', 'pod']
-      and podman_create_host_directories
-      else __volumes_from_container + __volumes_from_pod
+      else __volumes_from_container + __volumes_from_pod) |
+      map('regex_replace', '^(?=[.])', __quadlet_dir ~ '/') |
+      map('regex_replace', '/[.](?=/|$)', '') | list
       if podman_create_host_directories else [] }}"
     __host_paths: "{{ __podman_kube | selectattr('spec', 'defined') |
       map(attribute='spec') | selectattr('volumes', 'defined') |
