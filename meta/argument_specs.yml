@@ -255,16 +255,11 @@ argument_specs:
             description: >
               Name of the TLS client certificate file in the certs.d
               directory.
-          private_key:
+          key:
             type: str
             description: >
               Name of the TLS client private key file in the certs.d
               directory.
-          key:
-            type: str
-            description: >
-              Alternate name for the TLS client private key file in the
-              certs.d directory.
           ca_cert:
             type: str
             description: >
@@ -275,16 +270,11 @@ argument_specs:
             description: >
               Path on the controller of the TLS client certificate to
               copy to `cert`.
-          private_key_src:
-            type: str
-            description: >
-              Path on the controller of the TLS client private key to
-              copy to `private_key`.
           key_src:
             type: str
             description: >
-              Alternate path on the controller of the TLS client private
-              key to copy to `key`.
+              Path on the controller of the TLS client private key to
+              copy to `key`.
           ca_cert_src:
             type: str
             description: >
@@ -294,16 +284,10 @@ argument_specs:
             type: str
             description: >
               Inline TLS client certificate content to write to `cert`.
-          private_key_content:
-            type: str
-            description: >
-              Inline TLS client private key content to write to
-              `private_key`.
           key_content:
             type: str
             description: >
-              Alternate inline TLS client private key content to write
-              to `key`.
+              Inline TLS client private key content to write to `key`.
           ca_cert_content:
             type: str
             description: >
