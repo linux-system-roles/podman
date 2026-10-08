@@ -24,10 +24,21 @@
   when: (__podman_packages | difference(ansible_facts.packages)) | list | length > 0
   register: podman_package_result
 
+# A staged install reports ok on re-runs, so ask rpm (by provides) if it is live.
+- name: Check whether the packages are live on a transactional update system
+  command:  # noqa command-instead-of-module
+    argv: "{{ ['rpm', '-q', '--whatprovides'] + (__podman_packages) }}"
+  register: __podman_packages_live
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: __podman_is_transactional | d(false)
+
 - name: Handle reboot for transactional update systems
   when:
     - __podman_is_transactional | d(false)
-    - podman_package_result is changed
+    - podman_package_result is changed or
+      (__podman_packages_live.rc | d(0)) != 0
   block:
     - name: Notify user that reboot is needed to apply changes
       debug:
@@ -37,7 +48,9 @@
     - name: Reboot transactional update systems
       reboot:
         msg: Rebooting the system to apply transactional update changes.
-      when: podman_transactional_update_reboot_ok | bool
+      when:
+        - podman_transactional_update_reboot_ok is not none
+        - podman_transactional_update_reboot_ok | bool
 
     - name: Fail if reboot is needed and not set
       fail:
