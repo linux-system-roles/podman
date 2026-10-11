@@ -20,6 +20,9 @@ galaxy_info:
     - el9
     - el10
     - fedora
+    - leap16
     - podman
+    - sles
+    - sles16
     - containerbuild
 dependencies: []
