@@ -65,7 +65,10 @@
 
 - name: Ensure test packages
   package:
-    name: [httpd-tools, skopeo]
+    name:
+      - "{{ 'apache2-utils' if ansible_facts['os_family'] == 'Suse'
+          else 'httpd-tools' }}"
+      - skopeo
     state: present
     use: "{{ (__podman_is_ostree | d(false)) |
              ternary('ansible.posix.rhel_rpm_ostree', omit) }}"
