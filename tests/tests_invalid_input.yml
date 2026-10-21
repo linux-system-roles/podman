@@ -5,6 +5,13 @@
 # that outcome.
 - name: Verify invalid parameters are rejected
   hosts: all
+  vars:
+    __invalid_input_failure_messages: >-
+      {{ ([ansible_failed_result.msg | default('') | string,
+           ansible_failed_result.msg.msg | default('') | string]
+          + (ansible_failed_result.results | default([])
+             | map(attribute='msg') | map('default', '') | list))
+         | join(' ') }}
   tasks:
     - name: Run invalid input tests
       block:
@@ -41,6 +48,13 @@
                 - name: Mark invalid podman_create_host_directories rejected
                   ansible.builtin.set_fact:
                     __invalid_input_create_host_dirs_type_failed: true
+                  when:
+                    - >-
+                      "argument 'podman_create_host_directories' is of type" in
+                      __invalid_input_failure_messages
+                    - >-
+                      'unable to convert to bool' in
+                      __invalid_input_failure_messages
 
             - name: Assert invalid podman_create_host_directories type was rejected
               ansible.builtin.assert:
@@ -62,6 +76,13 @@
                 - name: Mark invalid podman_secure_logging rejected
                   ansible.builtin.set_fact:
                     __invalid_input_secure_logging_type_failed: true
+                  when:
+                    - >-
+                      "argument 'podman_secure_logging' is of type" in
+                      __invalid_input_failure_messages
+                    - >-
+                      'unable to convert to bool' in
+                      __invalid_input_failure_messages
 
             - name: Assert invalid podman_secure_logging type was rejected
               ansible.builtin.assert:
@@ -81,6 +102,13 @@
                 - name: Mark invalid podman_firewall rejected
                   ansible.builtin.set_fact:
                     __invalid_input_firewall_type_failed: true
+                  when:
+                    - >-
+                      "Elements value for option 'podman_firewall'" in
+                      __invalid_input_failure_messages
+                    - >-
+                      'unable to convert to dict' in
+                      __invalid_input_failure_messages
 
             - name: Assert invalid podman_firewall type was rejected
               ansible.builtin.assert:
@@ -100,6 +128,13 @@
                 - name: Mark invalid podman_containers_conf rejected
                   ansible.builtin.set_fact:
                     __invalid_input_containers_conf_type_failed: true
+                  when:
+                    - >-
+                      "argument 'podman_containers_conf' is of type" in
+                      __invalid_input_failure_messages
+                    - >-
+                      'unable to convert to dict' in
+                      __invalid_input_failure_messages
 
             - name: Assert invalid podman_containers_conf type was rejected
               ansible.builtin.assert:
@@ -123,6 +158,13 @@
                 - name: Mark invalid credential file state rejected
                   ansible.builtin.set_fact:
                     __invalid_input_cred_state_choice_failed: true
+                  when:
+                    - >-
+                      'value of state must be one of: present, absent' in
+                      __invalid_input_failure_messages
+                    - >-
+                      'got: invalid_choice found in podman_credential_files' in
+                      __invalid_input_failure_messages
 
             - name: Assert invalid credential file state was rejected
               ansible.builtin.assert:
@@ -144,6 +186,13 @@
                 - name: Mark invalid registry certificate state rejected
                   ansible.builtin.set_fact:
                     __invalid_input_cert_state_choice_failed: true
+                  when:
+                    - >-
+                      'value of state must be one of: present, absent' in
+                      __invalid_input_failure_messages
+                    - >-
+                      'got: invalid_choice found in podman_registry_certificates' in
+                      __invalid_input_failure_messages
 
             - name: Assert invalid registry certificate state was rejected
               ansible.builtin.assert:
@@ -165,9 +214,10 @@
                 - name: Mark missing registry_host rejected
                   ansible.builtin.set_fact:
                     __invalid_input_missing_registry_host_failed: true
-                  when: >-
-                    'missing required arguments' in
-                    (ansible_failed_result | default({}) | to_json)
+                  when:
+                    - >-
+                      'missing required arguments: registry_host found in podman_registry_certificates' in
+                      __invalid_input_failure_messages
 
             - name: Assert missing registry_host was rejected
               ansible.builtin.assert:
@@ -193,9 +243,10 @@
             - name: Mark podman_kube_specs string rejected
               ansible.builtin.set_fact:
                 __invalid_input_kube_specs_string_failed: true
-              when: >-
-                'podman_kube_specs must be a list' in
-                (ansible_failed_result | default({}) | to_json)
+              when:
+                - >-
+                  'podman_kube_specs must be a list of dictionaries' in
+                  __invalid_input_failure_messages
 
         - name: Assert podman_kube_specs as string was rejected
           ansible.builtin.assert:
@@ -216,9 +267,13 @@
             - name: Mark kube_file_content integer rejected
               ansible.builtin.set_fact:
                 __invalid_input_kube_file_content_int_failed: true
-              when: >-
-                'kube_file_content must be a string' in
-                (ansible_failed_result | default({}) | to_json)
+              when:
+                - >-
+                  'podman_kube_specs[0].kube_file_content must be a string' in
+                  __invalid_input_failure_messages
+                - >-
+                  'got int' in
+                  __invalid_input_failure_messages
 
         - name: Assert kube_file_content as integer was rejected
           ansible.builtin.assert:
@@ -240,9 +295,10 @@
             - name: Mark podman_quadlet_specs string rejected
               ansible.builtin.set_fact:
                 __invalid_input_quadlet_specs_string_failed: true
-              when: >-
-                'podman_quadlet_specs must be a list' in
-                (ansible_failed_result | default({}) | to_json)
+              when:
+                - >-
+                  'podman_quadlet_specs must be a list of dictionaries' in
+                  __invalid_input_failure_messages
 
         - name: Assert podman_quadlet_specs as string was rejected
           ansible.builtin.assert:
@@ -264,9 +320,10 @@
             - name: Mark podman_secrets string rejected
               ansible.builtin.set_fact:
                 __invalid_input_secrets_string_failed: true
-              when: >-
-                'podman_secrets must be a list' in
-                (ansible_failed_result | default({}) | to_json)
+              when:
+                - >-
+                  'podman_secrets must be a list of dictionaries' in
+                  __invalid_input_failure_messages
 
         - name: Assert podman_secrets as string was rejected
           ansible.builtin.assert:
@@ -286,9 +343,10 @@
             - name: Mark podman_run_as_group integer rejected
               ansible.builtin.set_fact:
                 __invalid_input_run_as_group_int_failed: true
-              when: >-
-                'podman_run_as_group must be null or a string' in
-                (ansible_failed_result | default({}) | to_json)
+              when:
+                - >-
+                  'podman_run_as_group must be null or a string, got int' in
+                  __invalid_input_failure_messages
 
         - name: Assert podman_run_as_group as integer was rejected
           ansible.builtin.assert:
@@ -308,9 +366,10 @@
             - name: Mark podman_systemd_unit_scope integer rejected
               ansible.builtin.set_fact:
                 __invalid_input_unit_scope_int_failed: true
-              when: >-
-                'podman_systemd_unit_scope must be null or a string' in
-                (ansible_failed_result | default({}) | to_json)
+              when:
+                - >-
+                  'podman_systemd_unit_scope must be null or a string, got int' in
+                  __invalid_input_failure_messages
 
         - name: Assert podman_systemd_unit_scope as integer was rejected
           ansible.builtin.assert:
@@ -330,9 +389,10 @@
             - name: Mark podman_validate_certs string rejected
               ansible.builtin.set_fact:
                 __invalid_input_validate_certs_string_failed: true
-              when: >-
-                'podman_validate_certs must be null or a boolean' in
-                (ansible_failed_result | default({}) | to_json)
+              when:
+                - >-
+                  'podman_validate_certs must be null or a boolean' in
+                  __invalid_input_failure_messages
 
         - name: Assert podman_validate_certs as string was rejected
           ansible.builtin.assert:
@@ -354,9 +414,10 @@
             - name: Mark transactional_update_reboot_ok string rejected
               ansible.builtin.set_fact:
                 __invalid_input_tu_reboot_string_failed: true
-              when: >-
-                'podman_transactional_update_reboot_ok must be null or a boolean' in
-                (ansible_failed_result | default({}) | to_json)
+              when:
+                - >-
+                  'podman_transactional_update_reboot_ok must be null or a boolean' in
+                  __invalid_input_failure_messages
 
         - name: Assert transactional_update_reboot_ok as string was rejected
           ansible.builtin.assert:
@@ -379,9 +440,10 @@
             - name: Mark credential file mode boolean rejected
               ansible.builtin.set_fact:
                 __invalid_input_cred_mode_bool_failed: true
-              when: >-
-                'mode must be a string' in
-                (ansible_failed_result | default({}) | to_json)
+              when:
+                - >-
+                  'podman_credential_files[0].mode must be a string or integer, got bool' in
+                  __invalid_input_failure_messages
 
         - name: Assert credential file mode as boolean was rejected
           ansible.builtin.assert:
