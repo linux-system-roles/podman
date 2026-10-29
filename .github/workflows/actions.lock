@@ -5,14 +5,14 @@ version: 'v0.0.3'
 workflows:
     '.github/workflows/ansible-lint.yml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-python@v7.0.0'
+        - 'actions/setup-python@v7.1.0'
         - 'linux-system-roles/.github@main'
     '.github/workflows/ansible-managed-var-comment.yml':
         - 'actions/checkout@v7.0.1'
         - 'linux-system-roles/.github@main'
     '.github/workflows/ansible-test.yml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-python@v7.0.0'
+        - 'actions/setup-python@v7.1.0'
         - 'linux-system-roles/.github@main'
     '.github/workflows/build_docs.yml':
         - 'actions/checkout@v7.0.1'
@@ -63,9 +63,9 @@ dependencies:
         commit: 'sha1-9000827ccba6bdab643e8b6fd33ac0654aef8333'
         owner_id: 44036562
         repo_id: 192626254
-    'actions/setup-python@v7.0.0':
-        ref: 'v7.0.0'
-        commit: 'sha1-5fda3b95a4ea91299a34e894583c3862153e4b97'
+    'actions/setup-python@v7.1.0':
+        ref: 'v7.1.0'
+        commit: 'sha1-6d4fd22b20465ccc0f7354476588e8df7c9ca0e0'
         owner_id: 44036562
         repo_id: 192625525
     'actions/upload-artifact@v7.0.2':
@@ -80,7 +80,7 @@ dependencies:
         repo_id: 263411323
     'linux-system-roles/.github@main':
         ref: 'main'
-        commit: 'sha1-391ce4abac68b563afd81c3c0fb889df826cc6e6'
+        commit: 'sha1-038468a64a784796a0202d5c9c714f27ec2cc2c4'
         owner_id: 28014670
         repo_id: 320092621
     'sclorg/testing-farm-as-github-action@v4.3.1':
