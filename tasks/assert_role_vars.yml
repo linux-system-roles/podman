@@ -103,7 +103,7 @@
 - name: Assert mode in podman_credential_files is a string or integer
   ansible.builtin.assert:
     that:
-      - (item.mode | type_debug) in ['str', 'int', 'unicode']
+      - item.mode is string or (item.mode | type_debug) == 'int'
     fail_msg: >-
       podman_credential_files[{{ idx }}].mode must be a string or integer,
       got {{ item.mode | type_debug }}
