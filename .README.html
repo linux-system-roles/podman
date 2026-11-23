@@ -513,13 +513,21 @@ id="podman_create_host_directories">podman_create_host_directories</h2>
 host mounts in <code>volumes.hostPath</code> specifications in the
 Kubernetes YAML given in <code>podman_kube_specs</code>, and from
 <code>Volume</code> configuration in quadlet Container specification
-where a host path is specified. NOTE: Directories must be specified as
-absolute paths (for root containers), or paths relative to the home
-directory (for non-root containers), in order for the role to manage
-them. Anything else will be assumed to be some other sort of volume and
-will be ignored. The role will apply its default ownership/permissions
-to the directories. If you need to set ownership/permissions, see
-<code>podman_host_directories</code>.</p>
+where a host path is specified. NOTE: For Kubernetes
+<code>hostPath</code> volumes, directories must be specified as absolute
+paths (for root containers), or paths relative to the home directory
+(for non-root containers), in order for the role to manage them. For a
+quadlet <code>Volume</code>, the host path must be absolute or start
+with <code>.</code>; a path that starts with <code>.</code> is resolved
+relative to the directory of the quadlet unit file, as Quadlet does. For
+example, <code>Volume: ./data:/data</code> creates
+<code>/etc/containers/systemd/data</code> for root containers and
+<code>$HOME/.config/containers/systemd/data</code> for rootless
+containers. Anything else, such as a named volume
+(<code>data:/data</code>), will be assumed to be some other sort of
+volume and will be ignored. The role will apply its default
+ownership/permissions to the directories. If you need to set
+ownership/permissions, see <code>podman_host_directories</code>.</p>
 <h2 id="podman_host_directories">podman_host_directories</h2>
 <p>This is a <code>dict</code>. When using
 <code>podman_create_host_directories</code>, this tells the role what
