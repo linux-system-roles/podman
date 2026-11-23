@@ -1,6 +1,43 @@
 Changelog
 =========
 
+[1.15.0] - 2026-11-23
+--------------------
+
+### New Features
+
+- feat: Argument spec implementation for podman role (#340)
+- feat: Add SLE16 support (#348)
+
+### Bug Fixes
+
+- fix: create host directories from quadlet Volume host paths (#341)
+- fix: create quadlet Volume host directories the way Quadlet resolves them (#345)
+- fix: Reboot transactional systems when packages are staged but not live (#347)
+
+### Other Changes
+
+- ci: no CI test by default - implement slash commands for CI tests [citest_skip] (#337)
+- ci: ansible-test-milestone is now version 2.23 - update sanity ignore files (#338)
+- ci: allow lsr org members to run ci tests (#339)
+- ci: Run Dependabot monthly and group changes in a single PR (#344)
+- ci: bump tox-lsr version 3.21.0, myrotvorets/set-commit-status-action, support leap-16.0 (#346)
+- ci: use shared actions and lock workflow dependencies (#349)
+- ci: use shared actions and lock workflow dependencies (#350)
+- ci: Use order 10 for centos vault task so that it runs first (#351)
+- test: check invalid inputs for correct error message (#352)
+- docs: add AI policy; update setup-python, codeql actions (#353)
+- ci: retry centos vault repo failures using new package_retry yum/dnf plugin (#354)
+- refactor: use is string test for string type checks (#355)
+- docs: tag markdown plain text blocks correctly (#356)
+- ci: Use a fixed 5 minute backoff for CentOS vault repos (#357)
+- ci: support Fedora 45, Ansible 2.22; drop Fedora 43 (#358)
+- ci: use ubuntu 24.04 for test envs that use py39 (#359)
+- ci: use ubuntu 26.04 with podman 5.x and disable apparmor restriction (#360)
+- docs: add AGENTS.md with shared developer conventions from .github (#361)
+- docs: remove extra blank lines from .coderabbit.yaml (#362)
+- ci: update tox-lsr for support for tests/module_utils (#363)
+
 [1.14.3] - 2026-09-17
 --------------------
 
